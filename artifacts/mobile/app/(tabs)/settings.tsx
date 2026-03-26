@@ -67,7 +67,7 @@ export default function SettingsScreen() {
         const threshold = Number(thresholds[site.id]);
         if (!isNaN(threshold) && threshold !== site.slowThresholdMs) {
           await updateSite.mutateAsync({
-            siteId: site.id.toString(),
+            siteId: site.id,
             data: { slowThresholdMs: threshold },
           });
         }

@@ -32,9 +32,8 @@ export default function HistoryScreen() {
   const activeSiteId = selectedSiteId ?? sites?.[0]?.id;
 
   const { data: checkHistory, isLoading: historyLoading, refetch, isRefetching } = useGetCheckHistory(
-    activeSiteId?.toString() ?? "0",
+    activeSiteId ?? 0,
     { hours: selectedRange, limit: 500 },
-    { query: { enabled: !!activeSiteId } }
   );
 
   const chartData = (checkHistory?.checks ?? [])

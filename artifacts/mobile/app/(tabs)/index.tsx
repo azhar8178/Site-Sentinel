@@ -26,7 +26,7 @@ export default function DashboardScreen() {
 
   const handleManualCheck = async (siteId: number) => {
     try {
-      await triggerCheck.mutateAsync({ siteId: siteId.toString() });
+      await triggerCheck.mutateAsync({ siteId });
       queryClient.invalidateQueries({ queryKey: ["/api/sites"] });
     } catch {}
   };
