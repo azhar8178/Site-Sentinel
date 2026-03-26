@@ -95,12 +95,15 @@ Simple username/password authentication with JWT tokens:
 - Auth state persisted via AsyncStorage in mobile app
 - Login screen gates access to the main dashboard
 
+## Email / SMTP
+
+Email alerts use generic SMTP (nodemailer), not AWS SES. All SMTP settings (host, port, username, password, SSL/TLS) are stored in the `alert_config` database table and configurable from the Settings tab in the app. No environment variables needed for email.
+
+The SMTP password is masked ("••••••••") in API responses. A `/api/config/test-smtp` endpoint lets users verify their SMTP settings from the app before saving.
+
 ## Environment Secrets Required
 
 - `JWT_SECRET` - Secret for signing JWT tokens (generate with `openssl rand -hex 32`)
-- `AWS_ACCESS_KEY_ID` - AWS IAM access key for SES
-- `AWS_SECRET_ACCESS_KEY` - AWS IAM secret key for SES
-- `AWS_SES_REGION` - AWS region for SES (e.g., eu-west-1)
 
 ## TypeScript & Composite Projects
 

@@ -213,6 +213,25 @@ paths:
               schema:
                 $ref: "#/components/schemas/AlertConfigResponse"
 
+  /config/test-smtp:
+    post:
+      operationId: testSmtpConnection
+      tags: [config]
+      summary: Test SMTP connection
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TestSmtpInput"
+      responses:
+        "200":
+          description: SMTP test result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TestSmtpResponse"
+
 components:
   schemas:
     HealthStatus:
@@ -378,6 +397,16 @@ components:
           type: string
         isEnabled:
           type: boolean
+        smtpHost:
+          type: string
+        smtpPort:
+          type: integer
+        smtpUsername:
+          type: string
+        smtpPassword:
+          type: string
+        smtpSecure:
+          type: boolean
         updatedAt:
           type: string
           format: date-time
@@ -386,6 +415,11 @@ components:
         - recipientEmails
         - senderEmail
         - isEnabled
+        - smtpHost
+        - smtpPort
+        - smtpUsername
+        - smtpPassword
+        - smtpSecure
         - updatedAt
 
     UpdateAlertConfigInput:
@@ -397,3 +431,39 @@ components:
           type: string
         isEnabled:
           type: boolean
+        smtpHost:
+          type: string
+        smtpPort:
+          type: integer
+        smtpUsername:
+          type: string
+        smtpPassword:
+          type: string
+        smtpSecure:
+          type: boolean
+
+    TestSmtpInput:
+      type: object
+      properties:
+        smtpHost:
+          type: string
+        smtpPort:
+          type: integer
+        smtpUsername:
+          type: string
+        smtpPassword:
+          type: string
+        smtpSecure:
+          type: boolean
+      required:
+        - smtpHost
+
+    TestSmtpResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        error:
+          type: string
+      required:
+        - success

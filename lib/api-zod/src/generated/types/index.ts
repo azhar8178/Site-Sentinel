@@ -17,5 +17,7 @@ export * from "./healthStatus";
 export * from "./listAlertsParams";
 export * from "./siteWithStatus";
 export * from "./siteWithStatusCurrentStatus";
+export * from "./testSmtpInput";
+export * from "./testSmtpResponse";
 export * from "./updateAlertConfigInput";
 export * from "./updateSiteInput";

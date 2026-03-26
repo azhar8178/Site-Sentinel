@@ -77,6 +77,11 @@ export const alertConfigTable = pgTable("alert_config", {
   recipientEmails: text("recipient_emails").notNull().default(""),
   senderEmail: text("sender_email").notNull().default(""),
   isEnabled: boolean("is_enabled").notNull().default(true),
+  smtpHost: text("smtp_host").notNull().default(""),
+  smtpPort: integer("smtp_port").notNull().default(587),
+  smtpUsername: text("smtp_username").notNull().default(""),
+  smtpPassword: text("smtp_password").notNull().default(""),
+  smtpSecure: boolean("smtp_secure").notNull().default(false),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 

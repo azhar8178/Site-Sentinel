@@ -18,6 +18,7 @@ import {
   useUpdateAlertConfig,
   useListSites,
   useUpdateSite,
+  useTestSmtpConnection,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -34,18 +35,30 @@ export default function SettingsScreen() {
   const { data: sites } = useListSites();
   const updateConfig = useUpdateAlertConfig();
   const updateSite = useUpdateSite();
+  const testSmtp = useTestSmtpConnection();
 
   const [recipientEmails, setRecipientEmails] = useState("");
   const [senderEmail, setSenderEmail] = useState("");
   const [isEnabled, setIsEnabled] = useState(true);
+  const [smtpHost, setSmtpHost] = useState("");
+  const [smtpPort, setSmtpPort] = useState("587");
+  const [smtpUsername, setSmtpUsername] = useState("");
+  const [smtpPassword, setSmtpPassword] = useState("");
+  const [smtpSecure, setSmtpSecure] = useState(false);
   const [thresholds, setThresholds] = useState<Record<number, string>>({});
   const [hasChanges, setHasChanges] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
     if (config) {
       setRecipientEmails(config.recipientEmails);
       setSenderEmail(config.senderEmail);
       setIsEnabled(config.isEnabled);
+      setSmtpHost(config.smtpHost);
+      setSmtpPort(String(config.smtpPort));
+      setSmtpUsername(config.smtpUsername);
+      setSmtpPassword(config.smtpPassword);
+      setSmtpSecure(config.smtpSecure);
     }
   }, [config?.id]);
 
@@ -62,7 +75,16 @@ export default function SettingsScreen() {
   const handleSave = async () => {
     try {
       await updateConfig.mutateAsync({
-        data: { recipientEmails, senderEmail, isEnabled },
+        data: {
+          recipientEmails,
+          senderEmail,
+          isEnabled,
+          smtpHost,
+          smtpPort: Number(smtpPort) || 587,
+          smtpUsername,
+          smtpPassword,
+          smtpSecure,
+        },
       });
 
       for (const site of sites ?? []) {
@@ -83,6 +105,30 @@ export default function SettingsScreen() {
       Alert.alert("Error", "Failed to save settings. Please try again.");
     }
   };
+
+  const handleTestSmtp = async () => {
+    try {
+      const result = await testSmtp.mutateAsync({
+        data: {
+          smtpHost,
+          smtpPort: Number(smtpPort) || 587,
+          smtpUsername,
+          smtpPassword,
+          smtpSecure,
+        },
+      });
+
+      if (result.success) {
+        Alert.alert("Success", "SMTP connection test passed! Your mail server is reachable.");
+      } else {
+        Alert.alert("Failed", `SMTP connection failed: ${result.error}`);
+      }
+    } catch {
+      Alert.alert("Error", "Could not test SMTP connection. Please check your settings.");
+    }
+  };
+
+  const markChanged = () => setHasChanges(true);
 
   if (configLoading) {
     return (
@@ -113,24 +159,18 @@ export default function SettingsScreen() {
             </View>
             <Switch
               value={isEnabled}
-              onValueChange={(v) => {
-                setIsEnabled(v);
-                setHasChanges(true);
-              }}
+              onValueChange={(v) => { setIsEnabled(v); markChanged(); }}
               trackColor={{ false: "#D1D5DB", true: `${Colors.light.tint}80` }}
               thumbColor={isEnabled ? Colors.light.tint : "#F3F4F6"}
             />
           </View>
 
           <View style={styles.fieldGroup}>
-            <Text style={styles.fieldLabel}>Sender Email (SES verified)</Text>
+            <Text style={styles.fieldLabel}>Sender Email (From address)</Text>
             <TextInput
               style={styles.textInput}
               value={senderEmail}
-              onChangeText={(v) => {
-                setSenderEmail(v);
-                setHasChanges(true);
-              }}
+              onChangeText={(v) => { setSenderEmail(v); markChanged(); }}
               placeholder="alerts@yourdomain.com"
               placeholderTextColor={Colors.light.textSecondary}
               keyboardType="email-address"
@@ -144,10 +184,7 @@ export default function SettingsScreen() {
             <TextInput
               style={[styles.textInput, styles.textInputMultiline]}
               value={recipientEmails}
-              onChangeText={(v) => {
-                setRecipientEmails(v);
-                setHasChanges(true);
-              }}
+              onChangeText={(v) => { setRecipientEmails(v); markChanged(); }}
               placeholder="team@company.com, dev@company.com"
               placeholderTextColor={Colors.light.textSecondary}
               keyboardType="email-address"
@@ -156,6 +193,109 @@ export default function SettingsScreen() {
               testID="recipient-emails-input"
             />
           </View>
+        </View>
+
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Feather name="server" size={18} color={Colors.light.text} />
+            <Text style={styles.sectionTitle}>SMTP Server</Text>
+          </View>
+          <Text style={styles.sectionDescription}>
+            Configure your outgoing mail server for sending alerts
+          </Text>
+
+          <View style={styles.fieldGroup}>
+            <Text style={styles.fieldLabel}>SMTP Host</Text>
+            <TextInput
+              style={styles.textInput}
+              value={smtpHost}
+              onChangeText={(v) => { setSmtpHost(v); markChanged(); }}
+              placeholder="smtp.gmail.com"
+              placeholderTextColor={Colors.light.textSecondary}
+              autoCapitalize="none"
+              autoCorrect={false}
+              testID="smtp-host-input"
+            />
+          </View>
+
+          <View style={styles.row}>
+            <View style={[styles.fieldGroup, { flex: 1, marginRight: 12 }]}>
+              <Text style={styles.fieldLabel}>Port</Text>
+              <TextInput
+                style={styles.textInput}
+                value={smtpPort}
+                onChangeText={(v) => { setSmtpPort(v); markChanged(); }}
+                placeholder="587"
+                placeholderTextColor={Colors.light.textSecondary}
+                keyboardType="number-pad"
+                testID="smtp-port-input"
+              />
+            </View>
+            <View style={[styles.fieldGroup, { flex: 1 }]}>
+              <Text style={styles.fieldLabel}>SSL/TLS</Text>
+              <View style={styles.toggleRowSmall}>
+                <Text style={styles.toggleLabelSmall}>{smtpSecure ? "Enabled" : "Disabled"}</Text>
+                <Switch
+                  value={smtpSecure}
+                  onValueChange={(v) => { setSmtpSecure(v); markChanged(); }}
+                  trackColor={{ false: "#D1D5DB", true: `${Colors.light.tint}80` }}
+                  thumbColor={smtpSecure ? Colors.light.tint : "#F3F4F6"}
+                />
+              </View>
+            </View>
+          </View>
+
+          <View style={styles.fieldGroup}>
+            <Text style={styles.fieldLabel}>Username</Text>
+            <TextInput
+              style={styles.textInput}
+              value={smtpUsername}
+              onChangeText={(v) => { setSmtpUsername(v); markChanged(); }}
+              placeholder="your-email@gmail.com"
+              placeholderTextColor={Colors.light.textSecondary}
+              autoCapitalize="none"
+              autoCorrect={false}
+              testID="smtp-username-input"
+            />
+          </View>
+
+          <View style={styles.fieldGroup}>
+            <Text style={styles.fieldLabel}>Password</Text>
+            <View style={styles.passwordContainer}>
+              <TextInput
+                style={[styles.textInput, styles.passwordInput]}
+                value={smtpPassword}
+                onChangeText={(v) => { setSmtpPassword(v); markChanged(); }}
+                placeholder="App password or SMTP password"
+                placeholderTextColor={Colors.light.textSecondary}
+                secureTextEntry={!showPassword}
+                autoCapitalize="none"
+                autoCorrect={false}
+                testID="smtp-password-input"
+              />
+              <Pressable
+                style={styles.eyeButton}
+                onPress={() => setShowPassword(!showPassword)}
+              >
+                <Feather name={showPassword ? "eye-off" : "eye"} size={18} color={Colors.light.textSecondary} />
+              </Pressable>
+            </View>
+          </View>
+
+          <Pressable
+            style={({ pressed }) => [styles.testButton, pressed && styles.testButtonPressed]}
+            onPress={handleTestSmtp}
+            disabled={testSmtp.isPending || !smtpHost}
+          >
+            {testSmtp.isPending ? (
+              <ActivityIndicator size="small" color={Colors.light.tint} />
+            ) : (
+              <>
+                <Feather name="zap" size={16} color={Colors.light.tint} />
+                <Text style={styles.testButtonText}>Test Connection</Text>
+              </>
+            )}
+          </Pressable>
         </View>
 
         <View style={styles.section}>
@@ -176,7 +316,7 @@ export default function SettingsScreen() {
                   value={thresholds[site.id] ?? ""}
                   onChangeText={(v) => {
                     setThresholds((prev) => ({ ...prev, [site.id]: v }));
-                    setHasChanges(true);
+                    markChanged();
                   }}
                   keyboardType="number-pad"
                   testID={`threshold-${site.id}`}
@@ -185,17 +325,6 @@ export default function SettingsScreen() {
               </View>
             </View>
           ))}
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>AWS SES Configuration</Text>
-          <View style={styles.infoCard}>
-            <Feather name="info" size={16} color={Colors.light.tint} />
-            <Text style={styles.infoText}>
-              AWS credentials (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_SES_REGION) should be
-              set as environment secrets on the server.
-            </Text>
-          </View>
         </View>
 
         {hasChanges && (
@@ -260,11 +389,16 @@ const styles = StyleSheet.create({
   section: {
     marginBottom: 24,
   },
+  sectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 4,
+  },
   sectionTitle: {
     fontSize: 17,
     fontFamily: "Inter_600SemiBold",
     color: Colors.light.text,
-    marginBottom: 4,
   },
   sectionDescription: {
     fontSize: 13,
@@ -297,6 +431,26 @@ const styles = StyleSheet.create({
     color: Colors.light.textSecondary,
     marginTop: 2,
   },
+  row: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+  },
+  toggleRowSmall: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: Colors.light.surface,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: Colors.light.border,
+  },
+  toggleLabelSmall: {
+    fontSize: 14,
+    fontFamily: "Inter_400Regular",
+    color: Colors.light.text,
+  },
   fieldGroup: {
     marginBottom: 14,
   },
@@ -320,6 +474,39 @@ const styles = StyleSheet.create({
   textInputMultiline: {
     minHeight: 60,
     textAlignVertical: "top",
+  },
+  passwordContainer: {
+    position: "relative",
+  },
+  passwordInput: {
+    paddingRight: 48,
+  },
+  eyeButton: {
+    position: "absolute",
+    right: 14,
+    top: 0,
+    bottom: 0,
+    justifyContent: "center",
+  },
+  testButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: `${Colors.light.tint}10`,
+    borderRadius: 10,
+    paddingVertical: 12,
+    gap: 8,
+    borderWidth: 1,
+    borderColor: `${Colors.light.tint}30`,
+    marginTop: 4,
+  },
+  testButtonPressed: {
+    opacity: 0.7,
+  },
+  testButtonText: {
+    fontSize: 14,
+    fontFamily: "Inter_600SemiBold",
+    color: Colors.light.tint,
   },
   thresholdRow: {
     flexDirection: "row",
@@ -367,23 +554,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontFamily: "Inter_500Medium",
     color: Colors.light.textSecondary,
-  },
-  infoCard: {
-    flexDirection: "row",
-    gap: 10,
-    backgroundColor: `${Colors.light.tint}08`,
-    borderRadius: 12,
-    padding: 14,
-    marginTop: 8,
-    borderWidth: 1,
-    borderColor: `${Colors.light.tint}20`,
-  },
-  infoText: {
-    flex: 1,
-    fontSize: 13,
-    fontFamily: "Inter_400Regular",
-    color: Colors.light.textSecondary,
-    lineHeight: 18,
   },
   saveButton: {
     flexDirection: "row",

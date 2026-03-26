@@ -87,6 +87,11 @@ export interface AlertConfigResponse {
   recipientEmails: string;
   senderEmail: string;
   isEnabled: boolean;
+  smtpHost: string;
+  smtpPort: number;
+  smtpUsername: string;
+  smtpPassword: string;
+  smtpSecure: boolean;
   updatedAt: string;
 }
 
@@ -94,6 +99,24 @@ export interface UpdateAlertConfigInput {
   recipientEmails?: string;
   senderEmail?: string;
   isEnabled?: boolean;
+  smtpHost?: string;
+  smtpPort?: number;
+  smtpUsername?: string;
+  smtpPassword?: string;
+  smtpSecure?: boolean;
+}
+
+export interface TestSmtpInput {
+  smtpHost: string;
+  smtpPort?: number;
+  smtpUsername?: string;
+  smtpPassword?: string;
+  smtpSecure?: boolean;
+}
+
+export interface TestSmtpResponse {
+  success: boolean;
+  error?: string;
 }
 
 export type GetCheckHistoryParams = {

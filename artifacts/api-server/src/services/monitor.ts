@@ -110,9 +110,17 @@ async function processCheckResult(
 
   if (recipients.length === 0) return;
 
+  const smtpConfig = {
+    smtpHost: config.smtpHost,
+    smtpPort: config.smtpPort,
+    smtpUsername: config.smtpUsername,
+    smtpPassword: config.smtpPassword,
+    smtpSecure: config.smtpSecure,
+  };
+
   if (newStatus === "down" && previousStatus !== "down") {
     const alert = formatDowntimeAlert(site.name, site.url, result.statusCode, result.errorMessage);
-    const emailSent = await sendAlertEmail(config.senderEmail, recipients, alert.subject, alert.html, alert.text);
+    const emailSent = await sendAlertEmail(smtpConfig, config.senderEmail, recipients, alert.subject, alert.html, alert.text);
 
     await db.insert(alertsTable).values({
       siteId: site.id,
@@ -128,7 +136,7 @@ async function processCheckResult(
 
   if (newStatus === "slow" && previousStatus !== "slow") {
     const alert = formatSlowAlert(site.name, site.url, result.responseTimeMs!, site.slowThresholdMs);
-    const emailSent = await sendAlertEmail(config.senderEmail, recipients, alert.subject, alert.html, alert.text);
+    const emailSent = await sendAlertEmail(smtpConfig, config.senderEmail, recipients, alert.subject, alert.html, alert.text);
 
     await db.insert(alertsTable).values({
       siteId: site.id,
@@ -144,7 +152,7 @@ async function processCheckResult(
 
   if (newStatus === "up" && (previousStatus === "down" || previousStatus === "slow")) {
     const alert = formatRecoveryAlert(site.name, site.url, result.responseTimeMs!);
-    const emailSent = await sendAlertEmail(config.senderEmail, recipients, alert.subject, alert.html, alert.text);
+    const emailSent = await sendAlertEmail(smtpConfig, config.senderEmail, recipients, alert.subject, alert.html, alert.text);
 
     await db.insert(alertsTable).values({
       siteId: site.id,

@@ -173,6 +173,11 @@ export const GetAlertConfigResponse = zod.object({
   recipientEmails: zod.string(),
   senderEmail: zod.string(),
   isEnabled: zod.boolean(),
+  smtpHost: zod.string(),
+  smtpPort: zod.number(),
+  smtpUsername: zod.string(),
+  smtpPassword: zod.string(),
+  smtpSecure: zod.boolean(),
   updatedAt: zod.date(),
 });
 
@@ -183,6 +188,11 @@ export const UpdateAlertConfigBody = zod.object({
   recipientEmails: zod.string().optional(),
   senderEmail: zod.string().optional(),
   isEnabled: zod.boolean().optional(),
+  smtpHost: zod.string().optional(),
+  smtpPort: zod.number().optional(),
+  smtpUsername: zod.string().optional(),
+  smtpPassword: zod.string().optional(),
+  smtpSecure: zod.boolean().optional(),
 });
 
 export const UpdateAlertConfigResponse = zod.object({
@@ -190,5 +200,26 @@ export const UpdateAlertConfigResponse = zod.object({
   recipientEmails: zod.string(),
   senderEmail: zod.string(),
   isEnabled: zod.boolean(),
+  smtpHost: zod.string(),
+  smtpPort: zod.number(),
+  smtpUsername: zod.string(),
+  smtpPassword: zod.string(),
+  smtpSecure: zod.boolean(),
   updatedAt: zod.date(),
+});
+
+/**
+ * @summary Test SMTP connection
+ */
+export const TestSmtpConnectionBody = zod.object({
+  smtpHost: zod.string(),
+  smtpPort: zod.number().optional(),
+  smtpUsername: zod.string().optional(),
+  smtpPassword: zod.string().optional(),
+  smtpSecure: zod.boolean().optional(),
+});
+
+export const TestSmtpConnectionResponse = zod.object({
+  success: zod.boolean(),
+  error: zod.string().optional(),
 });

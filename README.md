@@ -43,7 +43,7 @@ Built for monitoring **Love Furniture IE** and **Love Furniture UK** Magento sto
 - **Node.js** >= 20 (v24 recommended)
 - **pnpm** >= 9
 - **PostgreSQL** >= 14
-- **AWS SES** account with verified sender email/domain
+- **SMTP mail server** (any provider: Gmail, Outlook, AWS SES, your own server)
 
 ## Quick Start
 
@@ -65,13 +65,11 @@ DATABASE_URL=postgresql://user:password@localhost:5432/site_monitor
 PORT=8080
 JWT_SECRET=your-secure-random-secret-here
 
-# AWS SES (required for email alerts)
-AWS_ACCESS_KEY_ID=your-aws-access-key
-AWS_SECRET_ACCESS_KEY=your-aws-secret-key
-AWS_SES_REGION=eu-west-1
-
 # Mobile app (for Expo web build)
 EXPO_PUBLIC_DOMAIN=your-server-domain.com
+
+# SMTP settings are configured in-app via Settings > SMTP Server
+# No environment variables needed for email — it's all in the database
 ```
 
 ### 3. Set Up Database
@@ -138,9 +136,6 @@ docker run -d \
   -p 8080:8080 \
   -e DATABASE_URL=postgresql://user:pass@db:5432/site_monitor \
   -e JWT_SECRET=your-secret \
-  -e AWS_ACCESS_KEY_ID=xxx \
-  -e AWS_SECRET_ACCESS_KEY=xxx \
-  -e AWS_SES_REGION=eu-west-1 \
   --name site-monitor \
   site-monitor
 ```
@@ -211,9 +206,6 @@ Environment=NODE_ENV=production
 Environment=PORT=8080
 Environment=DATABASE_URL=postgresql://monitor_user:your_db_password@localhost:5432/site_monitor
 Environment=JWT_SECRET=your-jwt-secret
-Environment=AWS_ACCESS_KEY_ID=your-key
-Environment=AWS_SECRET_ACCESS_KEY=your-secret
-Environment=AWS_SES_REGION=eu-west-1
 ExecStart=/usr/bin/node artifacts/api-server/dist/index.mjs
 Restart=always
 RestartSec=10
@@ -314,26 +306,47 @@ curl -X PUT http://localhost:8080/api/sites/1 \
 
 ### Configuring Email Alerts
 
-Use the Settings tab in the mobile app, or the API:
+All email settings are configured from the **Settings** tab in the app — no environment variables needed:
+
+1. Open the app and go to **Settings**
+2. Under **SMTP Server**, enter your mail server details:
+   - **SMTP Host** (e.g., `smtp.gmail.com`, `smtp.office365.com`, `email-smtp.eu-west-1.amazonaws.com`)
+   - **Port** (usually 587 for STARTTLS, or 465 for SSL/TLS)
+   - **Username** and **Password** (your SMTP credentials)
+   - **SSL/TLS** toggle (enable for port 465)
+3. Click **Test Connection** to verify your SMTP settings work
+4. Under **Email Notifications**, configure:
+   - **Sender Email** — the "From" address for alert emails
+   - **Recipient Emails** — comma-separated list of people to alert
+   - **Enable Alerts** toggle
+5. Click **Save Changes**
+
+You can also configure via the API:
 
 ```bash
 curl -X PUT http://localhost:8080/api/config \
   -H "Authorization: Bearer YOUR_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
-    "recipientEmails": "team@company.com, alerts@company.com",
+    "smtpHost": "smtp.gmail.com",
+    "smtpPort": 587,
+    "smtpUsername": "your-email@gmail.com",
+    "smtpPassword": "your-app-password",
+    "smtpSecure": false,
     "senderEmail": "monitor@yourdomain.com",
+    "recipientEmails": "team@company.com, alerts@company.com",
     "isEnabled": true
   }'
 ```
 
-### AWS SES Setup
+### Common SMTP Providers
 
-1. Go to AWS Console > SES
-2. Verify your sender email address or domain
-3. If in SES sandbox, also verify recipient email addresses
-4. Create an IAM user with `ses:SendEmail` and `ses:SendRawEmail` permissions
-5. Set the access key as environment variables
+| Provider | Host | Port | Notes |
+|----------|------|------|-------|
+| Gmail | `smtp.gmail.com` | 587 | Use an [App Password](https://support.google.com/accounts/answer/185833) |
+| Microsoft 365 | `smtp.office365.com` | 587 | Use your M365 credentials |
+| AWS SES | `email-smtp.{region}.amazonaws.com` | 587 | Create SMTP credentials in SES console |
+| Custom | Your mail server | 587/465 | Check with your IT team |
 
 ## Project Structure
 

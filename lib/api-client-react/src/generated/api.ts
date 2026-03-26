@@ -25,6 +25,8 @@ import type {
   HealthStatus,
   ListAlertsParams,
   SiteWithStatus,
+  TestSmtpInput,
+  TestSmtpResponse,
   UpdateAlertConfigInput,
   UpdateSiteInput,
 } from "./api.schemas";
@@ -795,4 +797,90 @@ export const useUpdateAlertConfig = <
   TContext
 > => {
   return useMutation(getUpdateAlertConfigMutationOptions(options));
+};
+
+/**
+ * @summary Test SMTP connection
+ */
+export const getTestSmtpConnectionUrl = () => {
+  return `/api/config/test-smtp`;
+};
+
+export const testSmtpConnection = async (
+  testSmtpInput: TestSmtpInput,
+  options?: RequestInit,
+): Promise<TestSmtpResponse> => {
+  return customFetch<TestSmtpResponse>(getTestSmtpConnectionUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(testSmtpInput),
+  });
+};
+
+export const getTestSmtpConnectionMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof testSmtpConnection>>,
+    TError,
+    { data: BodyType<TestSmtpInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof testSmtpConnection>>,
+  TError,
+  { data: BodyType<TestSmtpInput> },
+  TContext
+> => {
+  const mutationKey = ["testSmtpConnection"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof testSmtpConnection>>,
+    { data: BodyType<TestSmtpInput> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return testSmtpConnection(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type TestSmtpConnectionMutationResult = NonNullable<
+  Awaited<ReturnType<typeof testSmtpConnection>>
+>;
+export type TestSmtpConnectionMutationBody = BodyType<TestSmtpInput>;
+export type TestSmtpConnectionMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Test SMTP connection
+ */
+export const useTestSmtpConnection = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof testSmtpConnection>>,
+    TError,
+    { data: BodyType<TestSmtpInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof testSmtpConnection>>,
+  TError,
+  { data: BodyType<TestSmtpInput> },
+  TContext
+> => {
+  return useMutation(getTestSmtpConnectionMutationOptions(options));
 };

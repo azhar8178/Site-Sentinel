@@ -11,5 +11,10 @@ export interface AlertConfigResponse {
   recipientEmails: string;
   senderEmail: string;
   isEnabled: boolean;
+  smtpHost: string;
+  smtpPort: number;
+  smtpUsername: string;
+  smtpPassword: string;
+  smtpSecure: boolean;
   updatedAt: Date;
 }

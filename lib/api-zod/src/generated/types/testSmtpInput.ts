@@ -6,11 +6,8 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface UpdateAlertConfigInput {
-  recipientEmails?: string;
-  senderEmail?: string;
-  isEnabled?: boolean;
-  smtpHost?: string;
+export interface TestSmtpInput {
+  smtpHost: string;
   smtpPort?: number;
   smtpUsername?: string;
   smtpPassword?: string;

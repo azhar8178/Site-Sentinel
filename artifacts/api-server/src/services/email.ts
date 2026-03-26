@@ -1,38 +1,45 @@
-import { SESClient, SendEmailCommand } from "@aws-sdk/client-ses";
+import nodemailer from "nodemailer";
+import type { Transporter } from "nodemailer";
 import { logger } from "../lib/logger";
 
-let sesClient: SESClient | null = null;
+interface SmtpConfig {
+  smtpHost: string;
+  smtpPort: number;
+  smtpUsername: string;
+  smtpPassword: string;
+  smtpSecure: boolean;
+}
 
-function getClient(): SESClient | null {
-  if (sesClient) return sesClient;
-
-  const region = process.env.AWS_SES_REGION || process.env.AWS_REGION;
-  const accessKeyId = process.env.AWS_ACCESS_KEY_ID;
-  const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY;
-
-  if (!region || !accessKeyId || !secretAccessKey) {
-    logger.warn("AWS SES credentials not configured. Email notifications disabled.");
+function createTransporter(config: SmtpConfig): Transporter | null {
+  if (!config.smtpHost) {
+    logger.warn("SMTP host not configured. Email notifications disabled.");
     return null;
   }
 
-  sesClient = new SESClient({
-    region,
-    credentials: { accessKeyId, secretAccessKey },
+  return nodemailer.createTransport({
+    host: config.smtpHost,
+    port: config.smtpPort,
+    secure: config.smtpSecure,
+    auth: config.smtpUsername
+      ? {
+          user: config.smtpUsername,
+          pass: config.smtpPassword,
+        }
+      : undefined,
   });
-
-  return sesClient;
 }
 
 export async function sendAlertEmail(
+  smtpConfig: SmtpConfig,
   senderEmail: string,
   recipientEmails: string[],
   subject: string,
   htmlBody: string,
   textBody: string
 ): Promise<boolean> {
-  const client = getClient();
-  if (!client) {
-    logger.warn("SES client not available, skipping email");
+  const transporter = createTransporter(smtpConfig);
+  if (!transporter) {
+    logger.warn("SMTP not configured, skipping email");
     return false;
   }
 
@@ -42,21 +49,14 @@ export async function sendAlertEmail(
   }
 
   try {
-    const command = new SendEmailCommand({
-      Source: senderEmail,
-      Destination: {
-        ToAddresses: recipientEmails,
-      },
-      Message: {
-        Subject: { Data: subject, Charset: "UTF-8" },
-        Body: {
-          Html: { Data: htmlBody, Charset: "UTF-8" },
-          Text: { Data: textBody, Charset: "UTF-8" },
-        },
-      },
+    await transporter.sendMail({
+      from: senderEmail,
+      to: recipientEmails.join(", "),
+      subject,
+      html: htmlBody,
+      text: textBody,
     });
 
-    await client.send(command);
     logger.info({ subject, recipients: recipientEmails }, "Alert email sent");
     return true;
   } catch (err) {
@@ -65,8 +65,23 @@ export async function sendAlertEmail(
   }
 }
 
+export async function testSmtpConnection(config: SmtpConfig): Promise<{ success: boolean; error?: string }> {
+  const transporter = createTransporter(config);
+  if (!transporter) {
+    return { success: false, error: "SMTP host not configured" };
+  }
+
+  try {
+    await transporter.verify();
+    return { success: true };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Unknown error";
+    return { success: false, error: message };
+  }
+}
+
 export function formatDowntimeAlert(siteName: string, siteUrl: string, statusCode: number | null, errorMessage: string | null): { subject: string; html: string; text: string } {
-  const subject = `🚨 ALERT: ${siteName} is DOWN`;
+  const subject = `ALERT: ${siteName} is DOWN`;
   const timestamp = new Date().toISOString();
   const details = errorMessage || `HTTP ${statusCode}`;
 
@@ -95,7 +110,7 @@ export function formatDowntimeAlert(siteName: string, siteUrl: string, statusCod
 }
 
 export function formatSlowAlert(siteName: string, siteUrl: string, responseTimeMs: number, thresholdMs: number): { subject: string; html: string; text: string } {
-  const subject = `⚠️ WARNING: ${siteName} is SLOW (${responseTimeMs}ms)`;
+  const subject = `WARNING: ${siteName} is SLOW (${responseTimeMs}ms)`;
   const timestamp = new Date().toISOString();
 
   const text = `WARNING: ${siteName} is responding slowly\n\nSite: ${siteUrl}\nResponse Time: ${responseTimeMs}ms (threshold: ${thresholdMs}ms)\nTime: ${timestamp}`;
@@ -121,7 +136,7 @@ export function formatSlowAlert(siteName: string, siteUrl: string, responseTimeM
 }
 
 export function formatRecoveryAlert(siteName: string, siteUrl: string, responseTimeMs: number): { subject: string; html: string; text: string } {
-  const subject = `✅ RECOVERED: ${siteName} is back UP`;
+  const subject = `RECOVERED: ${siteName} is back UP`;
   const timestamp = new Date().toISOString();
 
   const text = `RECOVERED: ${siteName} is back online\n\nSite: ${siteUrl}\nResponse Time: ${responseTimeMs}ms\nTime: ${timestamp}`;
