@@ -88,7 +88,10 @@ export default function LoginScreen() {
         style={styles.flex}
       >
         <ScrollView
-          contentContainerStyle={styles.container}
+          contentContainerStyle={[
+            styles.container,
+            isWeb && styles.containerWeb,
+          ]}
           keyboardShouldPersistTaps="handled"
         >
           <View style={styles.iconContainer}>
@@ -176,6 +179,11 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingHorizontal: 32,
     paddingBottom: 40,
+  },
+  containerWeb: {
+    alignSelf: "center",
+    maxWidth: 420,
+    width: "100%",
   },
   iconContainer: {
     alignItems: "center",
