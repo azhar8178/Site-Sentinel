@@ -22,11 +22,13 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 
 import Colors from "@/constants/colors";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
   const isWeb = Platform.OS === "web";
   const queryClient = useQueryClient();
+  const { user, logout } = useAuth();
 
   const { data: config, isLoading: configLoading } = useGetAlertConfig();
   const { data: sites } = useListSites();
@@ -213,6 +215,26 @@ export default function SettingsScreen() {
             )}
           </Pressable>
         )}
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Account</Text>
+          <View style={styles.accountCard}>
+            <Feather name="user" size={20} color={Colors.light.textSecondary} />
+            <Text style={styles.accountUsername}>{user?.username}</Text>
+          </View>
+          <Pressable
+            style={({ pressed }) => [styles.logoutButton, pressed && styles.logoutButtonPressed]}
+            onPress={() => {
+              Alert.alert("Sign Out", "Are you sure you want to sign out?", [
+                { text: "Cancel", style: "cancel" },
+                { text: "Sign Out", style: "destructive", onPress: logout },
+              ]);
+            }}
+          >
+            <Feather name="log-out" size={18} color="#dc3545" />
+            <Text style={styles.logoutButtonText}>Sign Out</Text>
+          </Pressable>
+        </View>
       </ScrollView>
     </View>
   );
@@ -380,5 +402,39 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: "Inter_600SemiBold",
     color: "#FFFFFF",
+  },
+  accountCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    backgroundColor: Colors.light.surface,
+    borderRadius: 12,
+    padding: 16,
+    marginTop: 8,
+    marginBottom: 12,
+  },
+  accountUsername: {
+    fontSize: 15,
+    fontFamily: "Inter_500Medium",
+    color: Colors.light.text,
+  },
+  logoutButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#fef2f2",
+    borderRadius: 12,
+    paddingVertical: 14,
+    gap: 8,
+    borderWidth: 1,
+    borderColor: "#fecaca",
+  },
+  logoutButtonPressed: {
+    opacity: 0.85,
+  },
+  logoutButtonText: {
+    fontSize: 15,
+    fontFamily: "Inter_600SemiBold",
+    color: "#dc3545",
   },
 });

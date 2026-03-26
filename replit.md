@@ -85,8 +85,19 @@ artifacts-monorepo/
 - `PUT /api/config` - Update alert configuration
 - `PUT /api/sites/:id/threshold` - Update site slow threshold
 
+## User Authentication
+
+Simple username/password authentication with JWT tokens:
+- First registered user is auto-admin
+- Subsequent registrations require an existing auth token
+- Auth middleware protects all API routes except `/api/health` and `/api/auth/*`
+- JWT tokens expire after 7 days
+- Auth state persisted via AsyncStorage in mobile app
+- Login screen gates access to the main dashboard
+
 ## Environment Secrets Required
 
+- `JWT_SECRET` - Secret for signing JWT tokens (generate with `openssl rand -hex 32`)
 - `AWS_ACCESS_KEY_ID` - AWS IAM access key for SES
 - `AWS_SECRET_ACCESS_KEY` - AWS IAM secret key for SES
 - `AWS_SES_REGION` - AWS region for SES (e.g., eu-west-1)
