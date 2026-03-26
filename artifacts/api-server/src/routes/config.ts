@@ -29,6 +29,16 @@ router.put("/config", async (req, res, next) => {
   try {
     const { recipientEmails, senderEmail, isEnabled } = req.body;
 
+    if (recipientEmails !== undefined && typeof recipientEmails !== "string") {
+      res.status(400).json({ error: "recipientEmails must be a string" }); return;
+    }
+    if (senderEmail !== undefined && typeof senderEmail !== "string") {
+      res.status(400).json({ error: "senderEmail must be a string" }); return;
+    }
+    if (isEnabled !== undefined && typeof isEnabled !== "boolean") {
+      res.status(400).json({ error: "isEnabled must be a boolean" }); return;
+    }
+
     let configs = await db.select().from(alertConfigTable).limit(1);
 
     if (configs.length === 0) {

@@ -35,6 +35,9 @@ router.put("/sites/:siteId", async (req, res, next) => {
     if (!siteId) { res.status(400).json({ error: "Invalid site ID" }); return; }
 
     const { name, url, isActive, slowThresholdMs } = req.body;
+    if (slowThresholdMs !== undefined && (typeof slowThresholdMs !== "number" || slowThresholdMs < 100 || slowThresholdMs > 60000)) {
+      res.status(400).json({ error: "slowThresholdMs must be a number between 100 and 60000" }); return;
+    }
     const updates: Record<string, unknown> = { updatedAt: new Date() };
     if (name !== undefined) updates.name = name;
     if (url !== undefined) updates.url = url;

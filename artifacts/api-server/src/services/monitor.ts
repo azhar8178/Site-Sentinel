@@ -33,7 +33,7 @@ async function checkSite(site: typeof sitesTable.$inferSelect): Promise<{
 
     clearTimeout(timeout);
     const responseTimeMs = Date.now() - start;
-    const isUp = response.status >= 200 && response.status < 400;
+    const isUp = response.status >= 200 && response.status < 300;
 
     return {
       statusCode: response.status,
