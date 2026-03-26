@@ -5,7 +5,9 @@
  * Site monitoring and alerting API
  * OpenAPI spec version: 0.1.0
  */
+import type { AlertResponse } from "./alertResponse";
 
-export interface HealthStatus {
-  status: string;
+export interface AlertListResponse {
+  alerts: AlertResponse[];
+  total: number;
 }

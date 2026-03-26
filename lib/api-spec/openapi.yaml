@@ -3,13 +3,21 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Site monitoring and alerting API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: sites
+    description: Monitored site operations
+  - name: checks
+    description: Check result operations
+  - name: alerts
+    description: Alert operations
+  - name: config
+    description: Alert configuration operations
 paths:
   /healthz:
     get:
@@ -24,6 +32,187 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /sites:
+    get:
+      operationId: listSites
+      tags: [sites]
+      summary: List monitored sites
+      description: Returns all monitored sites with current status
+      responses:
+        "200":
+          description: List of sites
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SiteWithStatus"
+
+  /sites/{siteId}:
+    get:
+      operationId: getSite
+      tags: [sites]
+      summary: Get a single site
+      parameters:
+        - name: siteId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Site details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SiteWithStatus"
+        "404":
+          description: Site not found
+
+    put:
+      operationId: updateSite
+      tags: [sites]
+      summary: Update site settings
+      parameters:
+        - name: siteId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateSiteInput"
+      responses:
+        "200":
+          description: Updated site
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SiteWithStatus"
+
+  /sites/{siteId}/check:
+    post:
+      operationId: triggerCheck
+      tags: [sites]
+      summary: Trigger a manual check for a site
+      parameters:
+        - name: siteId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Check result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CheckResultResponse"
+
+  /sites/{siteId}/checks:
+    get:
+      operationId: getCheckHistory
+      tags: [checks]
+      summary: Get check history for a site
+      parameters:
+        - name: siteId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: hours
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 24
+          description: Number of hours of history to return
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 100
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 0
+      responses:
+        "200":
+          description: Check history
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CheckHistoryResponse"
+
+  /alerts:
+    get:
+      operationId: listAlerts
+      tags: [alerts]
+      summary: List alerts
+      parameters:
+        - name: siteId
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 50
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 0
+      responses:
+        "200":
+          description: Alert list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AlertListResponse"
+
+  /config:
+    get:
+      operationId: getAlertConfig
+      tags: [config]
+      summary: Get alert configuration
+      responses:
+        "200":
+          description: Alert config
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AlertConfigResponse"
+
+    put:
+      operationId: updateAlertConfig
+      tags: [config]
+      summary: Update alert configuration
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateAlertConfigInput"
+      responses:
+        "200":
+          description: Updated config
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AlertConfigResponse"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +223,177 @@ components:
       required:
         - status
 
+    SiteWithStatus:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        url:
+          type: string
+        isActive:
+          type: boolean
+        currentStatus:
+          type: string
+          enum: [up, down, slow, unknown]
+        lastCheckedAt:
+          type: string
+          format: date-time
+          nullable: true
+        lastResponseTimeMs:
+          type: integer
+          nullable: true
+        slowThresholdMs:
+          type: integer
+        consecutiveFailures:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - name
+        - url
+        - isActive
+        - currentStatus
+        - slowThresholdMs
+        - consecutiveFailures
+        - createdAt
+        - updatedAt
+
+    UpdateSiteInput:
+      type: object
+      properties:
+        name:
+          type: string
+        url:
+          type: string
+        isActive:
+          type: boolean
+        slowThresholdMs:
+          type: integer
+
+    CheckResultResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+        siteId:
+          type: integer
+        statusCode:
+          type: integer
+          nullable: true
+        responseTimeMs:
+          type: integer
+          nullable: true
+        isUp:
+          type: boolean
+        errorMessage:
+          type: string
+          nullable: true
+        checkedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - siteId
+        - isUp
+        - checkedAt
+
+    CheckHistoryResponse:
+      type: object
+      properties:
+        checks:
+          type: array
+          items:
+            $ref: "#/components/schemas/CheckResultResponse"
+        total:
+          type: integer
+      required:
+        - checks
+        - total
+
+    AlertResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+        siteId:
+          type: integer
+        siteName:
+          type: string
+        siteUrl:
+          type: string
+        alertType:
+          type: string
+          enum: [downtime, slow_response, recovery]
+        message:
+          type: string
+        responseTimeMs:
+          type: integer
+          nullable: true
+        statusCode:
+          type: integer
+          nullable: true
+        emailSent:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - siteId
+        - siteName
+        - siteUrl
+        - alertType
+        - message
+        - emailSent
+        - createdAt
+
+    AlertListResponse:
+      type: object
+      properties:
+        alerts:
+          type: array
+          items:
+            $ref: "#/components/schemas/AlertResponse"
+        total:
+          type: integer
+      required:
+        - alerts
+        - total
+
+    AlertConfigResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+        recipientEmails:
+          type: string
+        senderEmail:
+          type: string
+        isEnabled:
+          type: boolean
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - recipientEmails
+        - senderEmail
+        - isEnabled
+        - updatedAt
+
+    UpdateAlertConfigInput:
+      type: object
+      properties:
+        recipientEmails:
+          type: string
+        senderEmail:
+          type: string
+        isEnabled:
+          type: boolean

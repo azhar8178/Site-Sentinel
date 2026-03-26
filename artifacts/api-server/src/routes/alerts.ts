@@ -1,0 +1,51 @@
+import { Router, type IRouter } from "express";
+import { db } from "@workspace/db";
+import { alertsTable, sitesTable } from "@workspace/db/schema";
+import { eq, desc, count } from "drizzle-orm";
+
+const router: IRouter = Router();
+
+router.get("/alerts", async (req, res, next) => {
+  try {
+    const siteId = req.query.siteId ? Number(req.query.siteId) : undefined;
+    if (req.query.siteId && (!siteId || !Number.isFinite(siteId))) {
+      res.status(400).json({ error: "Invalid siteId" }); return;
+    }
+    const limit = Math.min(Number(req.query.limit) || 50, 200);
+    const offset = Number(req.query.offset) || 0;
+
+    const conditions = siteId ? eq(alertsTable.siteId, siteId) : undefined;
+
+    const alerts = await db
+      .select({
+        id: alertsTable.id,
+        siteId: alertsTable.siteId,
+        siteName: sitesTable.name,
+        siteUrl: sitesTable.url,
+        alertType: alertsTable.alertType,
+        message: alertsTable.message,
+        responseTimeMs: alertsTable.responseTimeMs,
+        statusCode: alertsTable.statusCode,
+        emailSent: alertsTable.emailSent,
+        createdAt: alertsTable.createdAt,
+      })
+      .from(alertsTable)
+      .innerJoin(sitesTable, eq(alertsTable.siteId, sitesTable.id))
+      .where(conditions)
+      .orderBy(desc(alertsTable.createdAt))
+      .limit(limit)
+      .offset(offset);
+
+    const totalResult = await db
+      .select({ total: count() })
+      .from(alertsTable)
+      .where(conditions);
+
+    res.json({
+      alerts,
+      total: totalResult[0]?.total ?? 0,
+    });
+  } catch (err) { next(err); }
+});
+
+export default router;

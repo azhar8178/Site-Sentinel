@@ -6,6 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface HealthStatus {
-  status: string;
+export interface AlertConfigResponse {
+  id: number;
+  recipientEmails: string;
+  senderEmail: string;
+  isEnabled: boolean;
+  updatedAt: Date;
 }
