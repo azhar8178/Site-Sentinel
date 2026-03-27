@@ -82,6 +82,13 @@ export const alertConfigTable = pgTable("alert_config", {
   smtpUsername: text("smtp_username").notNull().default(""),
   smtpPassword: text("smtp_password").notNull().default(""),
   smtpSecure: boolean("smtp_secure").notNull().default(false),
+  slackEnabled: boolean("slack_enabled").notNull().default(false),
+  slackWebhookUrl: text("slack_webhook_url").notNull().default(""),
+  slackChannel: text("slack_channel").notNull().default(""),
+  whatsappEnabled: boolean("whatsapp_enabled").notNull().default(false),
+  whatsappApiToken: text("whatsapp_api_token").notNull().default(""),
+  whatsappPhoneNumberId: text("whatsapp_phone_number_id").notNull().default(""),
+  whatsappRecipients: text("whatsapp_recipients").notNull().default(""),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 

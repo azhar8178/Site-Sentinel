@@ -234,7 +234,125 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/TestSmtpResponse"
+                $ref: "#/components/schemas/TestConnectionResponse"
+
+  /config/test-email:
+    post:
+      operationId: sendTestEmail
+      tags: [config]
+      summary: Send a test email to verify delivery
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TestSmtpInput"
+      responses:
+        "200":
+          description: Test email result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TestConnectionResponse"
+
+  /config/test-slack:
+    post:
+      operationId: testSlackConnection
+      tags: [config]
+      summary: Test Slack webhook
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                slackWebhookUrl:
+                  type: string
+      responses:
+        "200":
+          description: Slack test result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TestConnectionResponse"
+
+  /config/test-whatsapp:
+    post:
+      operationId: testWhatsAppConnection
+      tags: [config]
+      summary: Test WhatsApp connection
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                whatsappApiToken:
+                  type: string
+                whatsappPhoneNumberId:
+                  type: string
+                testRecipient:
+                  type: string
+              required:
+                - testRecipient
+      responses:
+        "200":
+          description: WhatsApp test result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TestConnectionResponse"
+
+  /config/magento:
+    get:
+      operationId: getMagentoConfig
+      tags: [config]
+      summary: Get Magento connection configuration
+      responses:
+        "200":
+          description: Magento config
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MagentoConfigResponse"
+    put:
+      operationId: updateMagentoConfig
+      tags: [config]
+      summary: Update Magento connection configuration
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateMagentoConfigInput"
+      responses:
+        "200":
+          description: Updated Magento config
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MagentoConfigResponse"
+
+  /config/test-magento:
+    post:
+      operationId: testMagentoConnection
+      tags: [config]
+      summary: Test Magento API connection
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateMagentoConfigInput"
+      responses:
+        "200":
+          description: Magento test result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TestMagentoResponse"
 
   /servers:
     get:
@@ -581,6 +699,20 @@ components:
           type: string
         smtpSecure:
           type: boolean
+        slackEnabled:
+          type: boolean
+        slackWebhookUrl:
+          type: string
+        slackChannel:
+          type: string
+        whatsappEnabled:
+          type: boolean
+        whatsappApiToken:
+          type: string
+        whatsappPhoneNumberId:
+          type: string
+        whatsappRecipients:
+          type: string
         updatedAt:
           type: string
           format: date-time
@@ -594,6 +726,13 @@ components:
         - smtpUsername
         - smtpPassword
         - smtpSecure
+        - slackEnabled
+        - slackWebhookUrl
+        - slackChannel
+        - whatsappEnabled
+        - whatsappApiToken
+        - whatsappPhoneNumberId
+        - whatsappRecipients
         - updatedAt
 
     UpdateAlertConfigInput:
@@ -615,6 +754,20 @@ components:
           type: string
         smtpSecure:
           type: boolean
+        slackEnabled:
+          type: boolean
+        slackWebhookUrl:
+          type: string
+        slackChannel:
+          type: string
+        whatsappEnabled:
+          type: boolean
+        whatsappApiToken:
+          type: string
+        whatsappPhoneNumberId:
+          type: string
+        whatsappRecipients:
+          type: string
 
     TestSmtpInput:
       type: object
@@ -629,10 +782,12 @@ components:
           type: string
         smtpSecure:
           type: boolean
-      required:
-        - smtpHost
+        senderEmail:
+          type: string
+        recipientEmails:
+          type: string
 
-    TestSmtpResponse:
+    TestConnectionResponse:
       type: object
       properties:
         success:
@@ -641,6 +796,66 @@ components:
           type: string
       required:
         - success
+
+    TestMagentoResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        error:
+          type: string
+        stores:
+          type: string
+      required:
+        - success
+
+    MagentoConfigResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+        apiUrl:
+          type: string
+        adminUser:
+          type: string
+        adminPass:
+          type: string
+        apiToken:
+          type: string
+        isEnabled:
+          type: boolean
+        lastTestAt:
+          type: string
+          format: date-time
+          nullable: true
+        lastTestStatus:
+          type: string
+          nullable: true
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - apiUrl
+        - adminUser
+        - adminPass
+        - apiToken
+        - isEnabled
+        - updatedAt
+
+    UpdateMagentoConfigInput:
+      type: object
+      properties:
+        apiUrl:
+          type: string
+        adminUser:
+          type: string
+        adminPass:
+          type: string
+        apiToken:
+          type: string
+        isEnabled:
+          type: boolean
 
     SuccessResponse:
       type: object

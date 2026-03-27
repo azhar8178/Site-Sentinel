@@ -3,6 +3,8 @@ import { sitesTable, checkResultsTable, alertsTable, alertConfigTable } from "@w
 import { eq, desc } from "drizzle-orm";
 import { logger } from "../lib/logger";
 import { sendAlertEmail, formatDowntimeAlert, formatSlowAlert, formatRecoveryAlert } from "./email";
+import { sendSlackAlert, formatSlackDowntime, formatSlackSlow, formatSlackRecovery } from "./slack";
+import { sendWhatsAppAlert, formatWhatsAppDowntime, formatWhatsAppSlow, formatWhatsAppRecovery } from "./whatsapp";
 
 const CHECK_INTERVAL_MS = 60_000;
 const REQUEST_TIMEOUT_MS = 30_000;
@@ -108,7 +110,7 @@ async function processCheckResult(
     .map((e) => e.trim())
     .filter(Boolean);
 
-  if (recipients.length === 0) return;
+  const emailEnabled = recipients.length > 0 && !!config.smtpHost;
 
   const smtpConfig = {
     smtpHost: config.smtpHost,
@@ -118,14 +120,31 @@ async function processCheckResult(
     smtpSecure: config.smtpSecure,
   };
 
+  const slackActive = config.slackEnabled && !!config.slackWebhookUrl;
+  const whatsappRecipients = config.whatsappEnabled && config.whatsappRecipients
+    ? config.whatsappRecipients.split(",").map((r: string) => r.trim()).filter(Boolean)
+    : [];
+
+  if (!emailEnabled && !slackActive && whatsappRecipients.length === 0) return;
+
   if (newStatus === "down" && previousStatus !== "down") {
+    const details = result.errorMessage || `HTTP ${result.statusCode}`;
     const alert = formatDowntimeAlert(site.name, site.url, result.statusCode, result.errorMessage);
-    const emailSent = await sendAlertEmail(smtpConfig, config.senderEmail, recipients, alert.subject, alert.html, alert.text);
+    const emailSent = emailEnabled
+      ? await sendAlertEmail(smtpConfig, config.senderEmail, recipients, alert.subject, alert.html, alert.text)
+      : false;
+
+    if (slackActive) {
+      await sendSlackAlert(config.slackWebhookUrl, formatSlackDowntime(site.name, site.url, details));
+    }
+    if (whatsappRecipients.length > 0) {
+      await sendWhatsAppAlert(config.whatsappApiToken, config.whatsappPhoneNumberId, whatsappRecipients, formatWhatsAppDowntime(site.name, site.url, details));
+    }
 
     await db.insert(alertsTable).values({
       siteId: site.id,
       alertType: "downtime",
-      message: `${site.name} is DOWN. ${result.errorMessage || `HTTP ${result.statusCode}`}`,
+      message: `${site.name} is DOWN. ${details}`,
       responseTimeMs: result.responseTimeMs,
       statusCode: result.statusCode,
       emailSent,
@@ -136,7 +155,16 @@ async function processCheckResult(
 
   if (newStatus === "slow" && previousStatus !== "slow") {
     const alert = formatSlowAlert(site.name, site.url, result.responseTimeMs!, site.slowThresholdMs);
-    const emailSent = await sendAlertEmail(smtpConfig, config.senderEmail, recipients, alert.subject, alert.html, alert.text);
+    const emailSent = emailEnabled
+      ? await sendAlertEmail(smtpConfig, config.senderEmail, recipients, alert.subject, alert.html, alert.text)
+      : false;
+
+    if (slackActive) {
+      await sendSlackAlert(config.slackWebhookUrl, formatSlackSlow(site.name, site.url, result.responseTimeMs!, site.slowThresholdMs));
+    }
+    if (whatsappRecipients.length > 0) {
+      await sendWhatsAppAlert(config.whatsappApiToken, config.whatsappPhoneNumberId, whatsappRecipients, formatWhatsAppSlow(site.name, site.url, result.responseTimeMs!, site.slowThresholdMs));
+    }
 
     await db.insert(alertsTable).values({
       siteId: site.id,
@@ -152,7 +180,16 @@ async function processCheckResult(
 
   if (newStatus === "up" && (previousStatus === "down" || previousStatus === "slow")) {
     const alert = formatRecoveryAlert(site.name, site.url, result.responseTimeMs!);
-    const emailSent = await sendAlertEmail(smtpConfig, config.senderEmail, recipients, alert.subject, alert.html, alert.text);
+    const emailSent = emailEnabled
+      ? await sendAlertEmail(smtpConfig, config.senderEmail, recipients, alert.subject, alert.html, alert.text)
+      : false;
+
+    if (slackActive) {
+      await sendSlackAlert(config.slackWebhookUrl, formatSlackRecovery(site.name, site.url, result.responseTimeMs!));
+    }
+    if (whatsappRecipients.length > 0) {
+      await sendWhatsAppAlert(config.whatsappApiToken, config.whatsappPhoneNumberId, whatsappRecipients, formatWhatsAppRecovery(site.name, site.url, result.responseTimeMs!));
+    }
 
     await db.insert(alertsTable).values({
       siteId: site.id,

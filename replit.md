@@ -26,9 +26,11 @@ artifacts-monorepo/
 │   ├── api-server/         # Express API server + monitoring worker
 │   │   └── src/
 │   │       ├── services/
-│   │       │   ├── monitor.ts   # Site monitoring worker (60s interval)
-│   │       │   ├── magento.ts   # Magento sync service (5m interval)
-│   │       │   └── email.ts     # SMTP email alerts
+│   │       │   ├── monitor.ts   # Site monitoring worker (60s interval, multi-channel alerts)
+│   │       │   ├── magento.ts   # Magento sync service (5m interval, DB-first config)
+│   │       │   ├── email.ts     # SMTP email alerts
+│   │       │   ├── slack.ts     # Slack webhook notifications
+│   │       │   └── whatsapp.ts  # WhatsApp Business API notifications
 │   │       └── routes/
 │   │           └── index.ts     # All API routes (sites, checks, alerts, config)
 │   ├── mobile/              # Expo mobile app (Site Monitor dashboard)
@@ -40,7 +42,7 @@ artifacts-monorepo/
 │   │           ├── store.tsx    # Magento orders & cart tracking
 │   │           ├── servers.tsx  # Server vitals (CPU/mem/disk/net)
 │   │           ├── alerts.tsx   # Alert log viewer
-│   │           └── settings.tsx # Email & threshold settings
+│   │           └── settings.tsx # Connection management (Magento/Slack/WhatsApp/Email/Thresholds)
 │   └── mockup-sandbox/     # Component preview server
 ├── lib/
 │   ├── api-spec/           # OpenAPI spec + Orval codegen config
@@ -48,9 +50,9 @@ artifacts-monorepo/
 │   ├── api-zod/            # Generated Zod schemas from OpenAPI
 │   └── db/                 # Drizzle ORM schema + DB connection
 │       └── src/schema/
-│           ├── sites.ts    # sites, check_results, alerts, alert_config tables
+│           ├── sites.ts    # sites, check_results, alerts, alert_config (email+slack+whatsapp) tables
 │           ├── servers.ts  # servers, server_metrics tables
-│           ├── magento.ts  # magento_orders, magento_carts, magento_sync_log tables
+│           ├── magento.ts  # magento_orders, magento_carts, magento_sync_log, magento_config tables
 │           └── users.ts    # users table
 ├── scripts/
 │   └── src/

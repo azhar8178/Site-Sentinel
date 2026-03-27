@@ -29,6 +29,7 @@ import type {
   HealthStatus,
   ListAlertsParams,
   MagentoCart,
+  MagentoConfigResponse,
   MagentoOrder,
   MagentoStats,
   MagentoSyncLog,
@@ -37,9 +38,13 @@ import type {
   ServerWithMetrics,
   SiteWithStatus,
   SuccessResponse,
+  TestConnectionResponse,
+  TestMagentoResponse,
+  TestSlackConnectionBody,
   TestSmtpInput,
-  TestSmtpResponse,
+  TestWhatsAppConnectionBody,
   UpdateAlertConfigInput,
+  UpdateMagentoConfigInput,
   UpdateSiteInput,
 } from "./api.schemas";
 
@@ -821,8 +826,8 @@ export const getTestSmtpConnectionUrl = () => {
 export const testSmtpConnection = async (
   testSmtpInput: TestSmtpInput,
   options?: RequestInit,
-): Promise<TestSmtpResponse> => {
-  return customFetch<TestSmtpResponse>(getTestSmtpConnectionUrl(), {
+): Promise<TestConnectionResponse> => {
+  return customFetch<TestConnectionResponse>(getTestSmtpConnectionUrl(), {
     ...options,
     method: "POST",
     headers: { "Content-Type": "application/json", ...options?.headers },
@@ -895,6 +900,514 @@ export const useTestSmtpConnection = <
   TContext
 > => {
   return useMutation(getTestSmtpConnectionMutationOptions(options));
+};
+
+/**
+ * @summary Send a test email to verify delivery
+ */
+export const getSendTestEmailUrl = () => {
+  return `/api/config/test-email`;
+};
+
+export const sendTestEmail = async (
+  testSmtpInput?: TestSmtpInput,
+  options?: RequestInit,
+): Promise<TestConnectionResponse> => {
+  return customFetch<TestConnectionResponse>(getSendTestEmailUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(testSmtpInput),
+  });
+};
+
+export const getSendTestEmailMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof sendTestEmail>>,
+    TError,
+    { data: BodyType<TestSmtpInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof sendTestEmail>>,
+  TError,
+  { data: BodyType<TestSmtpInput> },
+  TContext
+> => {
+  const mutationKey = ["sendTestEmail"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof sendTestEmail>>,
+    { data: BodyType<TestSmtpInput> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return sendTestEmail(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type SendTestEmailMutationResult = NonNullable<
+  Awaited<ReturnType<typeof sendTestEmail>>
+>;
+export type SendTestEmailMutationBody = BodyType<TestSmtpInput>;
+export type SendTestEmailMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Send a test email to verify delivery
+ */
+export const useSendTestEmail = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof sendTestEmail>>,
+    TError,
+    { data: BodyType<TestSmtpInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof sendTestEmail>>,
+  TError,
+  { data: BodyType<TestSmtpInput> },
+  TContext
+> => {
+  return useMutation(getSendTestEmailMutationOptions(options));
+};
+
+/**
+ * @summary Test Slack webhook
+ */
+export const getTestSlackConnectionUrl = () => {
+  return `/api/config/test-slack`;
+};
+
+export const testSlackConnection = async (
+  testSlackConnectionBody?: TestSlackConnectionBody,
+  options?: RequestInit,
+): Promise<TestConnectionResponse> => {
+  return customFetch<TestConnectionResponse>(getTestSlackConnectionUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(testSlackConnectionBody),
+  });
+};
+
+export const getTestSlackConnectionMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof testSlackConnection>>,
+    TError,
+    { data: BodyType<TestSlackConnectionBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof testSlackConnection>>,
+  TError,
+  { data: BodyType<TestSlackConnectionBody> },
+  TContext
+> => {
+  const mutationKey = ["testSlackConnection"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof testSlackConnection>>,
+    { data: BodyType<TestSlackConnectionBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return testSlackConnection(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type TestSlackConnectionMutationResult = NonNullable<
+  Awaited<ReturnType<typeof testSlackConnection>>
+>;
+export type TestSlackConnectionMutationBody = BodyType<TestSlackConnectionBody>;
+export type TestSlackConnectionMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Test Slack webhook
+ */
+export const useTestSlackConnection = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof testSlackConnection>>,
+    TError,
+    { data: BodyType<TestSlackConnectionBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof testSlackConnection>>,
+  TError,
+  { data: BodyType<TestSlackConnectionBody> },
+  TContext
+> => {
+  return useMutation(getTestSlackConnectionMutationOptions(options));
+};
+
+/**
+ * @summary Test WhatsApp connection
+ */
+export const getTestWhatsAppConnectionUrl = () => {
+  return `/api/config/test-whatsapp`;
+};
+
+export const testWhatsAppConnection = async (
+  testWhatsAppConnectionBody: TestWhatsAppConnectionBody,
+  options?: RequestInit,
+): Promise<TestConnectionResponse> => {
+  return customFetch<TestConnectionResponse>(getTestWhatsAppConnectionUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(testWhatsAppConnectionBody),
+  });
+};
+
+export const getTestWhatsAppConnectionMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof testWhatsAppConnection>>,
+    TError,
+    { data: BodyType<TestWhatsAppConnectionBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof testWhatsAppConnection>>,
+  TError,
+  { data: BodyType<TestWhatsAppConnectionBody> },
+  TContext
+> => {
+  const mutationKey = ["testWhatsAppConnection"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof testWhatsAppConnection>>,
+    { data: BodyType<TestWhatsAppConnectionBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return testWhatsAppConnection(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type TestWhatsAppConnectionMutationResult = NonNullable<
+  Awaited<ReturnType<typeof testWhatsAppConnection>>
+>;
+export type TestWhatsAppConnectionMutationBody =
+  BodyType<TestWhatsAppConnectionBody>;
+export type TestWhatsAppConnectionMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Test WhatsApp connection
+ */
+export const useTestWhatsAppConnection = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof testWhatsAppConnection>>,
+    TError,
+    { data: BodyType<TestWhatsAppConnectionBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof testWhatsAppConnection>>,
+  TError,
+  { data: BodyType<TestWhatsAppConnectionBody> },
+  TContext
+> => {
+  return useMutation(getTestWhatsAppConnectionMutationOptions(options));
+};
+
+/**
+ * @summary Get Magento connection configuration
+ */
+export const getGetMagentoConfigUrl = () => {
+  return `/api/config/magento`;
+};
+
+export const getMagentoConfig = async (
+  options?: RequestInit,
+): Promise<MagentoConfigResponse> => {
+  return customFetch<MagentoConfigResponse>(getGetMagentoConfigUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetMagentoConfigQueryKey = () => {
+  return [`/api/config/magento`] as const;
+};
+
+export const getGetMagentoConfigQueryOptions = <
+  TData = Awaited<ReturnType<typeof getMagentoConfig>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getMagentoConfig>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetMagentoConfigQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getMagentoConfig>>
+  > = ({ signal }) => getMagentoConfig({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getMagentoConfig>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetMagentoConfigQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getMagentoConfig>>
+>;
+export type GetMagentoConfigQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get Magento connection configuration
+ */
+
+export function useGetMagentoConfig<
+  TData = Awaited<ReturnType<typeof getMagentoConfig>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getMagentoConfig>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetMagentoConfigQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Update Magento connection configuration
+ */
+export const getUpdateMagentoConfigUrl = () => {
+  return `/api/config/magento`;
+};
+
+export const updateMagentoConfig = async (
+  updateMagentoConfigInput: UpdateMagentoConfigInput,
+  options?: RequestInit,
+): Promise<MagentoConfigResponse> => {
+  return customFetch<MagentoConfigResponse>(getUpdateMagentoConfigUrl(), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(updateMagentoConfigInput),
+  });
+};
+
+export const getUpdateMagentoConfigMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateMagentoConfig>>,
+    TError,
+    { data: BodyType<UpdateMagentoConfigInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateMagentoConfig>>,
+  TError,
+  { data: BodyType<UpdateMagentoConfigInput> },
+  TContext
+> => {
+  const mutationKey = ["updateMagentoConfig"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateMagentoConfig>>,
+    { data: BodyType<UpdateMagentoConfigInput> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return updateMagentoConfig(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateMagentoConfigMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateMagentoConfig>>
+>;
+export type UpdateMagentoConfigMutationBody =
+  BodyType<UpdateMagentoConfigInput>;
+export type UpdateMagentoConfigMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Update Magento connection configuration
+ */
+export const useUpdateMagentoConfig = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateMagentoConfig>>,
+    TError,
+    { data: BodyType<UpdateMagentoConfigInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateMagentoConfig>>,
+  TError,
+  { data: BodyType<UpdateMagentoConfigInput> },
+  TContext
+> => {
+  return useMutation(getUpdateMagentoConfigMutationOptions(options));
+};
+
+/**
+ * @summary Test Magento API connection
+ */
+export const getTestMagentoConnectionUrl = () => {
+  return `/api/config/test-magento`;
+};
+
+export const testMagentoConnection = async (
+  updateMagentoConfigInput?: UpdateMagentoConfigInput,
+  options?: RequestInit,
+): Promise<TestMagentoResponse> => {
+  return customFetch<TestMagentoResponse>(getTestMagentoConnectionUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(updateMagentoConfigInput),
+  });
+};
+
+export const getTestMagentoConnectionMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof testMagentoConnection>>,
+    TError,
+    { data: BodyType<UpdateMagentoConfigInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof testMagentoConnection>>,
+  TError,
+  { data: BodyType<UpdateMagentoConfigInput> },
+  TContext
+> => {
+  const mutationKey = ["testMagentoConnection"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof testMagentoConnection>>,
+    { data: BodyType<UpdateMagentoConfigInput> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return testMagentoConnection(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type TestMagentoConnectionMutationResult = NonNullable<
+  Awaited<ReturnType<typeof testMagentoConnection>>
+>;
+export type TestMagentoConnectionMutationBody =
+  BodyType<UpdateMagentoConfigInput>;
+export type TestMagentoConnectionMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Test Magento API connection
+ */
+export const useTestMagentoConnection = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof testMagentoConnection>>,
+    TError,
+    { data: BodyType<UpdateMagentoConfigInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof testMagentoConnection>>,
+  TError,
+  { data: BodyType<UpdateMagentoConfigInput> },
+  TContext
+> => {
+  return useMutation(getTestMagentoConnectionMutationOptions(options));
 };
 
 /**

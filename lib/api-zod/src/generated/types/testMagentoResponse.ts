@@ -6,7 +6,8 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface TestSmtpResponse {
+export interface TestMagentoResponse {
   success: boolean;
   error?: string;
+  stores?: string;
 }

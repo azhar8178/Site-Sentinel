@@ -1,12 +1,12 @@
 import { db } from "@workspace/db";
-import { magentoOrdersTable, magentoCartsTable, magentoSyncLogTable } from "@workspace/db/schema";
+import { magentoOrdersTable, magentoCartsTable, magentoSyncLogTable, magentoConfigTable } from "@workspace/db/schema";
 import { eq, desc, gte, and, sql } from "drizzle-orm";
 import { logger } from "../lib/logger";
 
-const MAGENTO_API_URL = process.env.MAGENTO_API_URL || "";
-const MAGENTO_API_TOKEN = process.env.MAGENTO_API_TOKEN || "";
-const MAGENTO_ADMIN_USER = process.env.MAGENTO_ADMIN_USER || "";
-const MAGENTO_ADMIN_PASS = process.env.MAGENTO_ADMIN_PASS || "";
+const ENV_MAGENTO_API_URL = process.env.MAGENTO_API_URL || "";
+const ENV_MAGENTO_API_TOKEN = process.env.MAGENTO_API_TOKEN || "";
+const ENV_MAGENTO_ADMIN_USER = process.env.MAGENTO_ADMIN_USER || "";
+const ENV_MAGENTO_ADMIN_PASS = process.env.MAGENTO_ADMIN_PASS || "";
 const SYNC_INTERVAL_MS = 5 * 60 * 1000;
 const REQUEST_TIMEOUT_MS = 90_000;
 const TOKEN_REFRESH_BUFFER_MS = 5 * 60 * 1000;
@@ -14,13 +14,43 @@ const TOKEN_REFRESH_BUFFER_MS = 5 * 60 * 1000;
 let cachedToken: string | null = null;
 let tokenExpiresAt: number = 0;
 
+interface MagentoCredentials {
+  apiUrl: string;
+  adminUser: string;
+  adminPass: string;
+  apiToken: string;
+}
+
+async function getCredentials(): Promise<MagentoCredentials> {
+  try {
+    const configs = await db.select().from(magentoConfigTable).limit(1);
+    if (configs.length > 0 && configs[0].isEnabled && configs[0].apiUrl) {
+      return {
+        apiUrl: configs[0].apiUrl,
+        adminUser: configs[0].adminUser,
+        adminPass: configs[0].adminPass,
+        apiToken: configs[0].apiToken,
+      };
+    }
+  } catch {}
+
+  return {
+    apiUrl: ENV_MAGENTO_API_URL,
+    adminUser: ENV_MAGENTO_ADMIN_USER,
+    adminPass: ENV_MAGENTO_ADMIN_PASS,
+    apiToken: ENV_MAGENTO_API_TOKEN,
+  };
+}
+
 async function getToken(): Promise<string> {
   if (cachedToken && Date.now() < tokenExpiresAt - TOKEN_REFRESH_BUFFER_MS) {
     return cachedToken;
   }
 
-  if (MAGENTO_ADMIN_USER && MAGENTO_ADMIN_PASS) {
-    const baseUrl = MAGENTO_API_URL.replace(/\/rest\/V[12]$/, "");
+  const creds = await getCredentials();
+
+  if (creds.adminUser && creds.adminPass) {
+    const baseUrl = creds.apiUrl.replace(/\/rest\/V[12]$/, "");
     const tokenUrl = `${baseUrl}/rest/V1/integration/admin/token`;
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 30_000);
@@ -29,7 +59,7 @@ async function getToken(): Promise<string> {
       const response = await fetch(tokenUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username: MAGENTO_ADMIN_USER, password: MAGENTO_ADMIN_PASS }),
+        body: JSON.stringify({ username: creds.adminUser, password: creds.adminPass }),
         signal: controller.signal,
       });
 
@@ -50,21 +80,28 @@ async function getToken(): Promise<string> {
     }
   }
 
-  if (MAGENTO_API_TOKEN) {
-    return MAGENTO_API_TOKEN;
+  if (creds.apiToken) {
+    return creds.apiToken;
   }
 
   throw new Error("No Magento authentication configured");
 }
 
-function hasMagentoConfig(): boolean {
-  return !!MAGENTO_API_URL && !!(MAGENTO_API_TOKEN || (MAGENTO_ADMIN_USER && MAGENTO_ADMIN_PASS));
+async function hasMagentoConfig(): Promise<boolean> {
+  const creds = await getCredentials();
+  return !!creds.apiUrl && !!(creds.apiToken || (creds.adminUser && creds.adminPass));
+}
+
+async function getMagentoApiUrl(): Promise<string> {
+  const creds = await getCredentials();
+  return creds.apiUrl;
 }
 
 async function magentoFetch(endpoint: string): Promise<any> {
   const token = await getToken();
+  const apiUrl = await getMagentoApiUrl();
 
-  const url = `${MAGENTO_API_URL}${endpoint}`;
+  const url = `${apiUrl}${endpoint}`;
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
@@ -271,19 +308,23 @@ async function guardedRunAllSyncs(): Promise<void> {
   }
 }
 
-export function startMagentoSync(): void {
-  if (!hasMagentoConfig()) {
-    logger.warn("Magento API not configured, skipping sync");
-    return;
+export async function startMagentoSync(): Promise<void> {
+  const hasConfig = await hasMagentoConfig();
+  if (!hasConfig) {
+    logger.info("Magento API not configured yet. Sync will start when configured via Settings.");
+  } else {
+    logger.info({ intervalMs: SYNC_INTERVAL_MS }, "Starting Magento sync");
   }
 
-  logger.info({ intervalMs: SYNC_INTERVAL_MS }, "Starting Magento sync");
+  async function syncIfConfigured() {
+    const ready = await hasMagentoConfig();
+    if (ready) {
+      await guardedRunAllSyncs();
+    }
+  }
 
-  setTimeout(() => {
-    guardedRunAllSyncs();
-  }, 5000);
-
-  syncInterval = setInterval(guardedRunAllSyncs, SYNC_INTERVAL_MS);
+  setTimeout(syncIfConfigured, 5000);
+  syncInterval = setInterval(syncIfConfigured, SYNC_INTERVAL_MS);
 }
 
 export function stopMagentoSync(): void {

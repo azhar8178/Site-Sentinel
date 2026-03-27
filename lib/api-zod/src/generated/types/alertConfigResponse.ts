@@ -16,5 +16,12 @@ export interface AlertConfigResponse {
   smtpUsername: string;
   smtpPassword: string;
   smtpSecure: boolean;
+  slackEnabled: boolean;
+  slackWebhookUrl: string;
+  slackChannel: string;
+  whatsappEnabled: boolean;
+  whatsappApiToken: string;
+  whatsappPhoneNumberId: string;
+  whatsappRecipients: string;
   updatedAt: Date;
 }

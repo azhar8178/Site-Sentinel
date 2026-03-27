@@ -55,3 +55,17 @@ export const magentoSyncLogTable = pgTable("magento_sync_log", {
 export const insertMagentoSyncLogSchema = createInsertSchema(magentoSyncLogTable).omit({ id: true });
 export type InsertMagentoSyncLog = z.infer<typeof insertMagentoSyncLogSchema>;
 export type MagentoSyncLog = typeof magentoSyncLogTable.$inferSelect;
+
+export const magentoConfigTable = pgTable("magento_config", {
+  id: serial("id").primaryKey(),
+  apiUrl: text("api_url").notNull().default(""),
+  adminUser: text("admin_user").notNull().default(""),
+  adminPass: text("admin_pass").notNull().default(""),
+  apiToken: text("api_token").notNull().default(""),
+  isEnabled: boolean("is_enabled").notNull().default(false),
+  lastTestAt: timestamp("last_test_at"),
+  lastTestStatus: text("last_test_status"),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export type MagentoConfig = typeof magentoConfigTable.$inferSelect;

@@ -178,6 +178,13 @@ export const GetAlertConfigResponse = zod.object({
   smtpUsername: zod.string(),
   smtpPassword: zod.string(),
   smtpSecure: zod.boolean(),
+  slackEnabled: zod.boolean(),
+  slackWebhookUrl: zod.string(),
+  slackChannel: zod.string(),
+  whatsappEnabled: zod.boolean(),
+  whatsappApiToken: zod.string(),
+  whatsappPhoneNumberId: zod.string(),
+  whatsappRecipients: zod.string(),
   updatedAt: zod.date(),
 });
 
@@ -193,6 +200,13 @@ export const UpdateAlertConfigBody = zod.object({
   smtpUsername: zod.string().optional(),
   smtpPassword: zod.string().optional(),
   smtpSecure: zod.boolean().optional(),
+  slackEnabled: zod.boolean().optional(),
+  slackWebhookUrl: zod.string().optional(),
+  slackChannel: zod.string().optional(),
+  whatsappEnabled: zod.boolean().optional(),
+  whatsappApiToken: zod.string().optional(),
+  whatsappPhoneNumberId: zod.string().optional(),
+  whatsappRecipients: zod.string().optional(),
 });
 
 export const UpdateAlertConfigResponse = zod.object({
@@ -205,6 +219,13 @@ export const UpdateAlertConfigResponse = zod.object({
   smtpUsername: zod.string(),
   smtpPassword: zod.string(),
   smtpSecure: zod.boolean(),
+  slackEnabled: zod.boolean(),
+  slackWebhookUrl: zod.string(),
+  slackChannel: zod.string(),
+  whatsappEnabled: zod.boolean(),
+  whatsappApiToken: zod.string(),
+  whatsappPhoneNumberId: zod.string(),
+  whatsappRecipients: zod.string(),
   updatedAt: zod.date(),
 });
 
@@ -212,16 +233,117 @@ export const UpdateAlertConfigResponse = zod.object({
  * @summary Test SMTP connection
  */
 export const TestSmtpConnectionBody = zod.object({
-  smtpHost: zod.string(),
+  smtpHost: zod.string().optional(),
   smtpPort: zod.number().optional(),
   smtpUsername: zod.string().optional(),
   smtpPassword: zod.string().optional(),
   smtpSecure: zod.boolean().optional(),
+  senderEmail: zod.string().optional(),
+  recipientEmails: zod.string().optional(),
 });
 
 export const TestSmtpConnectionResponse = zod.object({
   success: zod.boolean(),
   error: zod.string().optional(),
+});
+
+/**
+ * @summary Send a test email to verify delivery
+ */
+export const SendTestEmailBody = zod.object({
+  smtpHost: zod.string().optional(),
+  smtpPort: zod.number().optional(),
+  smtpUsername: zod.string().optional(),
+  smtpPassword: zod.string().optional(),
+  smtpSecure: zod.boolean().optional(),
+  senderEmail: zod.string().optional(),
+  recipientEmails: zod.string().optional(),
+});
+
+export const SendTestEmailResponse = zod.object({
+  success: zod.boolean(),
+  error: zod.string().optional(),
+});
+
+/**
+ * @summary Test Slack webhook
+ */
+export const TestSlackConnectionBody = zod.object({
+  slackWebhookUrl: zod.string().optional(),
+});
+
+export const TestSlackConnectionResponse = zod.object({
+  success: zod.boolean(),
+  error: zod.string().optional(),
+});
+
+/**
+ * @summary Test WhatsApp connection
+ */
+export const TestWhatsAppConnectionBody = zod.object({
+  whatsappApiToken: zod.string().optional(),
+  whatsappPhoneNumberId: zod.string().optional(),
+  testRecipient: zod.string(),
+});
+
+export const TestWhatsAppConnectionResponse = zod.object({
+  success: zod.boolean(),
+  error: zod.string().optional(),
+});
+
+/**
+ * @summary Get Magento connection configuration
+ */
+export const GetMagentoConfigResponse = zod.object({
+  id: zod.number(),
+  apiUrl: zod.string(),
+  adminUser: zod.string(),
+  adminPass: zod.string(),
+  apiToken: zod.string(),
+  isEnabled: zod.boolean(),
+  lastTestAt: zod.date().nullish(),
+  lastTestStatus: zod.string().nullish(),
+  updatedAt: zod.date(),
+});
+
+/**
+ * @summary Update Magento connection configuration
+ */
+export const UpdateMagentoConfigBody = zod.object({
+  apiUrl: zod.string().optional(),
+  adminUser: zod.string().optional(),
+  adminPass: zod.string().optional(),
+  apiToken: zod.string().optional(),
+  isEnabled: zod.boolean().optional(),
+});
+
+export const UpdateMagentoConfigResponse = zod.object({
+  id: zod.number(),
+  apiUrl: zod.string(),
+  adminUser: zod.string(),
+  adminPass: zod.string(),
+  apiToken: zod.string(),
+  isEnabled: zod.boolean(),
+  lastTestAt: zod.date().nullish(),
+  lastTestStatus: zod.string().nullish(),
+  updatedAt: zod.date(),
+});
+
+/**
+ * @summary Test Magento API connection
+ */
+export const TestMagentoConnectionBody = zod.object({
+  apiUrl: zod.string().optional(),
+  adminUser: zod.string().optional(),
+  adminPass: zod.string().optional(),
+  apiToken: zod.string().optional(),
+  isEnabled: zod.boolean().optional(),
+});
+
+export const TestMagentoConnectionResponse = zod.object({
+  success: zod.boolean(),
+  error: zod.string().optional(),
+  stores: zod.string().optional(),
 });
 
 /**

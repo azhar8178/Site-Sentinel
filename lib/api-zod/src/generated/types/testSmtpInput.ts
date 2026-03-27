@@ -7,9 +7,11 @@
  */
 
 export interface TestSmtpInput {
-  smtpHost: string;
+  smtpHost?: string;
   smtpPort?: number;
   smtpUsername?: string;
   smtpPassword?: string;
   smtpSecure?: boolean;
+  senderEmail?: string;
+  recipientEmails?: string;
 }

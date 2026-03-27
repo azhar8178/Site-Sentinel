@@ -92,6 +92,13 @@ export interface AlertConfigResponse {
   smtpUsername: string;
   smtpPassword: string;
   smtpSecure: boolean;
+  slackEnabled: boolean;
+  slackWebhookUrl: string;
+  slackChannel: string;
+  whatsappEnabled: boolean;
+  whatsappApiToken: string;
+  whatsappPhoneNumberId: string;
+  whatsappRecipients: string;
   updatedAt: string;
 }
 
@@ -104,19 +111,54 @@ export interface UpdateAlertConfigInput {
   smtpUsername?: string;
   smtpPassword?: string;
   smtpSecure?: boolean;
+  slackEnabled?: boolean;
+  slackWebhookUrl?: string;
+  slackChannel?: string;
+  whatsappEnabled?: boolean;
+  whatsappApiToken?: string;
+  whatsappPhoneNumberId?: string;
+  whatsappRecipients?: string;
 }
 
 export interface TestSmtpInput {
-  smtpHost: string;
+  smtpHost?: string;
   smtpPort?: number;
   smtpUsername?: string;
   smtpPassword?: string;
   smtpSecure?: boolean;
+  senderEmail?: string;
+  recipientEmails?: string;
 }
 
-export interface TestSmtpResponse {
+export interface TestConnectionResponse {
   success: boolean;
   error?: string;
+}
+
+export interface TestMagentoResponse {
+  success: boolean;
+  error?: string;
+  stores?: string;
+}
+
+export interface MagentoConfigResponse {
+  id: number;
+  apiUrl: string;
+  adminUser: string;
+  adminPass: string;
+  apiToken: string;
+  isEnabled: boolean;
+  lastTestAt?: string | null;
+  lastTestStatus?: string | null;
+  updatedAt: string;
+}
+
+export interface UpdateMagentoConfigInput {
+  apiUrl?: string;
+  adminUser?: string;
+  adminPass?: string;
+  apiToken?: string;
+  isEnabled?: boolean;
 }
 
 export interface SuccessResponse {
@@ -244,6 +286,16 @@ export type ListAlertsParams = {
   siteId?: number;
   limit?: number;
   offset?: number;
+};
+
+export type TestSlackConnectionBody = {
+  slackWebhookUrl?: string;
+};
+
+export type TestWhatsAppConnectionBody = {
+  whatsappApiToken?: string;
+  whatsappPhoneNumberId?: string;
+  testRecipient: string;
 };
 
 export type GetServerMetricsParams = {
