@@ -1,0 +1,111 @@
+ubuntu@ip-172-33-86-172:~/Site-Sentinel$ docker compose logs api --tail 20.
+api-1  | Migration failed: error: relation "users" does not exist
+api-1  |     at /app/node_modules/.pnpm/pg@8.20.0/node_modules/pg/lib/client.js:631:17
+api-1  |     at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+api-1  |     at async file:///app/artifacts/api-server/scripts/migrate.mjs:26:5 {
+api-1  |   length: 103,
+api-1  |   severity: 'ERROR',
+api-1  |   code: '42P01',
+api-1  |   detail: undefined,
+api-1  |   hint: undefined,
+api-1  |   position: undefined,
+api-1  |   internalPosition: undefined,
+api-1  |   internalQuery: undefined,
+api-1  |   where: undefined,
+api-1  |   schema: undefined,
+api-1  |   table: undefined,
+api-1  |   column: undefined,
+api-1  |   dataType: undefined,
+api-1  |   constraint: undefined,
+api-1  |   file: 'namespace.c',
+api-1  |   line: '434',
+api-1  |   routine: 'RangeVarGetRelidExtended'
+api-1  | }
+api-1  | Migration failed: error: relation "users" does not exist
+api-1  |     at /app/node_modules/.pnpm/pg@8.20.0/node_modules/pg/lib/client.js:631:17
+api-1  |     at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+api-1  |     at async file:///app/artifacts/api-server/scripts/migrate.mjs:26:5 {
+api-1  |   length: 103,
+api-1  |   severity: 'ERROR',
+api-1  |   code: '42P01',
+api-1  |   detail: undefined,
+api-1  |   hint: undefined,
+api-1  |   position: undefined,
+api-1  |   internalPosition: undefined,
+api-1  |   internalQuery: undefined,
+api-1  |   where: undefined,
+api-1  |   schema: undefined,
+api-1  |   table: undefined,
+api-1  |   column: undefined,
+api-1  |   dataType: undefined,
+api-1  |   constraint: undefined,
+api-1  |   file: 'namespace.c',
+api-1  |   line: '434',
+api-1  |   routine: 'RangeVarGetRelidExtended'
+api-1  | }
+api-1  | Migration failed: error: relation "users" does not exist
+api-1  |     at /app/node_modules/.pnpm/pg@8.20.0/node_modules/pg/lib/client.js:631:17
+api-1  |     at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+api-1  |     at async file:///app/artifacts/api-server/scripts/migrate.mjs:26:5 {
+api-1  |   length: 103,
+api-1  |   severity: 'ERROR',
+api-1  |   code: '42P01',
+api-1  |   detail: undefined,
+api-1  |   hint: undefined,
+api-1  |   position: undefined,
+api-1  |   internalPosition: undefined,
+api-1  |   internalQuery: undefined,
+api-1  |   where: undefined,
+api-1  |   schema: undefined,
+api-1  |   table: undefined,
+api-1  |   column: undefined,
+api-1  |   dataType: undefined,
+api-1  |   constraint: undefined,
+api-1  |   file: 'namespace.c',
+api-1  |   line: '434',
+api-1  |   routine: 'RangeVarGetRelidExtended'
+api-1  | }
+api-1  | Migration failed: error: relation "users" does not exist
+api-1  |     at /app/node_modules/.pnpm/pg@8.20.0/node_modules/pg/lib/client.js:631:17
+api-1  |     at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+api-1  |     at async file:///app/artifacts/api-server/scripts/migrate.mjs:26:5 {
+api-1  |   length: 103,
+api-1  |   severity: 'ERROR',
+api-1  |   code: '42P01',
+api-1  |   detail: undefined,
+api-1  |   hint: undefined,
+api-1  |   position: undefined,
+api-1  |   internalPosition: undefined,
+api-1  |   internalQuery: undefined,
+api-1  |   where: undefined,
+api-1  |   schema: undefined,
+api-1  |   table: undefined,
+api-1  |   column: undefined,
+api-1  |   dataType: undefined,
+api-1  |   constraint: undefined,
+api-1  |   file: 'namespace.c',
+api-1  |   line: '434',
+api-1  |   routine: 'RangeVarGetRelidExtended'
+api-1  | }
+api-1  | Migration failed: error: relation "users" does not exist
+api-1  |     at /app/node_modules/.pnpm/pg@8.20.0/node_modules/pg/lib/client.js:631:17
+api-1  |     at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+api-1  |     at async file:///app/artifacts/api-server/scripts/migrate.mjs:26:5 {
+api-1  |   length: 103,
+api-1  |   severity: 'ERROR',
+api-1  |   code: '42P01',
+api-1  |   detail: undefined,
+api-1  |   hint: undefined,
+api-1  |   position: undefined,
+api-1  |   internalPosition: undefined,
+api-1  |   internalQuery: undefined,
+api-1  |   where: undefined,
+api-1  |   schema: undefined,
+api-1  |   table: undefined,
+api-1  |   column: undefined,
+api-1  |   dataType: undefined,
+api-1  |   constraint: undefined,
+api-1  |   file: 'namespace.c',
+api-1  |   line: '434',
+api-1  |   routine: 'RangeVarGetRelidExtended'
+api-1  | }

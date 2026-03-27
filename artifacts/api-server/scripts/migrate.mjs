@@ -2,23 +2,38 @@ import pg from "pg";
 
 const client = new pg.Client({ connectionString: process.env.DATABASE_URL });
 await client.connect();
+console.log("Connected to database");
 
-async function run(sql) {
-  await client.query(sql);
+async function run(label, sql) {
+  try {
+    await client.query(sql);
+    console.log(`  OK: ${label}`);
+  } catch (err) {
+    console.error(`  FAIL: ${label} — ${err.message}`);
+    throw err;
+  }
 }
 
 try {
-  await run(`DO $$ BEGIN CREATE TYPE site_status AS ENUM ('up', 'down', 'slow', 'unknown'); EXCEPTION WHEN duplicate_object THEN NULL; END $$`);
-  await run(`DO $$ BEGIN CREATE TYPE alert_type AS ENUM ('downtime', 'slow_response', 'recovery'); EXCEPTION WHEN duplicate_object THEN NULL; END $$`);
-  await run(`DO $$ BEGIN CREATE TYPE user_role AS ENUM ('admin', 'editor', 'viewer'); EXCEPTION WHEN duplicate_object THEN NULL; END $$`);
+  await run("site_status enum",
+    `CREATE TYPE site_status AS ENUM ('up', 'down', 'slow', 'unknown')`
+  ).catch(e => { if (e.code === '42710') console.log("  (already exists)"); else throw e; });
 
-  await run(`ALTER TYPE alert_type ADD VALUE IF NOT EXISTS 'cpu_high'`);
-  await run(`ALTER TYPE alert_type ADD VALUE IF NOT EXISTS 'ram_high'`);
-  await run(`ALTER TYPE alert_type ADD VALUE IF NOT EXISTS 'disk_high'`);
-  await run(`ALTER TYPE alert_type ADD VALUE IF NOT EXISTS 'server_offline'`);
-  await run(`ALTER TYPE alert_type ADD VALUE IF NOT EXISTS 'server_recovery'`);
+  await run("alert_type enum",
+    `CREATE TYPE alert_type AS ENUM ('downtime', 'slow_response', 'recovery')`
+  ).catch(e => { if (e.code === '42710') console.log("  (already exists)"); else throw e; });
 
-  await run(`CREATE TABLE IF NOT EXISTS users (
+  await run("user_role enum",
+    `CREATE TYPE user_role AS ENUM ('admin', 'editor', 'viewer')`
+  ).catch(e => { if (e.code === '42710') console.log("  (already exists)"); else throw e; });
+
+  for (const val of ["cpu_high", "ram_high", "disk_high", "server_offline", "server_recovery"]) {
+    await run(`alert_type += ${val}`,
+      `ALTER TYPE alert_type ADD VALUE IF NOT EXISTS '${val}'`
+    );
+  }
+
+  await run("users table", `CREATE TABLE IF NOT EXISTS users (
     id serial PRIMARY KEY,
     username text NOT NULL UNIQUE,
     password_hash text NOT NULL,
@@ -27,7 +42,7 @@ try {
     updated_at timestamp NOT NULL DEFAULT now()
   )`);
 
-  await run(`CREATE TABLE IF NOT EXISTS servers (
+  await run("servers table", `CREATE TABLE IF NOT EXISTS servers (
     id serial PRIMARY KEY,
     name text NOT NULL,
     hostname text NOT NULL,
@@ -38,7 +53,7 @@ try {
     updated_at timestamp NOT NULL DEFAULT now()
   )`);
 
-  await run(`CREATE TABLE IF NOT EXISTS server_metrics (
+  await run("server_metrics table", `CREATE TABLE IF NOT EXISTS server_metrics (
     id serial PRIMARY KEY,
     server_id integer NOT NULL REFERENCES servers(id) ON DELETE CASCADE,
     cpu_percent real NOT NULL,
@@ -54,7 +69,7 @@ try {
     recorded_at timestamp NOT NULL DEFAULT now()
   )`);
 
-  await run(`CREATE TABLE IF NOT EXISTS sites (
+  await run("sites table", `CREATE TABLE IF NOT EXISTS sites (
     id serial PRIMARY KEY,
     name text NOT NULL,
     url text NOT NULL,
@@ -68,7 +83,7 @@ try {
     updated_at timestamp NOT NULL DEFAULT now()
   )`);
 
-  await run(`CREATE TABLE IF NOT EXISTS check_results (
+  await run("check_results table", `CREATE TABLE IF NOT EXISTS check_results (
     id serial PRIMARY KEY,
     site_id integer NOT NULL REFERENCES sites(id) ON DELETE CASCADE,
     status_code integer,
@@ -78,7 +93,7 @@ try {
     checked_at timestamp NOT NULL DEFAULT now()
   )`);
 
-  await run(`CREATE TABLE IF NOT EXISTS alerts (
+  await run("alerts table", `CREATE TABLE IF NOT EXISTS alerts (
     id serial PRIMARY KEY,
     site_id integer REFERENCES sites(id) ON DELETE CASCADE,
     server_id integer REFERENCES servers(id) ON DELETE CASCADE,
@@ -90,7 +105,7 @@ try {
     created_at timestamp NOT NULL DEFAULT now()
   )`);
 
-  await run(`CREATE TABLE IF NOT EXISTS alert_config (
+  await run("alert_config table", `CREATE TABLE IF NOT EXISTS alert_config (
     id serial PRIMARY KEY,
     recipient_emails text NOT NULL DEFAULT '',
     sender_email text NOT NULL DEFAULT '',
@@ -110,7 +125,7 @@ try {
     updated_at timestamp NOT NULL DEFAULT now()
   )`);
 
-  await run(`CREATE TABLE IF NOT EXISTS server_alert_config (
+  await run("server_alert_config table", `CREATE TABLE IF NOT EXISTS server_alert_config (
     id serial PRIMARY KEY,
     is_enabled boolean NOT NULL DEFAULT true,
     cpu_threshold integer NOT NULL DEFAULT 90,
@@ -120,7 +135,7 @@ try {
     updated_at timestamp NOT NULL DEFAULT now()
   )`);
 
-  await run(`CREATE TABLE IF NOT EXISTS magento_orders (
+  await run("magento_orders table", `CREATE TABLE IF NOT EXISTS magento_orders (
     id serial PRIMARY KEY,
     order_id integer NOT NULL UNIQUE,
     increment_id text NOT NULL,
@@ -136,7 +151,7 @@ try {
     synced_at timestamp NOT NULL DEFAULT now()
   )`);
 
-  await run(`CREATE TABLE IF NOT EXISTS magento_carts (
+  await run("magento_carts table", `CREATE TABLE IF NOT EXISTS magento_carts (
     id serial PRIMARY KEY,
     quote_id integer NOT NULL UNIQUE,
     customer_email text,
@@ -152,7 +167,7 @@ try {
     synced_at timestamp NOT NULL DEFAULT now()
   )`);
 
-  await run(`CREATE TABLE IF NOT EXISTS magento_sync_log (
+  await run("magento_sync_log table", `CREATE TABLE IF NOT EXISTS magento_sync_log (
     id serial PRIMARY KEY,
     sync_type text NOT NULL,
     status text NOT NULL,
@@ -162,7 +177,7 @@ try {
     synced_at timestamp NOT NULL DEFAULT now()
   )`);
 
-  await run(`CREATE TABLE IF NOT EXISTS magento_config (
+  await run("magento_config table", `CREATE TABLE IF NOT EXISTS magento_config (
     id serial PRIMARY KEY,
     api_url text NOT NULL DEFAULT '',
     admin_user text NOT NULL DEFAULT '',
@@ -174,28 +189,28 @@ try {
     updated_at timestamp NOT NULL DEFAULT now()
   )`);
 
-  await run(`INSERT INTO alert_config (is_enabled) SELECT true WHERE NOT EXISTS (SELECT 1 FROM alert_config LIMIT 1)`);
-  await run(`INSERT INTO server_alert_config (is_enabled, cpu_threshold, ram_threshold, disk_threshold, offline_timeout_minutes) SELECT true, 90, 90, 95, 5 WHERE NOT EXISTS (SELECT 1 FROM server_alert_config LIMIT 1)`);
+  await run("seed alert_config", `INSERT INTO alert_config (is_enabled) SELECT true WHERE NOT EXISTS (SELECT 1 FROM alert_config LIMIT 1)`);
+  await run("seed server_alert_config", `INSERT INTO server_alert_config (is_enabled, cpu_threshold, ram_threshold, disk_threshold, offline_timeout_minutes) SELECT true, 90, 90, 95, 5 WHERE NOT EXISTS (SELECT 1 FROM server_alert_config LIMIT 1)`);
 
   const { rows: siteIdNull } = await client.query(`SELECT is_nullable FROM information_schema.columns WHERE table_name = 'alerts' AND column_name = 'site_id'`);
   if (siteIdNull.length > 0 && siteIdNull[0].is_nullable === "NO") {
-    await run(`ALTER TABLE alerts ALTER COLUMN site_id DROP NOT NULL`);
+    await run("alerts.site_id nullable", `ALTER TABLE alerts ALTER COLUMN site_id DROP NOT NULL`);
   }
 
   const { rows: serverIdCol } = await client.query(`SELECT 1 FROM information_schema.columns WHERE table_name = 'alerts' AND column_name = 'server_id'`);
   if (serverIdCol.length === 0) {
-    await run(`ALTER TABLE alerts ADD COLUMN server_id integer REFERENCES servers(id) ON DELETE CASCADE`);
+    await run("alerts.server_id column", `ALTER TABLE alerts ADD COLUMN server_id integer REFERENCES servers(id) ON DELETE CASCADE`);
   }
 
   const { rows: roleCol } = await client.query(`SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'role'`);
   if (roleCol.length === 0) {
-    await run(`ALTER TABLE users ADD COLUMN role user_role NOT NULL DEFAULT 'viewer'`);
+    await run("users.role column", `ALTER TABLE users ADD COLUMN role user_role NOT NULL DEFAULT 'viewer'`);
   }
 
   const { rows: isAdminCol } = await client.query(`SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'is_admin'`);
   if (isAdminCol.length > 0) {
-    await run(`UPDATE users SET role = 'admin' WHERE is_admin = true AND role = 'viewer'`);
-    await run(`ALTER TABLE users DROP COLUMN is_admin`);
+    await run("migrate is_admin to role", `UPDATE users SET role = 'admin' WHERE is_admin = true AND role = 'viewer'`);
+    await run("drop is_admin", `ALTER TABLE users DROP COLUMN is_admin`);
   }
 
   console.log("Migration completed successfully");
