@@ -5,13 +5,64 @@ import { logger } from "../lib/logger";
 
 const MAGENTO_API_URL = process.env.MAGENTO_API_URL || "";
 const MAGENTO_API_TOKEN = process.env.MAGENTO_API_TOKEN || "";
+const MAGENTO_ADMIN_USER = process.env.MAGENTO_ADMIN_USER || "";
+const MAGENTO_ADMIN_PASS = process.env.MAGENTO_ADMIN_PASS || "";
 const SYNC_INTERVAL_MS = 5 * 60 * 1000;
 const REQUEST_TIMEOUT_MS = 90_000;
+const TOKEN_REFRESH_BUFFER_MS = 5 * 60 * 1000;
+
+let cachedToken: string | null = null;
+let tokenExpiresAt: number = 0;
+
+async function getToken(): Promise<string> {
+  if (cachedToken && Date.now() < tokenExpiresAt - TOKEN_REFRESH_BUFFER_MS) {
+    return cachedToken;
+  }
+
+  if (MAGENTO_ADMIN_USER && MAGENTO_ADMIN_PASS) {
+    const baseUrl = MAGENTO_API_URL.replace(/\/rest\/V[12]$/, "");
+    const tokenUrl = `${baseUrl}/rest/V1/integration/admin/token`;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 30_000);
+
+    try {
+      const response = await fetch(tokenUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username: MAGENTO_ADMIN_USER, password: MAGENTO_ADMIN_PASS }),
+        signal: controller.signal,
+      });
+
+      if (!response.ok) {
+        const text = await response.text().catch(() => "");
+        logger.warn({ status: response.status, body: text.substring(0, 200) }, "Failed to fetch admin token, falling back to static token");
+      } else {
+        const token = (await response.json()) as string;
+        cachedToken = token.replace(/^"|"$/g, "");
+        tokenExpiresAt = Date.now() + 60 * 60 * 1000;
+        logger.info("Fetched fresh Magento admin token");
+        return cachedToken;
+      }
+    } catch (err: any) {
+      logger.warn({ error: err.message }, "Admin token fetch failed, falling back to static token");
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
+  if (MAGENTO_API_TOKEN) {
+    return MAGENTO_API_TOKEN;
+  }
+
+  throw new Error("No Magento authentication configured");
+}
+
+function hasMagentoConfig(): boolean {
+  return !!MAGENTO_API_URL && !!(MAGENTO_API_TOKEN || (MAGENTO_ADMIN_USER && MAGENTO_ADMIN_PASS));
+}
 
 async function magentoFetch(endpoint: string): Promise<any> {
-  if (!MAGENTO_API_URL || !MAGENTO_API_TOKEN) {
-    throw new Error("Magento API URL or token not configured");
-  }
+  const token = await getToken();
 
   const url = `${MAGENTO_API_URL}${endpoint}`;
   const controller = new AbortController();
@@ -20,11 +71,17 @@ async function magentoFetch(endpoint: string): Promise<any> {
   try {
     const response = await fetch(url, {
       headers: {
-        Authorization: `Bearer ${MAGENTO_API_TOKEN}`,
+        Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
       signal: controller.signal,
     });
+
+    if (response.status === 401 && cachedToken) {
+      cachedToken = null;
+      tokenExpiresAt = 0;
+      logger.warn("Token rejected (401), will refresh on next attempt");
+    }
 
     if (!response.ok) {
       const text = await response.text().catch(() => "");
@@ -215,7 +272,7 @@ async function guardedRunAllSyncs(): Promise<void> {
 }
 
 export function startMagentoSync(): void {
-  if (!MAGENTO_API_URL || !MAGENTO_API_TOKEN) {
+  if (!hasMagentoConfig()) {
     logger.warn("Magento API not configured, skipping sync");
     return;
   }

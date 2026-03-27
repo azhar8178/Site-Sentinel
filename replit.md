@@ -138,7 +138,9 @@ The SMTP password is masked ("••••••••") in API responses. A `/a
 
 - `JWT_SECRET` - Secret for signing JWT tokens (generate with `openssl rand -hex 32`)
 - `MAGENTO_API_URL` - Magento REST API base URL (e.g. `https://www.lovefurniture.ie/rest/V1`)
-- `MAGENTO_API_TOKEN` - Magento integration access token (needs Sales and Cart API permissions)
+- `MAGENTO_API_TOKEN` - Magento integration access token (fallback, used if admin credentials unavailable)
+- `MAGENTO_ADMIN_USER` - Magento admin username (preferred auth: auto-fetches and refreshes tokens)
+- `MAGENTO_ADMIN_PASS` - Magento admin password
 
 ## TypeScript & Composite Projects
 
