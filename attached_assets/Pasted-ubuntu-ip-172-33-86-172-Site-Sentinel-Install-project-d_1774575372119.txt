@@ -1,0 +1,76 @@
+ubuntu@ip-172-33-86-172:~/Site-Sentinel$ # Install project dependencies on the host (needed for DB commands)
+pnpm install
+
+# Point to PostgreSQL (localhost because we mapped port 5432)
+export DATABASE_URL=postgresql://monitor_user:PassMonitor@localhost:5432/site_monitor
+
+# Create all database tables
+pnpm --filter @workspace/db run push
+
+# Add the monitored sites (Love Furniture IE & UK)
+pnpm --filter @workspace/scripts run seed-sites
+Scope: all 9 workspace projects
+Lockfile is up to date, resolution step is skipped
+Packages: +1112
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Downloading react-native@0.81.5: 24.77 MB/24.77 MB, done
+Downloading @expo/ngrok-bin-linux-x64@2.3.41: 13.72 MB/13.72 MB, done
+ WARN  GET https://registry.npmjs.org/@radix-ui/react-progress/-/react-progress-1.1.8.tgz error (ERR_PNPM_FETCH_500). Will retry in 10 seconds. 2 retries left.
+Progress: resolved 1112, reused 0, downloaded 1085, added 1112, done
+node_modules/.pnpm/esbuild@0.27.3/node_modules/esbuild: Running postinstall script, done in 169ms
+
+devDependencies:
++ prettier 3.8.1
++ typescript 5.9.3
+
+. preinstall$ sh -c 'rm -f package-lock.json yarn.lock; case "$npm_config_user_agent" in pnpm/*) ;; *) echo "Use pnpm instead" >&2; exit 1 ;; esac'
+└─ Done in 33ms
+Done in 24.2s using pnpm v10.33.0
+
+> @workspace/db@0.0.0 push /home/ubuntu/Site-Sentinel/lib/db
+> drizzle-kit push --config ./drizzle.config.ts
+
+Reading config file '/home/ubuntu/Site-Sentinel/lib/db/drizzle.config.ts'
+Using 'pg' driver for database querying
+[⣷] Pulling schema from database...
+Error: connect ECONNREFUSED 127.0.0.1:5432
+    at /home/ubuntu/Site-Sentinel/node_modules/.pnpm/pg-pool@3.13.0_pg@8.20.0/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async Object.query (/home/ubuntu/Site-Sentinel/node_modules/.pnpm/drizzle-kit@0.31.9/node_modules/drizzle-kit/bin.cjs:80623:26)
+    at async fromDatabase2 (/home/ubuntu/Site-Sentinel/node_modules/.pnpm/drizzle-kit@0.31.9/node_modules/drizzle-kit/bin.cjs:19276:25) {
+  errno: -111,
+  code: 'ECONNREFUSED',
+  syscall: 'connect',
+  address: '127.0.0.1',
+  port: 5432
+}
+
+> @workspace/scripts@0.0.0 seed-sites /home/ubuntu/Site-Sentinel/scripts
+> tsx ./src/seed-sites.ts
+
+Seeding monitored sites...
+Seed failed: DrizzleQueryError: Failed query: select "id", "name", "url", "is_active", "current_status", "last_checked_at", "last_response_time_ms", "slow_threshold_ms", "consecutive_failures", "created_at", "updated_at" from "sites"
+params: 
+    at NodePgPreparedQuery.queryWithCache (/home/ubuntu/Site-Sentinel/node_modules/.pnpm/drizzle-orm@0.45.1_@types+pg@8.18.0_pg@8.20.0/node_modules/src/pg-core/session.ts:73:11)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async <anonymous> (/home/ubuntu/Site-Sentinel/node_modules/.pnpm/drizzle-orm@0.45.1_@types+pg@8.18.0_pg@8.20.0/node_modules/src/node-postgres/session.ts:154:19)
+    at async seed (/home/ubuntu/Site-Sentinel/scripts/src/seed-sites.ts:8:25) {
+  query: 'select "id", "name", "url", "is_active", "current_status", "last_checked_at", "last_response_time_ms", "slow_threshold_ms", "consecutive_failures", "created_at", "updated_at" from "sites"',
+  params: [],
+  cause: Error: connect ECONNREFUSED 127.0.0.1:5432
+      at /home/ubuntu/Site-Sentinel/node_modules/.pnpm/pg-pool@3.13.0_pg@8.20.0/node_modules/pg-pool/index.js:45:11
+      at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+      at async <anonymous> (/home/ubuntu/Site-Sentinel/node_modules/.pnpm/drizzle-orm@0.45.1_@types+pg@8.18.0_pg@8.20.0/node_modules/src/node-postgres/session.ts:161:13)
+      at async NodePgPreparedQuery.queryWithCache (/home/ubuntu/Site-Sentinel/node_modules/.pnpm/drizzle-orm@0.45.1_@types+pg@8.18.0_pg@8.20.0/node_modules/src/pg-core/session.ts:71:12)
+      at async <anonymous> (/home/ubuntu/Site-Sentinel/node_modules/.pnpm/drizzle-orm@0.45.1_@types+pg@8.18.0_pg@8.20.0/node_modules/src/node-postgres/session.ts:154:19)
+      at async seed (/home/ubuntu/Site-Sentinel/scripts/src/seed-sites.ts:8:25) {
+    errno: -111,
+    code: 'ECONNREFUSED',
+    syscall: 'connect',
+    address: '127.0.0.1',
+    port: 5432
+  }
+}
+/home/ubuntu/Site-Sentinel/scripts:
+ ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  @workspace/scripts@0.0.0 seed-sites: `tsx ./src/seed-sites.ts`
+Exit status 1
