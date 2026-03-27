@@ -34,36 +34,93 @@ Built for **Love Furniture IE** and **Love Furniture UK** Magento stores.
 
 ### What You Need
 
-- A Linux server (EC2 t3.micro is plenty, or any VPS)
-- Docker and Docker Compose installed
+- A Linux server (EC2 t3.micro is plenty, or any VPS with Ubuntu 22.04/24.04)
 - A domain name pointing to your server (e.g., `monitor.yourdomain.com`)
 - An SMTP mail server for alerts (configured later in-app)
 
 ### Overview of Steps
 
-1. Clone the repo to your server
-2. Start PostgreSQL and the API server with Docker Compose
-3. Initialize the database
-4. Set up Nginx + SSL
-5. Create your admin account
-6. Configure email alerts in the app
-7. Build the Android APK and deploy via MDM
+1. Prepare the server (install Docker, Node.js, pnpm, Git)
+2. Clone the repo
+3. Configure environment variables
+4. Start PostgreSQL and the API server with Docker Compose
+5. Initialize the database
+6. Set up Nginx + SSL
+7. Create your admin account
+8. Configure email alerts in the app
+9. Build the Android APK and deploy via MDM
 
 ---
 
-### Step 1: Clone the Repo
+### Step 1: Prepare the Server
 
-SSH into your server and clone the project:
+SSH into your fresh server and install all prerequisites:
+
+```bash
+# Update system packages
+sudo apt-get update && sudo apt-get upgrade -y
+
+# Install essential tools
+sudo apt-get install -y curl git ufw
+
+# Install Docker
+curl -fsSL https://get.docker.com | sudo sh
+sudo usermod -aG docker $USER
+
+# Install Docker Compose plugin (included with modern Docker, verify it works)
+docker compose version
+# If the above fails, install manually:
+# sudo apt-get install -y docker-compose-plugin
+
+# Install Node.js 24 (needed for database setup commands)
+curl -fsSL https://deb.nodesource.com/setup_24.x | sudo -E bash -
+sudo apt-get install -y nodejs
+
+# Install pnpm (needed for database setup commands)
+npm install -g pnpm@10
+
+# Install Nginx (for reverse proxy + SSL)
+sudo apt-get install -y nginx certbot python3-certbot-nginx
+
+# Configure firewall
+sudo ufw allow OpenSSH
+sudo ufw allow 'Nginx Full'
+sudo ufw --force enable
+```
+
+**Important:** Log out and log back in after adding yourself to the `docker` group, so you can run Docker without `sudo`:
+
+```bash
+exit
+# SSH back in
+ssh your-server
+```
+
+Verify everything is installed:
+
+```bash
+docker --version        # Docker 24+ or 27+
+docker compose version  # Docker Compose v2+
+node --version          # v24.x
+pnpm --version          # 10.x
+nginx -v                # nginx/1.x
+git --version           # git 2.x
+```
+
+---
+
+### Step 2: Clone the Repo
 
 ```bash
 cd /opt
-git clone <your-repo-url> site-monitor
+sudo git clone <your-repo-url> site-monitor
+sudo chown -R $USER:$USER site-monitor
 cd site-monitor
 ```
 
 ---
 
-### Step 2: Configure Environment
+### Step 3: Configure Environment
 
 Generate a secure JWT secret and create a `.env` file:
 
@@ -80,7 +137,7 @@ Change `changeme_db_password` to a strong password of your choice.
 
 ---
 
-### Step 3: Start Everything with Docker Compose
+### Step 4: Start Everything with Docker Compose
 
 Create a `docker-compose.yml` file:
 
@@ -142,16 +199,11 @@ You should see both `postgres` and `api` with status "Up".
 
 ---
 
-### Step 4: Initialize the Database
+### Step 5: Initialize the Database
 
-Run these commands from the project directory on your server. You need Node.js and pnpm installed on the host for this one-time setup:
+Run these commands from the project directory on your server (Node.js and pnpm were installed in Step 1):
 
 ```bash
-# Install Node.js and pnpm if not already installed
-curl -fsSL https://deb.nodesource.com/setup_24.x | sudo -E bash -
-sudo apt-get install -y nodejs
-npm install -g pnpm@10
-
 # Install project dependencies on the host (needed for DB commands)
 pnpm install
 
@@ -175,13 +227,9 @@ You should see both Love Furniture sites listed.
 
 ---
 
-### Step 5: Set Up Nginx + SSL
+### Step 6: Set Up Nginx + SSL
 
-Install Nginx and Certbot:
-
-```bash
-sudo apt-get install -y nginx certbot python3-certbot-nginx
-```
+Nginx and Certbot were already installed in Step 1. Now configure them.
 
 Create the Nginx config (replace `monitor.yourdomain.com` with your actual domain):
 
@@ -222,7 +270,7 @@ curl -s https://monitor.yourdomain.com/api/healthz
 
 ---
 
-### Step 6: Create Your Admin Account
+### Step 7: Create Your Admin Account
 
 Open the API in your browser or use curl:
 
@@ -236,7 +284,7 @@ This first user automatically becomes the admin. Save the token from the respons
 
 ---
 
-### Step 7: Configure Email Alerts
+### Step 8: Configure Email Alerts
 
 Email is configured from the mobile app (or via API). No environment variables needed.
 
@@ -280,7 +328,7 @@ Go to **Settings** tab > **SMTP Server** section, fill in your details, and hit 
 
 ---
 
-### Step 8: Build the Android APK
+### Step 9: Build the Android APK
 
 This is done on your local dev machine (not the server). You need Node.js, pnpm, and Android SDK installed.
 
