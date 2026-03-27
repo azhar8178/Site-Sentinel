@@ -231,6 +231,21 @@ You should see both Love Furniture sites listed.
 
 Nginx and Certbot were already installed in Step 1. Now configure them.
 
+First, build the web version of the dashboard:
+
+```bash
+cd ~/Site-Sentinel/artifacts/mobile
+EXPO_PUBLIC_DOMAIN=monitor.yourdomain.com npx expo export --platform web
+```
+
+This creates a `dist/` folder with the static web app. Now copy it where Nginx can serve it:
+
+```bash
+sudo mkdir -p /var/www/site-monitor
+sudo cp -r ~/Site-Sentinel/artifacts/mobile/dist/* /var/www/site-monitor/
+sudo chown -R www-data:www-data /var/www/site-monitor
+```
+
 Create the Nginx config (replace `monitor.yourdomain.com` with your actual domain):
 
 ```bash
@@ -239,12 +254,19 @@ server {
     listen 80;
     server_name monitor.yourdomain.com;
 
-    location / {
+    # API requests go to the backend
+    location /api/ {
         proxy_pass http://127.0.0.1:8080;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    # Web dashboard (static files)
+    location / {
+        root /var/www/site-monitor;
+        try_files $uri $uri/ /index.html;
     }
 }
 EOF
@@ -264,8 +286,13 @@ sudo certbot --nginx -d monitor.yourdomain.com
 Verify it's working:
 
 ```bash
+# API should respond
 curl -s https://monitor.yourdomain.com/api/healthz
 # Should return: {"status":"ok"}
+
+# Web dashboard should load
+curl -s -o /dev/null -w "%{http_code}" https://monitor.yourdomain.com/
+# Should return: 200
 ```
 
 ---

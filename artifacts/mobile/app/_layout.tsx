@@ -18,8 +18,9 @@ import { setBaseUrl } from "@workspace/api-client-react";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import LoginScreen from "./login";
+import { getBaseUrl } from "@/utils/getBaseUrl";
 
-setBaseUrl(`https://${process.env.EXPO_PUBLIC_DOMAIN}`);
+setBaseUrl(getBaseUrl());
 
 SplashScreen.preventAutoHideAsync();
 

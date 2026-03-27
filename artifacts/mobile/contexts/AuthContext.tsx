@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { setAuthTokenGetter } from "@workspace/api-client-react";
+import { getBaseUrl } from "@/utils/getBaseUrl";
 
 interface AuthUser {
   id: number;
@@ -22,7 +23,7 @@ const AuthContext = createContext<AuthContextType | null>(null);
 const TOKEN_KEY = "auth_token";
 const USER_KEY = "auth_user";
 
-const baseUrl = `https://${process.env.EXPO_PUBLIC_DOMAIN}`;
+const baseUrl = getBaseUrl();
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);

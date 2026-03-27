@@ -13,6 +13,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import { useAuth } from "@/contexts/AuthContext";
+import { getBaseUrl } from "@/utils/getBaseUrl";
 import Colors from "@/constants/colors";
 
 export default function LoginScreen() {
@@ -31,8 +32,7 @@ export default function LoginScreen() {
   useEffect(() => {
     const checkUserCount = async () => {
       try {
-        const domain = process.env.EXPO_PUBLIC_DOMAIN;
-        const res = await fetch(`https://${domain}/api/auth/user-count`);
+        const res = await fetch(`${getBaseUrl()}/api/auth/user-count`);
         if (res.ok) {
           const data = await res.json();
           if (data.count === 0) {
