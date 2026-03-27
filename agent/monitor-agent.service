@@ -1,0 +1,13 @@
+[Unit]
+Description=Site Monitor Agent
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/node /opt/monitor-agent/monitor-agent.js
+Restart=always
+RestartSec=10
+EnvironmentFile=/opt/monitor-agent/.env
+
+[Install]
+WantedBy=multi-user.target

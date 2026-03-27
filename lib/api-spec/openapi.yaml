@@ -18,6 +18,8 @@ tags:
     description: Alert operations
   - name: config
     description: Alert configuration operations
+  - name: servers
+    description: Server vitals monitoring operations
 paths:
   /healthz:
     get:
@@ -231,6 +233,104 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/TestSmtpResponse"
+
+  /servers:
+    get:
+      operationId: listServers
+      tags: [servers]
+      summary: List monitored servers
+      responses:
+        "200":
+          description: List of servers with latest metrics
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ServerWithMetrics"
+    post:
+      operationId: createServer
+      tags: [servers]
+      summary: Register a new server
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateServerInput"
+      responses:
+        "201":
+          description: Created server with API key
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ServerCreateResponse"
+
+  /servers/{serverId}:
+    get:
+      operationId: getServer
+      tags: [servers]
+      summary: Get server details
+      parameters:
+        - name: serverId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Server details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ServerWithMetrics"
+        "404":
+          description: Server not found
+    delete:
+      operationId: deleteServer
+      tags: [servers]
+      summary: Delete a server
+      parameters:
+        - name: serverId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /servers/{serverId}/metrics:
+    get:
+      operationId: getServerMetrics
+      tags: [servers]
+      summary: Get server metrics history
+      parameters:
+        - name: serverId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: hours
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 1
+          description: Number of hours of history
+      responses:
+        "200":
+          description: Metrics history
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ServerMetric"
 
 components:
   schemas:
@@ -467,3 +567,124 @@ components:
           type: string
       required:
         - success
+
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+      required:
+        - success
+
+    ServerMetric:
+      type: object
+      properties:
+        id:
+          type: integer
+        serverId:
+          type: integer
+        cpuPercent:
+          type: number
+        memUsedBytes:
+          type: number
+        memTotalBytes:
+          type: number
+        diskUsedBytes:
+          type: number
+        diskTotalBytes:
+          type: number
+        netRxBytes:
+          type: number
+        netTxBytes:
+          type: number
+        loadAvg1m:
+          type: number
+        loadAvg5m:
+          type: number
+        loadAvg15m:
+          type: number
+        recordedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - serverId
+        - cpuPercent
+        - memUsedBytes
+        - memTotalBytes
+        - diskUsedBytes
+        - diskTotalBytes
+        - netRxBytes
+        - netTxBytes
+        - loadAvg1m
+        - loadAvg5m
+        - loadAvg15m
+        - recordedAt
+
+    ServerWithMetrics:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        hostname:
+          type: string
+        isActive:
+          type: boolean
+        lastSeenAt:
+          type: string
+          format: date-time
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        latestMetrics:
+          nullable: true
+          $ref: "#/components/schemas/ServerMetric"
+      required:
+        - id
+        - name
+        - hostname
+        - isActive
+        - createdAt
+
+    ServerCreateResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        hostname:
+          type: string
+        apiKey:
+          type: string
+          description: Only returned once at creation
+        isActive:
+          type: boolean
+        lastSeenAt:
+          type: string
+          format: date-time
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - name
+        - hostname
+        - apiKey
+        - isActive
+        - createdAt
+
+    CreateServerInput:
+      type: object
+      properties:
+        name:
+          type: string
+        hostname:
+          type: string
+      required:
+        - name
+        - hostname

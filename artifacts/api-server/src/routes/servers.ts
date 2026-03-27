@@ -1,0 +1,250 @@
+import { Router, type IRouter } from "express";
+import crypto from "crypto";
+import { db } from "@workspace/db";
+import { serversTable, serverMetricsTable } from "@workspace/db/schema";
+import { eq, desc, and, gte } from "drizzle-orm";
+
+function hashApiKey(key: string): string {
+  return crypto.createHash("sha256").update(key).digest("hex");
+}
+
+function clampNum(val: unknown, min: number, max: number, fallback: number): number {
+  const n = Number(val);
+  if (!Number.isFinite(n)) return fallback;
+  return Math.max(min, Math.min(max, n));
+}
+
+export const serversRouter: IRouter = Router();
+
+serversRouter.get("/servers", async (_req, res, next) => {
+  try {
+    const servers = await db
+      .select({
+        id: serversTable.id,
+        name: serversTable.name,
+        hostname: serversTable.hostname,
+        isActive: serversTable.isActive,
+        lastSeenAt: serversTable.lastSeenAt,
+        createdAt: serversTable.createdAt,
+      })
+      .from(serversTable)
+      .orderBy(serversTable.name);
+
+    const result = await Promise.all(
+      servers.map(async (server) => {
+        const latest = await db
+          .select()
+          .from(serverMetricsTable)
+          .where(eq(serverMetricsTable.serverId, server.id))
+          .orderBy(desc(serverMetricsTable.recordedAt))
+          .limit(1);
+
+        return {
+          ...server,
+          latestMetrics: latest[0] ?? null,
+        };
+      })
+    );
+
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
+});
+
+serversRouter.get("/servers/:id", async (req, res, next) => {
+  try {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id) || id <= 0) {
+      res.status(400).json({ error: "Invalid server ID" });
+      return;
+    }
+
+    const servers = await db
+      .select({
+        id: serversTable.id,
+        name: serversTable.name,
+        hostname: serversTable.hostname,
+        isActive: serversTable.isActive,
+        lastSeenAt: serversTable.lastSeenAt,
+        createdAt: serversTable.createdAt,
+      })
+      .from(serversTable)
+      .where(eq(serversTable.id, id))
+      .limit(1);
+
+    if (servers.length === 0) {
+      res.status(404).json({ error: "Server not found" });
+      return;
+    }
+
+    const server = servers[0];
+    const latest = await db
+      .select()
+      .from(serverMetricsTable)
+      .where(eq(serverMetricsTable.serverId, id))
+      .orderBy(desc(serverMetricsTable.recordedAt))
+      .limit(1);
+
+    res.json({
+      ...server,
+      latestMetrics: latest[0] ?? null,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+serversRouter.get("/servers/:id/metrics", async (req, res, next) => {
+  try {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id) || id <= 0) {
+      res.status(400).json({ error: "Invalid server ID" });
+      return;
+    }
+
+    const hours = Math.max(1, Math.min(168, Number(req.query.hours) || 1));
+    const since = new Date(Date.now() - hours * 60 * 60 * 1000);
+
+    const metrics = await db
+      .select()
+      .from(serverMetricsTable)
+      .where(
+        and(
+          eq(serverMetricsTable.serverId, id),
+          gte(serverMetricsTable.recordedAt, since)
+        )
+      )
+      .orderBy(serverMetricsTable.recordedAt);
+
+    res.json(metrics);
+  } catch (err) {
+    next(err);
+  }
+});
+
+serversRouter.post("/servers", async (req, res, next) => {
+  try {
+    const { name, hostname } = req.body;
+
+    if (!name || typeof name !== "string" || name.trim().length === 0) {
+      res.status(400).json({ error: "name is required" });
+      return;
+    }
+    if (!hostname || typeof hostname !== "string" || hostname.trim().length === 0) {
+      res.status(400).json({ error: "hostname is required" });
+      return;
+    }
+
+    const rawKey = `sm_${crypto.randomBytes(24).toString("hex")}`;
+    const hashedKey = hashApiKey(rawKey);
+
+    const inserted = await db
+      .insert(serversTable)
+      .values({ name: name.trim(), hostname: hostname.trim(), apiKey: hashedKey })
+      .returning({
+        id: serversTable.id,
+        name: serversTable.name,
+        hostname: serversTable.hostname,
+        isActive: serversTable.isActive,
+        lastSeenAt: serversTable.lastSeenAt,
+        createdAt: serversTable.createdAt,
+      });
+
+    res.status(201).json({
+      ...inserted[0],
+      apiKey: rawKey,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+serversRouter.delete("/servers/:id", async (req, res, next) => {
+  try {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id) || id <= 0) {
+      res.status(400).json({ error: "Invalid server ID" });
+      return;
+    }
+
+    const deleted = await db.delete(serversTable).where(eq(serversTable.id, id)).returning({ id: serversTable.id });
+    if (deleted.length === 0) {
+      res.status(404).json({ error: "Server not found" });
+      return;
+    }
+
+    res.json({ success: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
+export const reportRouter: IRouter = Router();
+
+reportRouter.post("/servers/report", async (req, res, next) => {
+  try {
+    const rawKey = req.headers["x-api-key"] as string;
+
+    if (!rawKey || typeof rawKey !== "string") {
+      res.status(401).json({ error: "x-api-key header required" });
+      return;
+    }
+
+    const hashedKey = hashApiKey(rawKey);
+    const servers = await db
+      .select()
+      .from(serversTable)
+      .where(eq(serversTable.apiKey, hashedKey))
+      .limit(1);
+
+    if (servers.length === 0) {
+      res.status(401).json({ error: "Invalid API key" });
+      return;
+    }
+
+    const server = servers[0];
+    const b = req.body;
+
+    if (!b || typeof b !== "object") {
+      res.status(400).json({ error: "Request body required" });
+      return;
+    }
+
+    const cpuPercent = clampNum(b.cpuPercent, 0, 100, 0);
+    const memUsedBytes = clampNum(b.memUsedBytes, 0, Number.MAX_SAFE_INTEGER, 0);
+    const memTotalBytes = clampNum(b.memTotalBytes, 0, Number.MAX_SAFE_INTEGER, 0);
+    const diskUsedBytes = clampNum(b.diskUsedBytes, 0, Number.MAX_SAFE_INTEGER, 0);
+    const diskTotalBytes = clampNum(b.diskTotalBytes, 0, Number.MAX_SAFE_INTEGER, 0);
+    const netRxBytes = clampNum(b.netRxBytes, 0, Number.MAX_SAFE_INTEGER, 0);
+    const netTxBytes = clampNum(b.netTxBytes, 0, Number.MAX_SAFE_INTEGER, 0);
+    const loadAvg1m = clampNum(b.loadAvg1m, 0, 10000, 0);
+    const loadAvg5m = clampNum(b.loadAvg5m, 0, 10000, 0);
+    const loadAvg15m = clampNum(b.loadAvg15m, 0, 10000, 0);
+
+    await db.insert(serverMetricsTable).values({
+      serverId: server.id,
+      cpuPercent,
+      memUsedBytes,
+      memTotalBytes,
+      diskUsedBytes,
+      diskTotalBytes,
+      netRxBytes,
+      netTxBytes,
+      loadAvg1m,
+      loadAvg5m,
+      loadAvg15m,
+    });
+
+    await db
+      .update(serversTable)
+      .set({ lastSeenAt: new Date() })
+      .where(eq(serversTable.id, server.id));
+
+    res.json({ success: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
+export default serversRouter;

@@ -16,7 +16,7 @@ Site monitoring and alerting system for two Magento e-commerce sites (lovefurnit
 - **API codegen**: Orval (from OpenAPI spec)
 - **Build**: esbuild (CJS bundle)
 - **Mobile**: Expo (React Native)
-- **Email**: AWS SES (v2 SDK)
+- **Email**: Generic SMTP (nodemailer)
 
 ## Structure
 
@@ -36,6 +36,7 @@ artifacts-monorepo/
 │   │       └── (tabs)/
 │   │           ├── index.tsx    # Dashboard tab
 │   │           ├── history.tsx  # Response time history charts
+│   │           ├── servers.tsx  # Server vitals (CPU/mem/disk/net)
 │   │           ├── alerts.tsx   # Alert log viewer
 │   │           └── settings.tsx # Email & threshold settings
 │   └── mockup-sandbox/     # Component preview server
@@ -45,7 +46,9 @@ artifacts-monorepo/
 │   ├── api-zod/            # Generated Zod schemas from OpenAPI
 │   └── db/                 # Drizzle ORM schema + DB connection
 │       └── src/schema/
-│           └── sites.ts    # sites, check_results, alerts, alert_config tables
+│           ├── sites.ts    # sites, check_results, alerts, alert_config tables
+│           ├── servers.ts  # servers, server_metrics tables
+│           └── users.ts    # users table
 ├── scripts/
 │   └── src/
 │       └── seed-sites.ts   # Seeds the two monitored sites + default config
@@ -76,6 +79,13 @@ artifacts-monorepo/
 - **Alerts**: Chronological alert log with type badges and resolution status
 - **Settings**: Toggle email alerts, configure sender/recipients, per-site slow thresholds
 
+### Server Vitals Monitoring
+- Lightweight Node.js agent (`agent/monitor-agent.js`) runs on each server
+- Reports CPU, memory, disk, network, and load average every 30s
+- Agent authenticates via API key (no JWT needed)
+- Install via `agent/install.sh` which sets up a systemd service
+- Server detail modal shows historical charts (1h/6h/24h)
+
 ### API Endpoints
 - `GET /api/sites` - List all monitored sites
 - `POST /api/sites/:id/check` - Trigger manual site check
@@ -84,6 +94,12 @@ artifacts-monorepo/
 - `GET /api/config` - Get alert configuration
 - `PUT /api/config` - Update alert configuration
 - `PUT /api/sites/:id/threshold` - Update site slow threshold
+- `GET /api/servers` - List servers with latest metrics
+- `POST /api/servers` - Register a new server (returns API key)
+- `GET /api/servers/:id` - Get server details (includes API key)
+- `DELETE /api/servers/:id` - Remove a server
+- `GET /api/servers/:id/metrics` - Get historical metrics
+- `POST /api/servers/report` - Agent reports metrics (API key auth, no JWT)
 
 ## User Authentication
 
@@ -136,7 +152,7 @@ Express 5 API server with site monitoring worker. Routes live in `src/routes/` a
 
 Expo React Native app for site monitoring dashboard. Uses generated React Query hooks from `@workspace/api-client-react`.
 
-- Tab-based navigation: Dashboard, History, Alerts, Settings
+- Tab-based navigation: Dashboard, History, Servers, Alerts, Settings
 - API base URL configured via `EXPO_PUBLIC_DOMAIN` environment variable
 - Custom `SimpleChart` component (no native dependencies required)
 

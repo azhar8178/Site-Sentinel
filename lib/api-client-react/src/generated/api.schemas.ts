@@ -119,6 +119,52 @@ export interface TestSmtpResponse {
   error?: string;
 }
 
+export interface SuccessResponse {
+  success: boolean;
+}
+
+export interface ServerMetric {
+  id: number;
+  serverId: number;
+  cpuPercent: number;
+  memUsedBytes: number;
+  memTotalBytes: number;
+  diskUsedBytes: number;
+  diskTotalBytes: number;
+  netRxBytes: number;
+  netTxBytes: number;
+  loadAvg1m: number;
+  loadAvg5m: number;
+  loadAvg15m: number;
+  recordedAt: string;
+}
+
+export interface ServerWithMetrics {
+  id: number;
+  name: string;
+  hostname: string;
+  isActive: boolean;
+  lastSeenAt?: string | null;
+  createdAt: string;
+  latestMetrics?: ServerMetric | null;
+}
+
+export interface ServerCreateResponse {
+  id: number;
+  name: string;
+  hostname: string;
+  /** Only returned once at creation */
+  apiKey: string;
+  isActive: boolean;
+  lastSeenAt?: string | null;
+  createdAt: string;
+}
+
+export interface CreateServerInput {
+  name: string;
+  hostname: string;
+}
+
 export type GetCheckHistoryParams = {
   /**
    * Number of hours of history to return
@@ -132,4 +178,11 @@ export type ListAlertsParams = {
   siteId?: number;
   limit?: number;
   offset?: number;
+};
+
+export type GetServerMetricsParams = {
+  /**
+   * Number of hours of history
+   */
+  hours?: number;
 };

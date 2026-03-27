@@ -21,10 +21,16 @@ import type {
   AlertListResponse,
   CheckHistoryResponse,
   CheckResultResponse,
+  CreateServerInput,
   GetCheckHistoryParams,
+  GetServerMetricsParams,
   HealthStatus,
   ListAlertsParams,
+  ServerCreateResponse,
+  ServerMetric,
+  ServerWithMetrics,
   SiteWithStatus,
+  SuccessResponse,
   TestSmtpInput,
   TestSmtpResponse,
   UpdateAlertConfigInput,
@@ -884,3 +890,450 @@ export const useTestSmtpConnection = <
 > => {
   return useMutation(getTestSmtpConnectionMutationOptions(options));
 };
+
+/**
+ * @summary List monitored servers
+ */
+export const getListServersUrl = () => {
+  return `/api/servers`;
+};
+
+export const listServers = async (
+  options?: RequestInit,
+): Promise<ServerWithMetrics[]> => {
+  return customFetch<ServerWithMetrics[]>(getListServersUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListServersQueryKey = () => {
+  return [`/api/servers`] as const;
+};
+
+export const getListServersQueryOptions = <
+  TData = Awaited<ReturnType<typeof listServers>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listServers>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListServersQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listServers>>> = ({
+    signal,
+  }) => listServers({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listServers>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListServersQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listServers>>
+>;
+export type ListServersQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List monitored servers
+ */
+
+export function useListServers<
+  TData = Awaited<ReturnType<typeof listServers>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listServers>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListServersQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Register a new server
+ */
+export const getCreateServerUrl = () => {
+  return `/api/servers`;
+};
+
+export const createServer = async (
+  createServerInput: CreateServerInput,
+  options?: RequestInit,
+): Promise<ServerCreateResponse> => {
+  return customFetch<ServerCreateResponse>(getCreateServerUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(createServerInput),
+  });
+};
+
+export const getCreateServerMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createServer>>,
+    TError,
+    { data: BodyType<CreateServerInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createServer>>,
+  TError,
+  { data: BodyType<CreateServerInput> },
+  TContext
+> => {
+  const mutationKey = ["createServer"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createServer>>,
+    { data: BodyType<CreateServerInput> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return createServer(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateServerMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createServer>>
+>;
+export type CreateServerMutationBody = BodyType<CreateServerInput>;
+export type CreateServerMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Register a new server
+ */
+export const useCreateServer = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createServer>>,
+    TError,
+    { data: BodyType<CreateServerInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createServer>>,
+  TError,
+  { data: BodyType<CreateServerInput> },
+  TContext
+> => {
+  return useMutation(getCreateServerMutationOptions(options));
+};
+
+/**
+ * @summary Get server details
+ */
+export const getGetServerUrl = (serverId: number) => {
+  return `/api/servers/${serverId}`;
+};
+
+export const getServer = async (
+  serverId: number,
+  options?: RequestInit,
+): Promise<ServerWithMetrics> => {
+  return customFetch<ServerWithMetrics>(getGetServerUrl(serverId), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetServerQueryKey = (serverId: number) => {
+  return [`/api/servers/${serverId}`] as const;
+};
+
+export const getGetServerQueryOptions = <
+  TData = Awaited<ReturnType<typeof getServer>>,
+  TError = ErrorType<void>,
+>(
+  serverId: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getServer>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetServerQueryKey(serverId);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getServer>>> = ({
+    signal,
+  }) => getServer(serverId, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!serverId,
+    ...queryOptions,
+  } as UseQueryOptions<Awaited<ReturnType<typeof getServer>>, TError, TData> & {
+    queryKey: QueryKey;
+  };
+};
+
+export type GetServerQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getServer>>
+>;
+export type GetServerQueryError = ErrorType<void>;
+
+/**
+ * @summary Get server details
+ */
+
+export function useGetServer<
+  TData = Awaited<ReturnType<typeof getServer>>,
+  TError = ErrorType<void>,
+>(
+  serverId: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getServer>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetServerQueryOptions(serverId, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Delete a server
+ */
+export const getDeleteServerUrl = (serverId: number) => {
+  return `/api/servers/${serverId}`;
+};
+
+export const deleteServer = async (
+  serverId: number,
+  options?: RequestInit,
+): Promise<SuccessResponse> => {
+  return customFetch<SuccessResponse>(getDeleteServerUrl(serverId), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeleteServerMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteServer>>,
+    TError,
+    { serverId: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteServer>>,
+  TError,
+  { serverId: number },
+  TContext
+> => {
+  const mutationKey = ["deleteServer"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteServer>>,
+    { serverId: number }
+  > = (props) => {
+    const { serverId } = props ?? {};
+
+    return deleteServer(serverId, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteServerMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteServer>>
+>;
+
+export type DeleteServerMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Delete a server
+ */
+export const useDeleteServer = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteServer>>,
+    TError,
+    { serverId: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteServer>>,
+  TError,
+  { serverId: number },
+  TContext
+> => {
+  return useMutation(getDeleteServerMutationOptions(options));
+};
+
+/**
+ * @summary Get server metrics history
+ */
+export const getGetServerMetricsUrl = (
+  serverId: number,
+  params?: GetServerMetricsParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/servers/${serverId}/metrics?${stringifiedParams}`
+    : `/api/servers/${serverId}/metrics`;
+};
+
+export const getServerMetrics = async (
+  serverId: number,
+  params?: GetServerMetricsParams,
+  options?: RequestInit,
+): Promise<ServerMetric[]> => {
+  return customFetch<ServerMetric[]>(getGetServerMetricsUrl(serverId, params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetServerMetricsQueryKey = (
+  serverId: number,
+  params?: GetServerMetricsParams,
+) => {
+  return [
+    `/api/servers/${serverId}/metrics`,
+    ...(params ? [params] : []),
+  ] as const;
+};
+
+export const getGetServerMetricsQueryOptions = <
+  TData = Awaited<ReturnType<typeof getServerMetrics>>,
+  TError = ErrorType<unknown>,
+>(
+  serverId: number,
+  params?: GetServerMetricsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getServerMetrics>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetServerMetricsQueryKey(serverId, params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getServerMetrics>>
+  > = ({ signal }) =>
+    getServerMetrics(serverId, params, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!serverId,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getServerMetrics>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetServerMetricsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getServerMetrics>>
+>;
+export type GetServerMetricsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get server metrics history
+ */
+
+export function useGetServerMetrics<
+  TData = Awaited<ReturnType<typeof getServerMetrics>>,
+  TError = ErrorType<unknown>,
+>(
+  serverId: number,
+  params?: GetServerMetricsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getServerMetrics>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetServerMetricsQueryOptions(
+    serverId,
+    params,
+    options,
+  );
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}

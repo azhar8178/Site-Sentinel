@@ -223,3 +223,118 @@ export const TestSmtpConnectionResponse = zod.object({
   success: zod.boolean(),
   error: zod.string().optional(),
 });
+
+/**
+ * @summary List monitored servers
+ */
+export const ListServersResponseItem = zod.object({
+  id: zod.number(),
+  name: zod.string(),
+  hostname: zod.string(),
+  isActive: zod.boolean(),
+  lastSeenAt: zod.date().nullish(),
+  createdAt: zod.date(),
+  latestMetrics: zod
+    .object({
+      id: zod.number(),
+      serverId: zod.number(),
+      cpuPercent: zod.number(),
+      memUsedBytes: zod.number(),
+      memTotalBytes: zod.number(),
+      diskUsedBytes: zod.number(),
+      diskTotalBytes: zod.number(),
+      netRxBytes: zod.number(),
+      netTxBytes: zod.number(),
+      loadAvg1m: zod.number(),
+      loadAvg5m: zod.number(),
+      loadAvg15m: zod.number(),
+      recordedAt: zod.date(),
+    })
+    .nullish(),
+});
+export const ListServersResponse = zod.array(ListServersResponseItem);
+
+/**
+ * @summary Register a new server
+ */
+export const CreateServerBody = zod.object({
+  name: zod.string(),
+  hostname: zod.string(),
+});
+
+/**
+ * @summary Get server details
+ */
+export const GetServerParams = zod.object({
+  serverId: zod.coerce.number(),
+});
+
+export const GetServerResponse = zod.object({
+  id: zod.number(),
+  name: zod.string(),
+  hostname: zod.string(),
+  isActive: zod.boolean(),
+  lastSeenAt: zod.date().nullish(),
+  createdAt: zod.date(),
+  latestMetrics: zod
+    .object({
+      id: zod.number(),
+      serverId: zod.number(),
+      cpuPercent: zod.number(),
+      memUsedBytes: zod.number(),
+      memTotalBytes: zod.number(),
+      diskUsedBytes: zod.number(),
+      diskTotalBytes: zod.number(),
+      netRxBytes: zod.number(),
+      netTxBytes: zod.number(),
+      loadAvg1m: zod.number(),
+      loadAvg5m: zod.number(),
+      loadAvg15m: zod.number(),
+      recordedAt: zod.date(),
+    })
+    .nullish(),
+});
+
+/**
+ * @summary Delete a server
+ */
+export const DeleteServerParams = zod.object({
+  serverId: zod.coerce.number(),
+});
+
+export const DeleteServerResponse = zod.object({
+  success: zod.boolean(),
+});
+
+/**
+ * @summary Get server metrics history
+ */
+export const GetServerMetricsParams = zod.object({
+  serverId: zod.coerce.number(),
+});
+
+export const getServerMetricsQueryHoursDefault = 1;
+
+export const GetServerMetricsQueryParams = zod.object({
+  hours: zod.coerce
+    .number()
+    .default(getServerMetricsQueryHoursDefault)
+    .describe("Number of hours of history"),
+});
+
+export const GetServerMetricsResponseItem = zod.object({
+  id: zod.number(),
+  serverId: zod.number(),
+  cpuPercent: zod.number(),
+  memUsedBytes: zod.number(),
+  memTotalBytes: zod.number(),
+  diskUsedBytes: zod.number(),
+  diskTotalBytes: zod.number(),
+  netRxBytes: zod.number(),
+  netTxBytes: zod.number(),
+  loadAvg1m: zod.number(),
+  loadAvg5m: zod.number(),
+  loadAvg15m: zod.number(),
+  recordedAt: zod.date(),
+});
+export const GetServerMetricsResponse = zod.array(GetServerMetricsResponseItem);
