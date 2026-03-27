@@ -1,0 +1,39 @@
+Seeding monitored sites...
+Seed failed: DrizzleQueryError: Failed query: select "id", "name", "url", "is_active", "current_status", "last_checked_at", "last_response_time_ms", "slow_threshold_ms", "consecutive_failures", "created_at", "updated_at" from "sites"
+params: 
+    at NodePgPreparedQuery.queryWithCache (/home/ubuntu/Site-Sentinel/node_modules/.pnpm/drizzle-orm@0.45.1_@types+pg@8.18.0_pg@8.20.0/node_modules/src/pg-core/session.ts:73:11)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async <anonymous> (/home/ubuntu/Site-Sentinel/node_modules/.pnpm/drizzle-orm@0.45.1_@types+pg@8.18.0_pg@8.20.0/node_modules/src/node-postgres/session.ts:154:19)
+    at async seed (/home/ubuntu/Site-Sentinel/scripts/src/seed-sites.ts:8:25) {
+  query: 'select "id", "name", "url", "is_active", "current_status", "last_checked_at", "last_response_time_ms", "slow_threshold_ms", "consecutive_failures", "created_at", "updated_at" from "sites"',
+  params: [],
+  cause: error: password authentication failed for user "monitor"
+      at /home/ubuntu/Site-Sentinel/node_modules/.pnpm/pg-pool@3.13.0_pg@8.20.0/node_modules/pg-pool/index.js:45:11
+      at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+      at async <anonymous> (/home/ubuntu/Site-Sentinel/node_modules/.pnpm/drizzle-orm@0.45.1_@types+pg@8.18.0_pg@8.20.0/node_modules/src/node-postgres/session.ts:161:13)
+      at async NodePgPreparedQuery.queryWithCache (/home/ubuntu/Site-Sentinel/node_modules/.pnpm/drizzle-orm@0.45.1_@types+pg@8.18.0_pg@8.20.0/node_modules/src/pg-core/session.ts:71:12)
+      at async <anonymous> (/home/ubuntu/Site-Sentinel/node_modules/.pnpm/drizzle-orm@0.45.1_@types+pg@8.18.0_pg@8.20.0/node_modules/src/node-postgres/session.ts:154:19)
+      at async seed (/home/ubuntu/Site-Sentinel/scripts/src/seed-sites.ts:8:25) {
+    length: 103,
+    severity: 'FATAL',
+    code: '28P01',
+    detail: undefined,
+    hint: undefined,
+    position: undefined,
+    internalPosition: undefined,
+    internalQuery: undefined,
+    where: undefined,
+    schema: undefined,
+    table: undefined,
+    column: undefined,
+    dataType: undefined,
+    constraint: undefined,
+    file: 'auth.c',
+    line: '331',
+    routine: 'auth_failed'
+  }
+}
+/home/ubuntu/Site-Sentinel/scripts:
+ ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  @workspace/scripts@0.0.0 seed-sites: `tsx ./src/seed-sites.ts`
+Exit status 1
+ubuntu@ip-172-33-86-172:~/Site-Sentinel$ 
