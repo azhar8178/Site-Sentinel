@@ -24,3 +24,8 @@ expertMode = true
 [postMerge]
 path = "scripts/post-merge.sh"
 timeoutMs = 20000
+
+[userenv]
+
+[userenv.shared]
+MAGENTO_API_URL = "https://www.lovefurniture.ie/rest/V1"
