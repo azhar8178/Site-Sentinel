@@ -1,0 +1,53 @@
+# Verify the migration file has the new content
+head -6 artifacts/api-server/scripts/migrate.mjs
+
+# Force stop everything, remove old containers AND images
+docker compose down -v --rmi all
+docker compose up -d --build
+import { createRequire } from "node:module";
+import { fileURLToPath } from "node:url";
+import { dirname, resolve } from "node:path";
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const rootDir = resolve(__dirname, "..", "..", "..");
+const require = createRequire(resolve(rootDir, "lib", "db", "package.json"));
+[+] down 6/6
+ ✔ Container site-sentinel-api-1      Removed                                                                                                                          0.0s
+ ✔ Container site-sentinel-postgres-1 Removed                                                                                                                          0.2s
+ ✔ Image postgres:16-alpine           Removed                                                                                                                          2.4s
+ ✔ Image site-sentinel-api:latest     Removed                                                                                                                          2.4s
+ ✔ Volume site-sentinel_pgdata        Removed                                                                                                                          0.1s
+ ✔ Network site-sentinel_default      Removed                                                                                                                          0.1s
+[+] up 14/14
+ ✔ Image postgres:16-alpine Pulled                                                                                                                                     5.9s
+[+] Building 20.3s (14/14) FINISHED                                                                                                                                        
+ => [internal] load local bake definitions                                                                                                                            0.0s
+ => => reading from stdin 504B                                                                                                                                        0.0s
+ => [internal] load build definition from Dockerfile                                                                                                                  0.0s
+ => => transferring dockerfile: 611B                                                                                                                                  0.0s
+ => [internal] load metadata for docker.io/library/node:24-slim                                                                                                       0.3s
+ => [internal] load .dockerignore                                                                                                                                     0.0s
+ => => transferring context: 269B                                                                                                                                     0.0s
+ => [1/7] FROM docker.io/library/node:24-slim@sha256:06e5c9f86bfa0aaa7163cf37a5eaa8805f16b9acb48e3f85645b09d459fc2a9f                                                 0.0s
+ => => resolve docker.io/library/node:24-slim@sha256:06e5c9f86bfa0aaa7163cf37a5eaa8805f16b9acb48e3f85645b09d459fc2a9f                                                 0.0s
+ => [internal] load build context                                                                                                                                     0.0s
+ => => transferring context: 11.05kB                                                                                                                                  0.0s
+ => CACHED [2/7] RUN npm install -g pnpm@10                                                                                                                           0.0s
+ => CACHED [3/7] WORKDIR /app                                                                                                                                         0.0s
+ => CACHED [4/7] COPY . .                                                                                                                                             0.0s
+ => CACHED [5/7] RUN pnpm install --frozen-lockfile                                                                                                                   0.0s
+ => CACHED [6/7] RUN pnpm --filter @workspace/api-server run build                                                                                                    0.0s
+ => CACHED [7/7] RUN cd artifacts/mobile && pnpm exec expo export --platform web                                                                                      0.0s
+ => exporting to image                                                                                                                                               19.7s
+ => => exporting layers                                                                                                                                               0.0s
+ => => exporting manifest sha256:fa95d17be2b86d5b8adc986f2564676dec7733f6f6145f6b15a22a1c3ada79c8                                                                     0.0s
+ => => exporting config sha256:34043e5258bf9fea8330e240474eb90819848e175d85c8bcc9463eafe8357d6d                                                                       0.0s
+ => => exporting attestation manifest sha256:50e7ef589de64b49cb6ddc14fc75163236afe3f31ac0673b19241b0258320799                                                         0.0s
+ => => exporting manifest list sha256:3d7e91b8a24ad2c096534c09a7a890f69f633f39aa8efe93f67b2e3d326e02c8                                                                0.0s
+ => => naming to docker.io/library/site-sentinel-api:latest                                                                                                           0.0s
+[+] up 19/19king to docker.io/library/site-sentinel-api:latest                                                                                                       19.6s
+ ✔ Image postgres:16-alpine           Pulled                                                                                                                          5.9s
+ ✔ Image site-sentinel-api            Built                                                                                                                           20.4s
+ ✔ Network site-sentinel_default      Created                                                                                                                         0.0s
+ ✔ Volume site-sentinel_pgdata        Created                                                                                                                         0.0s
+ ✔ Container site-sentinel-postgres-1 Healthy                                                                                                                         11.3s
+ ✔ Container site-sentinel-api-1      Started                                                                                                                         11.1s
