@@ -169,8 +169,8 @@ The SMTP password is masked ("••••••••") in API responses. A `/a
 ## Self-Hosted Deployment
 
 Deployment files for Docker-based self-hosting:
-- `Dockerfile` — Multi-stage build (builder + production image with health check)
-- `docker-compose.yml` — PostgreSQL + API server with health checks; reads secrets from `.env`
+- `Dockerfile` — Single-stage build (API + Expo web frontend, health check)
+- `docker-compose.yml` — PostgreSQL + API server with health checks; reads secrets from `.env`; API binds to localhost only (requires Nginx for external access)
 - `.env.example` — Template for required environment variables
 - `deploy/nginx.conf` — Nginx reverse proxy config (for HTTPS with Certbot)
 - `deploy/DEPLOY.md` — Full step-by-step deployment guide

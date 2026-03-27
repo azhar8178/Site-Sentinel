@@ -39,7 +39,9 @@ nano .env
 docker-compose up -d --build
 ```
 
-Wait about 30 seconds for everything to start. Check status:
+The first build may take a few minutes (it builds both the API server and the web dashboard).
+
+Check status:
 
 ```bash
 docker-compose ps
@@ -66,7 +68,11 @@ curl http://localhost:8080/api/healthz
 
 Should return `{"status":"ok"}`.
 
-## Adding HTTPS with Nginx
+### 6. Access the web dashboard
+
+The API binds to `127.0.0.1:8080` by default for security — it is only accessible from the server itself until you set up Nginx (see below). The web dashboard is bundled with the API and served automatically from the same port.
+
+## Setting Up Nginx (Required for External Access)
 
 ### 1. Install Nginx and Certbot
 
