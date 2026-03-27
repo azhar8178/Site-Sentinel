@@ -1,0 +1,11 @@
+node_modules
+.git
+.local
+.canvas
+.env
+*.log
+artifacts/mobile/android
+artifacts/mobile/ios
+artifacts/mobile/.expo
+artifacts/mockup-sandbox
+dist

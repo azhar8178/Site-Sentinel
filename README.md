@@ -1,235 +1,198 @@
-# Site Monitor - Monitoring & Alerting System
+# Site Monitor
 
-A self-hosted site monitoring and alerting system that checks your websites every 60 seconds, sends email alerts via AWS SES when issues are detected, and provides a mobile-friendly dashboard for real-time status monitoring.
+A self-hosted monitoring and alerting system for your websites. Checks availability every 60 seconds, sends email alerts when issues are detected, and provides a mobile dashboard for real-time status.
 
-Built for monitoring **Love Furniture IE** and **Love Furniture UK** Magento stores, but easily extendable to any website.
+Built for **Love Furniture IE** and **Love Furniture UK** Magento stores.
 
-## Features
+## What It Does
 
-- **Automated Monitoring**: Checks site availability every 60 seconds
-- **Smart Alerts**: Detects status transitions (up/down/slow) with deduplication — no alert spam
-- **Email Notifications**: HTML-formatted alerts via AWS SES for downtime, slow response, and recovery
-- **Mobile Dashboard**: Real-time status, response time charts, alert history, and configurable settings
-- **User Authentication**: Simple username/password login system with JWT tokens
-- **Configurable Thresholds**: Per-site slow response thresholds (default 5000ms)
+- Checks your sites every 60 seconds
+- Detects downtime, slow responses, and recovery
+- Sends email alerts via any SMTP server (Gmail, Microsoft 365, AWS SES, etc.)
+- Mobile app (Android APK) for real-time dashboard, alert history, and settings
+- Simple username/password authentication
+- Per-site configurable slow response thresholds
 
 ## Architecture
 
 ```
 ┌─────────────────────┐     ┌──────────────────┐     ┌──────────────┐
-│   Mobile App (Expo) │────▶│  API Server      │────▶│  PostgreSQL  │
-│   Web / iOS / Android│     │  (Express 5)     │     │  Database    │
+│   Mobile App        │────▶│  API Server      │────▶│  PostgreSQL  │
+│   (Android APK)     │     │  (Node.js)       │     │              │
 └─────────────────────┘     │                  │     └──────────────┘
                             │  ┌────────────┐  │
                             │  │ Monitor    │  │     ┌──────────────┐
-                            │  │ Worker     │──┼────▶│  AWS SES     │
-                            │  │ (60s loop) │  │     │  (Emails)    │
+                            │  │ Worker     │──┼────▶│  SMTP Server │
+                            │  │ (60s loop) │  │     │  (Email)     │
                             │  └────────────┘  │     └──────────────┘
                             └──────────────────┘
 ```
 
-## Tech Stack
+---
 
-- **Backend**: Node.js 24, Express 5, TypeScript
-- **Database**: PostgreSQL + Drizzle ORM
-- **Frontend**: Expo (React Native) — works on web, iOS, and Android
-- **Email**: AWS SES v3 SDK
-- **Auth**: JWT tokens
-- **Monorepo**: pnpm workspaces
-- **API**: OpenAPI 3.1 spec with generated React Query hooks
+## Self-Hosting Guide
 
-## Prerequisites
+### What You Need
 
-- **Node.js** >= 20 (v24 recommended)
-- **pnpm** >= 9
-- **PostgreSQL** >= 14
-- **SMTP mail server** (any provider: Gmail, Outlook, AWS SES, your own server)
+- A Linux server (EC2 t3.micro is plenty, or any VPS)
+- Docker and Docker Compose installed
+- A domain name pointing to your server (e.g., `monitor.yourdomain.com`)
+- An SMTP mail server for alerts (configured later in-app)
 
-## Quick Start
+### Overview of Steps
 
-### 1. Clone and Install
+1. Clone the repo to your server
+2. Start PostgreSQL and the API server with Docker Compose
+3. Initialize the database
+4. Set up Nginx + SSL
+5. Create your admin account
+6. Configure email alerts in the app
+7. Build the Android APK and deploy via MDM
 
-```bash
-git clone <your-repo-url>
-cd site-monitor
-pnpm install
-```
+---
 
-### 2. Set Up Environment Variables
+### Step 1: Clone the Repo
 
-Create a `.env` file in the project root (or set these as environment variables):
-
-```bash
-# Required
-DATABASE_URL=postgresql://user:password@localhost:5432/site_monitor
-PORT=8080
-JWT_SECRET=your-secure-random-secret-here
-
-# Mobile app (for Expo web build)
-EXPO_PUBLIC_DOMAIN=your-server-domain.com
-
-# SMTP settings are configured in-app via Settings > SMTP Server
-# No environment variables needed for email — it's all in the database
-```
-
-### 3. Set Up Database
-
-```bash
-# Push the schema to your PostgreSQL database
-pnpm --filter @workspace/db run push
-
-# Seed the monitored sites and default config
-pnpm --filter @workspace/scripts run seed-sites
-```
-
-### 4. Build and Run the API Server
-
-```bash
-# Development
-pnpm --filter @workspace/api-server run dev
-
-# Production build
-pnpm --filter @workspace/api-server run build
-NODE_ENV=production node artifacts/api-server/dist/index.mjs
-```
-
-The API server starts on the port specified by `PORT` (default 8080). The monitoring worker starts automatically.
-
-### 5. Run the Mobile App
-
-```bash
-# Development (web)
-pnpm --filter @workspace/mobile run dev
-
-# The app will be available at http://localhost:18115
-```
-
-### 6. Create Your First User
-
-On first launch, navigate to the app and click "First time? Create Account". The first registered user automatically gets admin privileges.
-
-## Deployment Guide
-
-### Option A: Deploy with Docker (Recommended)
-
-Create a `Dockerfile` in the project root:
-
-```dockerfile
-FROM node:24-slim AS base
-RUN npm install -g pnpm@10
-
-WORKDIR /app
-COPY . .
-RUN pnpm install --frozen-lockfile
-
-# Build the API server
-RUN pnpm --filter @workspace/api-server run build
-
-EXPOSE 8080
-
-CMD ["node", "artifacts/api-server/dist/index.mjs"]
-```
-
-```bash
-docker build -t site-monitor .
-docker run -d \
-  -p 8080:8080 \
-  -e DATABASE_URL=postgresql://user:pass@db:5432/site_monitor \
-  -e JWT_SECRET=your-secret \
-  --name site-monitor \
-  site-monitor
-```
-
-### Option B: Deploy on a VPS (Ubuntu/Debian)
-
-#### 1. Install Dependencies
-
-```bash
-# Install Node.js 24
-curl -fsSL https://deb.nodesource.com/setup_24.x | sudo -E bash -
-sudo apt-get install -y nodejs
-
-# Install pnpm
-npm install -g pnpm@10
-
-# Install PostgreSQL
-sudo apt-get install -y postgresql postgresql-contrib
-```
-
-#### 2. Set Up PostgreSQL
-
-```bash
-sudo -u postgres psql
-CREATE DATABASE site_monitor;
-CREATE USER monitor_user WITH PASSWORD 'your_db_password';
-GRANT ALL PRIVILEGES ON DATABASE site_monitor TO monitor_user;
-\q
-```
-
-#### 3. Clone and Build
+SSH into your server and clone the project:
 
 ```bash
 cd /opt
 git clone <your-repo-url> site-monitor
 cd site-monitor
+```
+
+---
+
+### Step 2: Configure Environment
+
+Generate a secure JWT secret and create a `.env` file:
+
+```bash
+cat > .env << EOF
+DATABASE_URL=postgresql://monitor:changeme_db_password@postgres:5432/site_monitor
+JWT_SECRET=$(openssl rand -hex 32)
+PORT=8080
+NODE_ENV=production
+EOF
+```
+
+Change `changeme_db_password` to a strong password of your choice.
+
+---
+
+### Step 3: Start Everything with Docker Compose
+
+Create a `docker-compose.yml` file:
+
+```yaml
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: always
+    environment:
+      POSTGRES_DB: site_monitor
+      POSTGRES_USER: monitor
+      POSTGRES_PASSWORD: changeme_db_password  # Match your .env
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:5432:5432"
+
+  api:
+    build: .
+    restart: always
+    depends_on:
+      - postgres
+    env_file: .env
+    ports:
+      - "127.0.0.1:8080:8080"
+
+volumes:
+  pgdata:
+```
+
+Create the `Dockerfile`:
+
+```dockerfile
+FROM node:24-slim
+RUN npm install -g pnpm@10
+
+WORKDIR /app
+COPY . .
+RUN pnpm install --frozen-lockfile
+RUN pnpm --filter @workspace/api-server run build
+
+EXPOSE 8080
+CMD ["node", "artifacts/api-server/dist/index.mjs"]
+```
+
+Start everything:
+
+```bash
+docker compose up -d
+```
+
+Wait about 30 seconds for PostgreSQL to be ready, then check both containers are running:
+
+```bash
+docker compose ps
+```
+
+You should see both `postgres` and `api` with status "Up".
+
+---
+
+### Step 4: Initialize the Database
+
+Run these commands from the project directory on your server. You need Node.js and pnpm installed on the host for this one-time setup:
+
+```bash
+# Install Node.js and pnpm if not already installed
+curl -fsSL https://deb.nodesource.com/setup_24.x | sudo -E bash -
+sudo apt-get install -y nodejs
+npm install -g pnpm@10
+
+# Install project dependencies on the host (needed for DB commands)
 pnpm install
 
-# Set environment variables
-export DATABASE_URL=postgresql://monitor_user:your_db_password@localhost:5432/site_monitor
-export PORT=8080
-export JWT_SECRET=$(openssl rand -hex 32)
-export AWS_ACCESS_KEY_ID=your-key
-export AWS_SECRET_ACCESS_KEY=your-secret
-export AWS_SES_REGION=eu-west-1
+# Point to PostgreSQL (localhost because we mapped port 5432)
+export DATABASE_URL=postgresql://monitor:changeme_db_password@localhost:5432/site_monitor
 
-# Set up database
+# Create all database tables
 pnpm --filter @workspace/db run push
+
+# Add the monitored sites (Love Furniture IE & UK)
 pnpm --filter @workspace/scripts run seed-sites
-
-# Build
-pnpm --filter @workspace/api-server run build
 ```
 
-#### 4. Create a systemd Service
+Verify the database is set up:
 
 ```bash
-sudo tee /etc/systemd/system/site-monitor.service << 'EOF'
-[Unit]
-Description=Site Monitor API Server
-After=network.target postgresql.service
-
-[Service]
-Type=simple
-User=www-data
-WorkingDirectory=/opt/site-monitor
-Environment=NODE_ENV=production
-Environment=PORT=8080
-Environment=DATABASE_URL=postgresql://monitor_user:your_db_password@localhost:5432/site_monitor
-Environment=JWT_SECRET=your-jwt-secret
-ExecStart=/usr/bin/node artifacts/api-server/dist/index.mjs
-Restart=always
-RestartSec=10
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-sudo systemctl enable site-monitor
-sudo systemctl start site-monitor
+docker compose exec postgres psql -U monitor -d site_monitor -c "SELECT name, url FROM sites;"
 ```
 
-#### 5. Set Up Nginx Reverse Proxy (Optional but Recommended)
+You should see both Love Furniture sites listed.
+
+---
+
+### Step 5: Set Up Nginx + SSL
+
+Install Nginx and Certbot:
 
 ```bash
-sudo apt-get install -y nginx
+sudo apt-get install -y nginx certbot python3-certbot-nginx
+```
 
+Create the Nginx config (replace `monitor.yourdomain.com` with your actual domain):
+
+```bash
 sudo tee /etc/nginx/sites-available/site-monitor << 'EOF'
 server {
     listen 80;
     server_name monitor.yourdomain.com;
 
     location / {
-        proxy_pass http://localhost:8080;
+        proxy_pass http://127.0.0.1:8080;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -239,93 +202,56 @@ server {
 EOF
 
 sudo ln -s /etc/nginx/sites-available/site-monitor /etc/nginx/sites-enabled/
+sudo rm -f /etc/nginx/sites-enabled/default
 sudo nginx -t
 sudo systemctl restart nginx
 ```
 
-#### 6. Add SSL with Let's Encrypt
+Add SSL (free, auto-renewing):
 
 ```bash
-sudo apt-get install -y certbot python3-certbot-nginx
 sudo certbot --nginx -d monitor.yourdomain.com
 ```
 
-### Option C: Deploy on AWS (EC2 + RDS)
-
-1. Launch an EC2 instance (t3.micro is sufficient)
-2. Create an RDS PostgreSQL instance
-3. Follow the VPS guide above, using the RDS endpoint as `DATABASE_URL`
-4. Configure Security Groups to allow port 80/443 inbound
-5. Use an Application Load Balancer for SSL termination
-
-## API Endpoints
-
-### Authentication
-| Method | Endpoint | Auth Required | Description |
-|--------|----------|---------------|-------------|
-| POST | `/api/auth/register` | No (first user) / Yes (subsequent) | Create account — first user becomes admin |
-| POST | `/api/auth/login` | No | Sign in, returns JWT token |
-| GET | `/api/auth/me` | Yes | Get current user info |
-| GET | `/api/auth/user-count` | No | Check if any users exist (for bootstrap UI) |
-
-### Monitoring (Requires Auth)
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/sites` | List all monitored sites |
-| GET | `/api/sites/:id` | Get a specific site |
-| PUT | `/api/sites/:id` | Update site settings |
-| POST | `/api/sites/:id/check` | Trigger a manual check |
-| GET | `/api/sites/:id/checks` | Get check history (query: `hours`, `limit`, `offset`) |
-| GET | `/api/alerts` | List alerts (query: `siteId`, `limit`, `offset`) |
-| GET | `/api/config` | Get alert configuration |
-| PUT | `/api/config` | Update alert configuration |
-
-### Health (Public)
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/health` | Health check |
-
-## Configuration
-
-### Adding More Sites
-
-Edit `scripts/src/seed-sites.ts` to add more sites, then re-run:
+Verify it's working:
 
 ```bash
-pnpm --filter @workspace/scripts run seed-sites
+curl -s https://monitor.yourdomain.com/api/healthz
+# Should return: {"status":"ok"}
 ```
 
-Or use the API directly:
+---
+
+### Step 6: Create Your Admin Account
+
+Open the API in your browser or use curl:
 
 ```bash
-curl -X PUT http://localhost:8080/api/sites/1 \
-  -H "Authorization: Bearer YOUR_TOKEN" \
+curl -s -X POST https://monitor.yourdomain.com/api/auth/register \
   -H "Content-Type: application/json" \
-  -d '{"slowThresholdMs": 3000}'
+  -d '{"username": "admin", "password": "your-secure-password"}'
 ```
 
-### Configuring Email Alerts
+This first user automatically becomes the admin. Save the token from the response — you'll need it for any API calls.
 
-All email settings are configured from the **Settings** tab in the app — no environment variables needed:
+---
 
-1. Open the app and go to **Settings**
-2. Under **SMTP Server**, enter your mail server details:
-   - **SMTP Host** (e.g., `smtp.gmail.com`, `smtp.office365.com`, `email-smtp.eu-west-1.amazonaws.com`)
-   - **Port** (usually 587 for STARTTLS, or 465 for SSL/TLS)
-   - **Username** and **Password** (your SMTP credentials)
-   - **SSL/TLS** toggle (enable for port 465)
-3. Click **Test Connection** to verify your SMTP settings work
-4. Under **Email Notifications**, configure:
-   - **Sender Email** — the "From" address for alert emails
-   - **Recipient Emails** — comma-separated list of people to alert
-   - **Enable Alerts** toggle
-5. Click **Save Changes**
+### Step 7: Configure Email Alerts
 
-You can also configure via the API:
+Email is configured from the mobile app (or via API). No environment variables needed.
+
+**Via API** (before you have the app):
 
 ```bash
-curl -X PUT http://localhost:8080/api/config \
-  -H "Authorization: Bearer YOUR_TOKEN" \
+# Get your token first
+TOKEN=$(curl -s -X POST https://monitor.yourdomain.com/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username": "admin", "password": "your-secure-password"}' | \
+  node -e "process.stdin.on('data',d=>process.stdout.write(JSON.parse(d).token))")
+
+# Configure SMTP and alert recipients
+curl -X PUT https://monitor.yourdomain.com/api/config \
+  -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
     "smtpHost": "smtp.gmail.com",
@@ -333,11 +259,15 @@ curl -X PUT http://localhost:8080/api/config \
     "smtpUsername": "your-email@gmail.com",
     "smtpPassword": "your-app-password",
     "smtpSecure": false,
-    "senderEmail": "monitor@yourdomain.com",
-    "recipientEmails": "team@company.com, alerts@company.com",
+    "senderEmail": "alerts@yourdomain.com",
+    "recipientEmails": "you@company.com, team@company.com",
     "isEnabled": true
   }'
 ```
+
+**Via the app** (once you have it installed):
+
+Go to **Settings** tab > **SMTP Server** section, fill in your details, and hit **Test Connection** to verify.
 
 ### Common SMTP Providers
 
@@ -346,62 +276,169 @@ curl -X PUT http://localhost:8080/api/config \
 | Gmail | `smtp.gmail.com` | 587 | Use an [App Password](https://support.google.com/accounts/answer/185833) |
 | Microsoft 365 | `smtp.office365.com` | 587 | Use your M365 credentials |
 | AWS SES | `email-smtp.{region}.amazonaws.com` | 587 | Create SMTP credentials in SES console |
-| Custom | Your mail server | 587/465 | Check with your IT team |
+| Custom | Your mail server | 587/465 | Ask your IT team |
+
+---
+
+### Step 8: Build the Android APK
+
+This is done on your local dev machine (not the server). You need Node.js, pnpm, and Android SDK installed.
+
+```bash
+# Clone the repo on your dev machine (if not already)
+git clone <your-repo-url> site-monitor
+cd site-monitor
+pnpm install
+
+# Set the API server domain (your production server)
+export EXPO_PUBLIC_DOMAIN=monitor.yourdomain.com
+
+# Generate the Android project
+cd artifacts/mobile
+npx expo prebuild --platform android
+
+# Build the APK
+cd android
+./gradlew assembleRelease
+```
+
+The APK will be at:
+```
+artifacts/mobile/android/app/build/outputs/apk/release/app-release.apk
+```
+
+Upload this APK to **ManageEngine MDM** for distribution to your organization's devices.
+
+**Before building**, you may want to customize `artifacts/mobile/app.json`:
+- `name` — Display name on the device
+- `android.package` — Package identifier (e.g., `com.yourcompany.sitemonitor`)
+- `version` — Version number
+
+---
+
+## Maintenance
+
+### Checking Logs
+
+```bash
+# API server logs
+docker compose logs -f api
+
+# PostgreSQL logs
+docker compose logs -f postgres
+```
+
+### Restarting
+
+```bash
+docker compose restart api
+```
+
+### Updating
+
+```bash
+cd /opt/site-monitor
+git pull
+docker compose build api
+docker compose up -d api
+```
+
+### Backup Database
+
+```bash
+docker compose exec postgres pg_dump -U monitor site_monitor > backup_$(date +%Y%m%d).sql
+```
+
+### Restore Database
+
+```bash
+docker compose exec -T postgres psql -U monitor site_monitor < backup_20260326.sql
+```
+
+---
+
+## API Reference
+
+### Authentication
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| POST | `/api/auth/register` | First user: No / After: Yes | Create account |
+| POST | `/api/auth/login` | No | Sign in, returns JWT |
+| GET | `/api/auth/me` | Yes | Current user info |
+
+### Sites & Monitoring
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/sites` | List all sites |
+| GET | `/api/sites/:id` | Get a specific site |
+| PUT | `/api/sites/:id` | Update site settings |
+| POST | `/api/sites/:id/check` | Trigger manual check |
+| GET | `/api/sites/:id/checks` | Check history |
+| GET | `/api/alerts` | Alert history |
+| GET | `/api/config` | Get alert/SMTP config |
+| PUT | `/api/config` | Update alert/SMTP config |
+| POST | `/api/config/test-smtp` | Test SMTP connection |
+
+All endpoints except auth require a JWT token in the `Authorization: Bearer <token>` header.
+
+---
+
+## Troubleshooting
+
+### API server won't start
+- Check logs: `docker compose logs api`
+- Verify PostgreSQL is running: `docker compose ps`
+- Verify `DATABASE_URL` in `.env` matches the postgres service credentials
+
+### Sites not being monitored
+- Check API logs for errors: `docker compose logs -f api`
+- Verify the server can reach your sites (no firewall blocking outbound HTTP)
+- Monitoring starts automatically when the API server starts
+
+### Email alerts not sending
+- Go to Settings > SMTP Server in the app
+- Click **Test Connection** to verify SMTP settings
+- Check that "Enable Alerts" is ON and recipient emails are configured
+- Check API logs for SMTP error messages
+
+### Mobile app can't connect
+- Verify the app was built with the correct `EXPO_PUBLIC_DOMAIN`
+- The server must be accessible over HTTPS (the app uses `https://`)
+- Check that Nginx is running and SSL certificate is valid
+
+### Database issues
+- Verify PostgreSQL is running: `docker compose ps`
+- Check connection: `docker compose exec postgres psql -U monitor -d site_monitor -c "SELECT 1;"`
+- Check disk space: `df -h`
+
+---
 
 ## Project Structure
 
 ```
 site-monitor/
 ├── artifacts/
-│   ├── api-server/          # Express API + monitoring worker
+│   ├── api-server/              # API server + monitoring worker
 │   │   └── src/
-│   │       ├── middleware/auth.ts    # JWT auth middleware
-│   │       ├── services/monitor.ts  # 60s site check loop
-│   │       ├── services/email.ts    # AWS SES email alerts
-│   │       └── routes/              # API route handlers
-│   └── mobile/              # Expo mobile/web app
+│   │       ├── middleware/auth.ts    # JWT authentication
+│   │       ├── services/monitor.ts  # 60s check loop
+│   │       ├── services/email.ts    # SMTP email alerts
+│   │       └── routes/              # API endpoints
+│   └── mobile/                  # Mobile app (Expo/React Native)
 │       ├── app/
-│       │   ├── login.tsx            # Login/register screen
-│       │   └── (tabs)/             # Main app tabs
-│       └── contexts/AuthContext.tsx  # Auth state management
+│       │   ├── login.tsx            # Login screen
+│       │   └── (tabs)/             # Dashboard, History, Alerts, Settings
+│       └── contexts/AuthContext.tsx
 ├── lib/
-│   ├── db/                  # Database schema (Drizzle ORM)
-│   ├── api-spec/            # OpenAPI 3.1 specification
-│   ├── api-client-react/    # Generated React Query hooks
-│   └── api-zod/             # Generated Zod validation schemas
+│   ├── db/                      # Database schema (Drizzle ORM)
+│   ├── api-spec/                # OpenAPI specification
+│   ├── api-client-react/        # Generated API hooks
+│   └── api-zod/                 # Generated validation schemas
 └── scripts/
-    └── src/seed-sites.ts    # Database seed script
+    └── src/seed-sites.ts        # Database seed script
 ```
-
-## Troubleshooting
-
-### Monitoring not working
-- Check the API server logs for errors
-- Ensure `DATABASE_URL` is correctly set
-- Verify the server can reach the monitored URLs (no firewall blocking outbound HTTP)
-
-### Email alerts not sending
-- Verify AWS SES credentials are set correctly
-- Check if your SES account is still in sandbox mode (limited to verified emails only)
-- Ensure sender email is verified in SES
-- Check the API server logs for SES error messages
-
-### Mobile app can't connect
-- Ensure `EXPO_PUBLIC_DOMAIN` matches your server's domain
-- The API server must be accessible over HTTPS for the mobile app to connect
-- Check CORS settings if accessing from a different domain
-
-### Database connection issues
-- Verify `DATABASE_URL` format: `postgresql://user:password@host:port/database`
-- Ensure PostgreSQL is running and accepting connections
-- Check that the database user has proper permissions
-
-## Future Enhancements
-
-- **Slack Integration**: The alert system is modular — Slack notifications can be added alongside email
-- **SMTP Support**: Can be extended to support generic SMTP servers instead of just AWS SES
-- **Multi-region Checks**: Run checks from multiple geographic locations
-- **Status Page**: Public-facing status page for your users
 
 ## License
 
