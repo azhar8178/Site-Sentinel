@@ -2,6 +2,7 @@ import app from "./app";
 import { logger } from "./lib/logger";
 import { startMonitoring } from "./services/monitor";
 import { startMagentoSync } from "./services/magento";
+import { startServerMonitoring } from "./services/serverMonitor";
 
 const rawPort = process.env["PORT"];
 
@@ -27,4 +28,5 @@ app.listen(port, (err) => {
 
   startMonitoring();
   startMagentoSync();
+  startServerMonitoring();
 });

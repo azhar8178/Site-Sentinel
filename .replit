@@ -1,4 +1,4 @@
-modules = ["nodejs-24"]
+modules = ["nodejs-24", "postgresql-16"]
 
 [[artifacts]]
 id = "artifacts/api-server"
@@ -29,3 +29,6 @@ timeoutMs = 20000
 
 [userenv.shared]
 MAGENTO_API_URL = "https://www.lovefurniture.ie/rest/V1"
+
+[nix]
+channel = "stable-25_05"

@@ -91,6 +91,18 @@ artifacts-monorepo/
 - Install via `agent/install.sh` which sets up a systemd service
 - Server detail modal shows historical charts (1h/6h/24h)
 
+### Server Vitals Alerting
+- Threshold-based alerting for CPU, RAM, disk usage and server offline status
+- Default thresholds: CPU > 90%, RAM > 90%, Disk > 95%, offline timeout 5 minutes
+- Configurable via Settings tab ("Server Alert Thresholds" section)
+- Alert types: `cpu_high`, `ram_high`, `disk_high`, `server_offline`, `server_recovery`
+- Alerts fire on state transitions only (no duplicate alerts for sustained conditions)
+- Uses same notification channels as site alerts (Email, Slack, WhatsApp)
+- In-memory state tracking per server (resets on server restart)
+- DB schema: `server_alert_config` table, `alerts.server_id` FK, nullable `alerts.site_id`
+- Service: `artifacts/api-server/src/services/serverMonitor.ts`
+- API: `GET/PUT /api/config/server-alerts`
+
 ### Magento Integration
 - Background sync every 5 minutes fetches orders (7 days) and carts (48 hours)
 - Paginated fetching handles large stores (100 per page, loops until complete)
@@ -115,6 +127,8 @@ artifacts-monorepo/
 - `DELETE /api/servers/:id` - Remove a server
 - `GET /api/servers/:id/metrics` - Get historical metrics
 - `POST /api/servers/report` - Agent reports metrics (API key auth, no JWT)
+- `GET /api/config/server-alerts` - Get server alert thresholds config
+- `PUT /api/config/server-alerts` - Update server alert thresholds config
 - `GET /api/magento/stats` - Order and cart statistics
 - `GET /api/magento/orders` - Recent orders list
 - `GET /api/magento/carts` - Abandoned carts list

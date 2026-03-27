@@ -2,9 +2,10 @@ import { pgTable, serial, text, integer, boolean, timestamp, real, pgEnum } from
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { relations } from "drizzle-orm";
+import { serversTable } from "./servers";
 
 export const siteStatusEnum = pgEnum("site_status", ["up", "down", "slow", "unknown"]);
-export const alertTypeEnum = pgEnum("alert_type", ["downtime", "slow_response", "recovery"]);
+export const alertTypeEnum = pgEnum("alert_type", ["downtime", "slow_response", "recovery", "cpu_high", "ram_high", "disk_high", "server_offline", "server_recovery"]);
 
 export const sitesTable = pgTable("sites", {
   id: serial("id").primaryKey(),
@@ -52,7 +53,8 @@ export type CheckResult = typeof checkResultsTable.$inferSelect;
 
 export const alertsTable = pgTable("alerts", {
   id: serial("id").primaryKey(),
-  siteId: integer("site_id").notNull().references(() => sitesTable.id, { onDelete: "cascade" }),
+  siteId: integer("site_id").references(() => sitesTable.id, { onDelete: "cascade" }),
+  serverId: integer("server_id").references(() => serversTable.id, { onDelete: "cascade" }),
   alertType: alertTypeEnum("alert_type").notNull(),
   message: text("message").notNull(),
   responseTimeMs: integer("response_time_ms"),
@@ -65,6 +67,10 @@ export const alertsRelations = relations(alertsTable, ({ one }) => ({
   site: one(sitesTable, {
     fields: [alertsTable.siteId],
     references: [sitesTable.id],
+  }),
+  server: one(serversTable, {
+    fields: [alertsTable.serverId],
+    references: [serversTable.id],
   }),
 }));
 
@@ -95,3 +101,17 @@ export const alertConfigTable = pgTable("alert_config", {
 export const insertAlertConfigSchema = createInsertSchema(alertConfigTable).omit({ id: true, updatedAt: true });
 export type InsertAlertConfig = z.infer<typeof insertAlertConfigSchema>;
 export type AlertConfig = typeof alertConfigTable.$inferSelect;
+
+export const serverAlertConfigTable = pgTable("server_alert_config", {
+  id: serial("id").primaryKey(),
+  isEnabled: boolean("is_enabled").notNull().default(true),
+  cpuThreshold: integer("cpu_threshold").notNull().default(90),
+  ramThreshold: integer("ram_threshold").notNull().default(90),
+  diskThreshold: integer("disk_threshold").notNull().default(95),
+  offlineTimeoutMinutes: integer("offline_timeout_minutes").notNull().default(5),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertServerAlertConfigSchema = createInsertSchema(serverAlertConfigTable).omit({ id: true, updatedAt: true });
+export type InsertServerAlertConfig = z.infer<typeof insertServerAlertConfigSchema>;
+export type ServerAlertConfig = typeof serverAlertConfigTable.$inferSelect;

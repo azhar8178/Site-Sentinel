@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
-import { alertConfigTable, magentoConfigTable } from "@workspace/db/schema";
+import { alertConfigTable, magentoConfigTable, serverAlertConfigTable } from "@workspace/db/schema";
 import { eq } from "drizzle-orm";
 import { testSmtpConnection, sendAlertEmail } from "../services/email";
 import { testSlackWebhook } from "../services/slack";
@@ -315,6 +315,56 @@ router.post("/config/test-magento", async (req, res, next) => {
       const msg = err instanceof Error ? err.message : "Unknown error";
       res.json({ success: false, error: `Cannot reach Magento API: ${msg}` });
     }
+  } catch (err) { next(err); }
+});
+
+async function getOrCreateServerAlertConfig() {
+  let configs = await db.select().from(serverAlertConfigTable).limit(1);
+  if (configs.length === 0) {
+    configs = await db.insert(serverAlertConfigTable).values({}).returning();
+  }
+  return configs[0];
+}
+
+router.get("/config/server-alerts", async (_req, res, next) => {
+  try {
+    const config = await getOrCreateServerAlertConfig();
+    res.json(config);
+  } catch (err) { next(err); }
+});
+
+router.put("/config/server-alerts", async (req, res, next) => {
+  try {
+    const config = await getOrCreateServerAlertConfig();
+    const updates: Record<string, unknown> = { updatedAt: new Date() };
+
+    const allowedBooleans = ["isEnabled"];
+    const allowedNumbers = ["cpuThreshold", "ramThreshold", "diskThreshold", "offlineTimeoutMinutes"];
+
+    for (const key of allowedBooleans) {
+      if (req.body[key] !== undefined) {
+        if (typeof req.body[key] !== "boolean") {
+          res.status(400).json({ error: `${key} must be a boolean` }); return;
+        }
+        updates[key] = req.body[key];
+      }
+    }
+    for (const key of allowedNumbers) {
+      if (req.body[key] !== undefined) {
+        if (typeof req.body[key] !== "number") {
+          res.status(400).json({ error: `${key} must be a number` }); return;
+        }
+        updates[key] = req.body[key];
+      }
+    }
+
+    const updated = await db
+      .update(serverAlertConfigTable)
+      .set(updates)
+      .where(eq(serverAlertConfigTable.id, config.id))
+      .returning();
+
+    res.json(updated[0]);
   } catch (err) { next(err); }
 });
 

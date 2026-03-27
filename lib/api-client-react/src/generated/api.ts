@@ -34,6 +34,7 @@ import type {
   MagentoOrder,
   MagentoStats,
   MagentoSyncLog,
+  ServerAlertConfigResponse,
   ServerCreateResponse,
   ServerMetric,
   ServerWithMetrics,
@@ -46,6 +47,7 @@ import type {
   TestWhatsAppConnectionBody,
   UpdateAlertConfigInput,
   UpdateMagentoConfigInput,
+  UpdateServerAlertConfigInput,
   UpdateSiteInput,
   UpdateUserInput,
   UserResponse,
@@ -1411,6 +1413,171 @@ export const useTestMagentoConnection = <
   TContext
 > => {
   return useMutation(getTestMagentoConnectionMutationOptions(options));
+};
+
+/**
+ * @summary Get server alert threshold configuration
+ */
+export const getGetServerAlertConfigUrl = () => {
+  return `/api/config/server-alerts`;
+};
+
+export const getServerAlertConfig = async (
+  options?: RequestInit,
+): Promise<ServerAlertConfigResponse> => {
+  return customFetch<ServerAlertConfigResponse>(getGetServerAlertConfigUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetServerAlertConfigQueryKey = () => {
+  return [`/api/config/server-alerts`] as const;
+};
+
+export const getGetServerAlertConfigQueryOptions = <
+  TData = Awaited<ReturnType<typeof getServerAlertConfig>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getServerAlertConfig>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetServerAlertConfigQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getServerAlertConfig>>
+  > = ({ signal }) => getServerAlertConfig({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getServerAlertConfig>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetServerAlertConfigQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getServerAlertConfig>>
+>;
+export type GetServerAlertConfigQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get server alert threshold configuration
+ */
+
+export function useGetServerAlertConfig<
+  TData = Awaited<ReturnType<typeof getServerAlertConfig>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getServerAlertConfig>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetServerAlertConfigQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Update server alert threshold configuration
+ */
+export const getUpdateServerAlertConfigUrl = () => {
+  return `/api/config/server-alerts`;
+};
+
+export const updateServerAlertConfig = async (
+  updateServerAlertConfigInput: UpdateServerAlertConfigInput,
+  options?: RequestInit,
+): Promise<ServerAlertConfigResponse> => {
+  return customFetch<ServerAlertConfigResponse>(
+    getUpdateServerAlertConfigUrl(),
+    {
+      ...options,
+      method: "PUT",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(updateServerAlertConfigInput),
+    },
+  );
+};
+
+export const getUpdateServerAlertConfigMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateServerAlertConfig>>,
+    TError,
+    { data: BodyType<UpdateServerAlertConfigInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateServerAlertConfig>>,
+  TError,
+  { data: BodyType<UpdateServerAlertConfigInput> },
+  TContext
+> => {
+  const mutationKey = ["updateServerAlertConfig"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateServerAlertConfig>>,
+    { data: BodyType<UpdateServerAlertConfigInput> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return updateServerAlertConfig(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateServerAlertConfigMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateServerAlertConfig>>
+>;
+export type UpdateServerAlertConfigMutationBody =
+  BodyType<UpdateServerAlertConfigInput>;
+export type UpdateServerAlertConfigMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Update server alert threshold configuration
+ */
+export const useUpdateServerAlertConfig = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateServerAlertConfig>>,
+    TError,
+    { data: BodyType<UpdateServerAlertConfigInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateServerAlertConfig>>,
+  TError,
+  { data: BodyType<UpdateServerAlertConfigInput> },
+  TContext
+> => {
+  return useMutation(getUpdateServerAlertConfigMutationOptions(options));
 };
 
 /**

@@ -14,13 +14,20 @@ import { useListAlerts } from "@workspace/api-client-react";
 
 import Colors from "@/constants/colors";
 
-type AlertType = "downtime" | "slow_response" | "recovery";
+type AlertType = "downtime" | "slow_response" | "recovery" | "cpu_high" | "ram_high" | "disk_high" | "server_offline" | "server_recovery";
 
 const alertTypeConfig: Record<AlertType, { icon: keyof typeof Feather.glyphMap; color: string; bg: string; label: string }> = {
   downtime: { icon: "x-circle", color: Colors.light.danger, bg: Colors.light.dangerBg, label: "Downtime" },
   slow_response: { icon: "alert-triangle", color: Colors.light.warning, bg: Colors.light.warningBg, label: "Slow Response" },
   recovery: { icon: "check-circle", color: Colors.light.success, bg: Colors.light.successBg, label: "Recovery" },
+  cpu_high: { icon: "cpu", color: Colors.light.danger, bg: Colors.light.dangerBg, label: "CPU High" },
+  ram_high: { icon: "hard-drive", color: Colors.light.danger, bg: Colors.light.dangerBg, label: "RAM High" },
+  disk_high: { icon: "database", color: Colors.light.warning, bg: Colors.light.warningBg, label: "Disk High" },
+  server_offline: { icon: "wifi-off", color: Colors.light.danger, bg: Colors.light.dangerBg, label: "Server Offline" },
+  server_recovery: { icon: "check-circle", color: Colors.light.success, bg: Colors.light.successBg, label: "Server Recovered" },
 };
+
+const serverAlertTypes = new Set(["cpu_high", "ram_high", "disk_high", "server_offline", "server_recovery"]);
 
 export default function AlertsScreen() {
   const insets = useSafeAreaInsets();
@@ -31,6 +38,8 @@ export default function AlertsScreen() {
 
   const renderAlert = ({ item }: { item: (typeof alerts)[0] }) => {
     const config = alertTypeConfig[(item.alertType as AlertType)] ?? alertTypeConfig.downtime;
+    const isServerAlert = serverAlertTypes.has(item.alertType);
+    const displayName = isServerAlert ? (item.serverName || "Unknown Server") : (item.siteName || "Unknown Site");
 
     return (
       <View style={styles.alertCard}>
@@ -40,13 +49,18 @@ export default function AlertsScreen() {
         <View style={styles.alertContent}>
           <View style={styles.alertHeader}>
             <Text style={[styles.alertType, { color: config.color }]}>{config.label}</Text>
+            {isServerAlert && (
+              <View style={styles.serverBadge}>
+                <Feather name="server" size={10} color={Colors.light.tint} />
+              </View>
+            )}
             {item.emailSent && (
               <View style={styles.emailBadge}>
                 <Feather name="mail" size={10} color={Colors.light.textSecondary} />
               </View>
             )}
           </View>
-          <Text style={styles.alertSite}>{item.siteName}</Text>
+          <Text style={styles.alertSite}>{displayName}</Text>
           <Text style={styles.alertMessage} numberOfLines={2}>
             {item.message}
           </Text>
@@ -96,7 +110,7 @@ export default function AlertsScreen() {
               <Feather name="bell-off" size={40} color={Colors.light.textSecondary} />
               <Text style={styles.emptyText}>No alerts yet</Text>
               <Text style={styles.emptySubtext}>
-                Alerts will appear here when your sites go down or become slow
+                Alerts will appear here when your sites go down, become slow, or server vitals exceed thresholds
               </Text>
             </View>
           }
@@ -168,6 +182,14 @@ const styles = StyleSheet.create({
     height: 18,
     borderRadius: 9,
     backgroundColor: Colors.light.background,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  serverBadge: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: `${Colors.light.tint}15`,
     alignItems: "center",
     justifyContent: "center",
   },

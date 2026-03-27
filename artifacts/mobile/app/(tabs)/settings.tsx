@@ -31,6 +31,8 @@ import {
   useCreateUser,
   useUpdateUser,
   useDeleteUser,
+  useGetServerAlertConfig,
+  useUpdateServerAlertConfig,
 } from "@workspace/api-client-react";
 import type { CreateUserInputRole, UpdateUserInputRole, UpdateUserInput } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -472,6 +474,8 @@ export default function SettingsScreen() {
   const testWhatsApp = useTestWhatsAppConnection();
   const updateMagentoConfig = useUpdateMagentoConfig();
   const testMagento = useTestMagentoConnection();
+  const { data: serverAlertConfig } = useGetServerAlertConfig();
+  const updateServerAlertConfig = useUpdateServerAlertConfig();
 
   const [recipientEmails, setRecipientEmails] = useState("");
   const [senderEmail, setSenderEmail] = useState("");
@@ -498,8 +502,15 @@ export default function SettingsScreen() {
   const [magApiToken, setMagApiToken] = useState("");
   const [magEnabled, setMagEnabled] = useState(false);
 
+  const [serverAlertsEnabled, setServerAlertsEnabled] = useState(true);
+  const [cpuThreshold, setCpuThreshold] = useState("90");
+  const [ramThreshold, setRamThreshold] = useState("90");
+  const [diskThreshold, setDiskThreshold] = useState("95");
+  const [offlineTimeout, setOfflineTimeout] = useState("5");
+
   const [hasChanges, setHasChanges] = useState(false);
   const [hasMagChanges, setHasMagChanges] = useState(false);
+  const [hasServerAlertChanges, setHasServerAlertChanges] = useState(false);
 
   useEffect(() => {
     if (config) {
@@ -532,6 +543,16 @@ export default function SettingsScreen() {
   }, [magentoConfig?.id]);
 
   useEffect(() => {
+    if (serverAlertConfig) {
+      setServerAlertsEnabled(serverAlertConfig.isEnabled);
+      setCpuThreshold(String(serverAlertConfig.cpuThreshold));
+      setRamThreshold(String(serverAlertConfig.ramThreshold));
+      setDiskThreshold(String(serverAlertConfig.diskThreshold));
+      setOfflineTimeout(String(serverAlertConfig.offlineTimeoutMinutes));
+    }
+  }, [serverAlertConfig?.id]);
+
+  useEffect(() => {
     if (sites) {
       const t: Record<number, string> = {};
       sites.forEach((s) => { t[s.id] = String(s.slowThresholdMs); });
@@ -541,6 +562,7 @@ export default function SettingsScreen() {
 
   const markChanged = () => setHasChanges(true);
   const markMagChanged = () => setHasMagChanges(true);
+  const markServerAlertChanged = () => setHasServerAlertChanges(true);
 
   const handleSave = async () => {
     try {
@@ -657,6 +679,25 @@ export default function SettingsScreen() {
       }
     } catch {
       showToast("Could not test Magento connection.", "error");
+    }
+  };
+
+  const handleSaveServerAlerts = async () => {
+    try {
+      await updateServerAlertConfig.mutateAsync({
+        data: {
+          isEnabled: serverAlertsEnabled,
+          cpuThreshold: Number(cpuThreshold) || 90,
+          ramThreshold: Number(ramThreshold) || 90,
+          diskThreshold: Number(diskThreshold) || 95,
+          offlineTimeoutMinutes: Number(offlineTimeout) || 5,
+        },
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/config/server-alerts"] });
+      setHasServerAlertChanges(false);
+      showToast("Server alert thresholds saved.", "success");
+    } catch {
+      showToast("Failed to save server alert thresholds.", "error");
     }
   };
 
@@ -1025,6 +1066,104 @@ export default function SettingsScreen() {
                 )}
               </Pressable>
             )}
+            {/* ── Server Alert Thresholds ── */}
+            <View style={styles.section}>
+              <SectionHeader icon="cpu" title="Server Alert Thresholds" description="Configure when server vitals trigger alerts" />
+
+              <View style={styles.toggleRow}>
+                <View style={styles.toggleInfo}>
+                  <Text style={styles.toggleLabel}>Enable Server Alerts</Text>
+                  <Text style={styles.toggleDescription}>Alert when CPU, RAM, Disk exceed thresholds or server goes offline</Text>
+                </View>
+                <Switch
+                  value={serverAlertsEnabled}
+                  onValueChange={(v) => { setServerAlertsEnabled(v); markServerAlertChanged(); }}
+                  trackColor={{ false: "#D1D5DB", true: `${Colors.light.tint}80` }}
+                  thumbColor={serverAlertsEnabled ? Colors.light.tint : "#F3F4F6"}
+                />
+              </View>
+
+              <View style={styles.thresholdRow}>
+                <View style={styles.thresholdInfo}>
+                  <Text style={styles.thresholdName}>CPU Usage</Text>
+                  <Text style={styles.thresholdUrl}>Alert when CPU exceeds this percentage</Text>
+                </View>
+                <View style={styles.thresholdInputContainer}>
+                  <TextInput
+                    style={styles.thresholdInput}
+                    value={cpuThreshold}
+                    onChangeText={(v) => { setCpuThreshold(v); markServerAlertChanged(); }}
+                    keyboardType="number-pad"
+                  />
+                  <Text style={styles.thresholdUnit}>%</Text>
+                </View>
+              </View>
+
+              <View style={styles.thresholdRow}>
+                <View style={styles.thresholdInfo}>
+                  <Text style={styles.thresholdName}>RAM Usage</Text>
+                  <Text style={styles.thresholdUrl}>Alert when memory exceeds this percentage</Text>
+                </View>
+                <View style={styles.thresholdInputContainer}>
+                  <TextInput
+                    style={styles.thresholdInput}
+                    value={ramThreshold}
+                    onChangeText={(v) => { setRamThreshold(v); markServerAlertChanged(); }}
+                    keyboardType="number-pad"
+                  />
+                  <Text style={styles.thresholdUnit}>%</Text>
+                </View>
+              </View>
+
+              <View style={styles.thresholdRow}>
+                <View style={styles.thresholdInfo}>
+                  <Text style={styles.thresholdName}>Disk Usage</Text>
+                  <Text style={styles.thresholdUrl}>Alert when disk space exceeds this percentage</Text>
+                </View>
+                <View style={styles.thresholdInputContainer}>
+                  <TextInput
+                    style={styles.thresholdInput}
+                    value={diskThreshold}
+                    onChangeText={(v) => { setDiskThreshold(v); markServerAlertChanged(); }}
+                    keyboardType="number-pad"
+                  />
+                  <Text style={styles.thresholdUnit}>%</Text>
+                </View>
+              </View>
+
+              <View style={styles.thresholdRow}>
+                <View style={styles.thresholdInfo}>
+                  <Text style={styles.thresholdName}>Offline Timeout</Text>
+                  <Text style={styles.thresholdUrl}>Minutes before a server is considered offline</Text>
+                </View>
+                <View style={styles.thresholdInputContainer}>
+                  <TextInput
+                    style={styles.thresholdInput}
+                    value={offlineTimeout}
+                    onChangeText={(v) => { setOfflineTimeout(v); markServerAlertChanged(); }}
+                    keyboardType="number-pad"
+                  />
+                  <Text style={styles.thresholdUnit}>min</Text>
+                </View>
+              </View>
+
+              {hasServerAlertChanges && (
+                <Pressable
+                  style={({ pressed }) => [styles.saveButton, { marginTop: 8, marginBottom: 0 }, pressed && styles.saveButtonPressed]}
+                  onPress={handleSaveServerAlerts}
+                  disabled={updateServerAlertConfig.isPending}
+                >
+                  {updateServerAlertConfig.isPending ? (
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                  ) : (
+                    <>
+                      <Feather name="check" size={18} color="#FFFFFF" />
+                      <Text style={styles.saveButtonText}>Save Server Thresholds</Text>
+                    </>
+                  )}
+                </Pressable>
+              )}
+            </View>
           </>
         )}
 

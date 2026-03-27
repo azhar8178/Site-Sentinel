@@ -9,9 +9,12 @@ import type { AlertResponseAlertType } from "./alertResponseAlertType";
 
 export interface AlertResponse {
   id: number;
-  siteId: number;
+  siteId?: number | null;
+  serverId?: number | null;
   siteName: string;
   siteUrl: string;
+  serverName: string;
+  serverHostname: string;
   alertType: AlertResponseAlertType;
   message: string;
   responseTimeMs?: number | null;

@@ -356,6 +356,36 @@ paths:
               schema:
                 $ref: "#/components/schemas/TestMagentoResponse"
 
+  /config/server-alerts:
+    get:
+      operationId: getServerAlertConfig
+      tags: [config]
+      summary: Get server alert threshold configuration
+      responses:
+        "200":
+          description: Server alert config
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ServerAlertConfigResponse"
+    put:
+      operationId: updateServerAlertConfig
+      tags: [config]
+      summary: Update server alert threshold configuration
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateServerAlertConfigInput"
+      responses:
+        "200":
+          description: Updated server alert config
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ServerAlertConfigResponse"
+
   /servers:
     get:
       operationId: listServers
@@ -721,13 +751,21 @@ components:
           type: integer
         siteId:
           type: integer
+          nullable: true
+        serverId:
+          type: integer
+          nullable: true
         siteName:
           type: string
         siteUrl:
           type: string
+        serverName:
+          type: string
+        serverHostname:
+          type: string
         alertType:
           type: string
-          enum: [downtime, slow_response, recovery]
+          enum: [downtime, slow_response, recovery, cpu_high, ram_high, disk_high, server_offline, server_recovery]
         message:
           type: string
         responseTimeMs:
@@ -743,9 +781,10 @@ components:
           format: date-time
       required:
         - id
-        - siteId
         - siteName
         - siteUrl
+        - serverName
+        - serverHostname
         - alertType
         - message
         - emailSent
@@ -1264,3 +1303,44 @@ components:
         - recordsFetched
         - durationMs
         - syncedAt
+
+    ServerAlertConfigResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+        isEnabled:
+          type: boolean
+        cpuThreshold:
+          type: integer
+        ramThreshold:
+          type: integer
+        diskThreshold:
+          type: integer
+        offlineTimeoutMinutes:
+          type: integer
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - isEnabled
+        - cpuThreshold
+        - ramThreshold
+        - diskThreshold
+        - offlineTimeoutMinutes
+        - updatedAt
+
+    UpdateServerAlertConfigInput:
+      type: object
+      properties:
+        isEnabled:
+          type: boolean
+        cpuThreshold:
+          type: integer
+        ramThreshold:
+          type: integer
+        diskThreshold:
+          type: integer
+        offlineTimeoutMinutes:
+          type: integer

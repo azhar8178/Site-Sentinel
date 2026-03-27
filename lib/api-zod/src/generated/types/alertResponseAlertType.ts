@@ -13,4 +13,9 @@ export const AlertResponseAlertType = {
   downtime: "downtime",
   slow_response: "slow_response",
   recovery: "recovery",
+  cpu_high: "cpu_high",
+  ram_high: "ram_high",
+  disk_high: "disk_high",
+  server_offline: "server_offline",
+  server_recovery: "server_recovery",
 } as const;

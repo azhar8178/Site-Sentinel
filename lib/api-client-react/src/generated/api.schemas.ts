@@ -62,13 +62,21 @@ export const AlertResponseAlertType = {
   downtime: "downtime",
   slow_response: "slow_response",
   recovery: "recovery",
+  cpu_high: "cpu_high",
+  ram_high: "ram_high",
+  disk_high: "disk_high",
+  server_offline: "server_offline",
+  server_recovery: "server_recovery",
 } as const;
 
 export interface AlertResponse {
   id: number;
-  siteId: number;
+  siteId?: number | null;
+  serverId?: number | null;
   siteName: string;
   siteUrl: string;
+  serverName: string;
+  serverHostname: string;
   alertType: AlertResponseAlertType;
   message: string;
   responseTimeMs?: number | null;
@@ -317,6 +325,24 @@ export interface MagentoSyncLog {
   durationMs: number;
   error?: string | null;
   syncedAt: string;
+}
+
+export interface ServerAlertConfigResponse {
+  id: number;
+  isEnabled: boolean;
+  cpuThreshold: number;
+  ramThreshold: number;
+  diskThreshold: number;
+  offlineTimeoutMinutes: number;
+  updatedAt: string;
+}
+
+export interface UpdateServerAlertConfigInput {
+  isEnabled?: boolean;
+  cpuThreshold?: number;
+  ramThreshold?: number;
+  diskThreshold?: number;
+  offlineTimeoutMinutes?: number;
 }
 
 export type GetCheckHistoryParams = {

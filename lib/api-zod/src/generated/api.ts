@@ -151,10 +151,22 @@ export const ListAlertsResponse = zod.object({
   alerts: zod.array(
     zod.object({
       id: zod.number(),
-      siteId: zod.number(),
+      siteId: zod.number().nullish(),
+      serverId: zod.number().nullish(),
       siteName: zod.string(),
       siteUrl: zod.string(),
-      alertType: zod.enum(["downtime", "slow_response", "recovery"]),
+      serverName: zod.string(),
+      serverHostname: zod.string(),
+      alertType: zod.enum([
+        "downtime",
+        "slow_response",
+        "recovery",
+        "cpu_high",
+        "ram_high",
+        "disk_high",
+        "server_offline",
+        "server_recovery",
+      ]),
       message: zod.string(),
       responseTimeMs: zod.number().nullish(),
       statusCode: zod.number().nullish(),
@@ -344,6 +356,40 @@ export const TestMagentoConnectionResponse = zod.object({
   success: zod.boolean(),
   error: zod.string().optional(),
   stores: zod.string().optional(),
+});
+
+/**
+ * @summary Get server alert threshold configuration
+ */
+export const GetServerAlertConfigResponse = zod.object({
+  id: zod.number(),
+  isEnabled: zod.boolean(),
+  cpuThreshold: zod.number(),
+  ramThreshold: zod.number(),
+  diskThreshold: zod.number(),
+  offlineTimeoutMinutes: zod.number(),
+  updatedAt: zod.date(),
+});
+
+/**
+ * @summary Update server alert threshold configuration
+ */
+export const UpdateServerAlertConfigBody = zod.object({
+  isEnabled: zod.boolean().optional(),
+  cpuThreshold: zod.number().optional(),
+  ramThreshold: zod.number().optional(),
+  diskThreshold: zod.number().optional(),
+  offlineTimeoutMinutes: zod.number().optional(),
+});
+
+export const UpdateServerAlertConfigResponse = zod.object({
+  id: zod.number(),
+  isEnabled: zod.boolean(),
+  cpuThreshold: zod.number(),
+  ramThreshold: zod.number(),
+  diskThreshold: zod.number(),
+  offlineTimeoutMinutes: zod.number(),
+  updatedAt: zod.date(),
 });
 
 /**
