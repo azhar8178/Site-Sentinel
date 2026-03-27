@@ -214,7 +214,8 @@ Expo React Native app for site monitoring dashboard. Uses generated React Query 
 Database layer using Drizzle ORM with PostgreSQL. Exports a Drizzle client instance and schema models.
 
 - `src/schema/sites.ts` — sites, check_results, alerts, alert_config tables
-- Production migrations are handled by Replit when publishing. In development, use `pnpm --filter @workspace/db run push`.
+- Production migrations are handled by `artifacts/api-server/scripts/migrate.mjs` which runs during the production build step. It is idempotent and handles schema additions (role enum, server_alert_config table, alerts table alterations) safely.
+- In development, use `pnpm --filter @workspace/db run push`.
 
 ### `lib/api-spec` (`@workspace/api-spec`)
 

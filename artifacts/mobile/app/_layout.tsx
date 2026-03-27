@@ -43,7 +43,16 @@ const queryClient = new QueryClient({
           onApiUnauthorized();
           return false;
         }
-        return failureCount < 3;
+        if (
+          typeof error === "object" &&
+          error !== null &&
+          "status" in error &&
+          typeof (error as any).status === "number"
+        ) {
+          const status = (error as any).status;
+          if (status >= 400 && status < 500) return false;
+        }
+        return failureCount < 2;
       },
     },
     mutations: {
