@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   StyleSheet,
   Text,
@@ -10,6 +10,7 @@ import {
   Alert,
   ActivityIndicator,
   Platform,
+  Animated,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
@@ -25,11 +26,77 @@ import { useQueryClient } from "@tanstack/react-query";
 import Colors from "@/constants/colors";
 import { useAuth } from "@/contexts/AuthContext";
 
+type ToastType = "success" | "error" | "info";
+
+function useToast() {
+  const [toast, setToast] = useState<{ message: string; type: ToastType } | null>(null);
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const show = useCallback((message: string, type: ToastType = "info") => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    setToast({ message, type });
+    const useNative = Platform.OS !== "web";
+    Animated.timing(fadeAnim, { toValue: 1, duration: 200, useNativeDriver: useNative }).start();
+    timerRef.current = setTimeout(() => {
+      Animated.timing(fadeAnim, { toValue: 0, duration: 300, useNativeDriver: useNative }).start(() => {
+        setToast(null);
+      });
+    }, 4000);
+  }, [fadeAnim]);
+
+  const ToastBanner = toast ? (
+    <Animated.View
+      style={[
+        styles.toastBanner,
+        toast.type === "success" && styles.toastSuccess,
+        toast.type === "error" && styles.toastError,
+        toast.type === "info" && styles.toastInfo,
+        { opacity: fadeAnim },
+      ]}
+    >
+      <Feather
+        name={toast.type === "success" ? "check-circle" : toast.type === "error" ? "alert-circle" : "info"}
+        size={16}
+        color={toast.type === "success" ? "#065F46" : toast.type === "error" ? "#991B1B" : "#1E40AF"}
+      />
+      <Text
+        style={[
+          styles.toastText,
+          toast.type === "success" && styles.toastTextSuccess,
+          toast.type === "error" && styles.toastTextError,
+          toast.type === "info" && styles.toastTextInfo,
+        ]}
+      >
+        {toast.message}
+      </Text>
+    </Animated.View>
+  ) : null;
+
+  return { show, ToastBanner };
+}
+
+function showAlert(title: string, message: string, buttons?: Array<{ text: string; style?: string; onPress?: () => void }>) {
+  if (Platform.OS === "web") {
+    if (buttons && buttons.length > 1) {
+      if (window.confirm(`${title}\n\n${message}`)) {
+        const action = buttons.find((b) => b.style === "destructive" || b.text !== "Cancel");
+        action?.onPress?.();
+      }
+    } else {
+      window.alert(`${title}\n\n${message}`);
+    }
+  } else {
+    Alert.alert(title, message, buttons as any);
+  }
+}
+
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
   const isWeb = Platform.OS === "web";
   const queryClient = useQueryClient();
   const { user, logout } = useAuth();
+  const { show: showToast, ToastBanner } = useToast();
 
   const { data: config, isLoading: configLoading } = useGetAlertConfig();
   const { data: sites } = useListSites();
@@ -100,9 +167,9 @@ export default function SettingsScreen() {
       queryClient.invalidateQueries({ queryKey: ["/api/config"] });
       queryClient.invalidateQueries({ queryKey: ["/api/sites"] });
       setHasChanges(false);
-      Alert.alert("Saved", "Settings updated successfully.");
+      showToast("Settings saved successfully.", "success");
     } catch {
-      Alert.alert("Error", "Failed to save settings. Please try again.");
+      showToast("Failed to save settings. Please try again.", "error");
     }
   };
 
@@ -119,12 +186,12 @@ export default function SettingsScreen() {
       });
 
       if (result.success) {
-        Alert.alert("Success", "SMTP connection test passed! Your mail server is reachable.");
+        showToast("SMTP connection test passed! Mail server is reachable.", "success");
       } else {
-        Alert.alert("Failed", `SMTP connection failed: ${result.error}`);
+        showToast(`SMTP connection failed: ${result.error}`, "error");
       }
     } catch {
-      Alert.alert("Error", "Could not test SMTP connection. Please check your settings.");
+      showToast("Could not test SMTP connection. Check your settings.", "error");
     }
   };
 
@@ -140,6 +207,7 @@ export default function SettingsScreen() {
 
   return (
     <View style={styles.root}>
+      {ToastBanner}
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={[
@@ -354,7 +422,7 @@ export default function SettingsScreen() {
           <Pressable
             style={({ pressed }) => [styles.logoutButton, pressed && styles.logoutButtonPressed]}
             onPress={() => {
-              Alert.alert("Sign Out", "Are you sure you want to sign out?", [
+              showAlert("Sign Out", "Are you sure you want to sign out?", [
                 { text: "Cancel", style: "cancel" },
                 { text: "Sign Out", style: "destructive", onPress: logout },
               ]);
@@ -606,5 +674,52 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontFamily: "Inter_600SemiBold",
     color: "#dc3545",
+  },
+  toastBanner: {
+    position: "absolute",
+    top: Platform.OS === "web" ? 20 : 60,
+    left: 20,
+    right: 20,
+    zIndex: 100,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderRadius: 12,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  toastSuccess: {
+    backgroundColor: "#ECFDF5",
+    borderWidth: 1,
+    borderColor: "#A7F3D0",
+  },
+  toastError: {
+    backgroundColor: "#FEF2F2",
+    borderWidth: 1,
+    borderColor: "#FECACA",
+  },
+  toastInfo: {
+    backgroundColor: "#EFF6FF",
+    borderWidth: 1,
+    borderColor: "#BFDBFE",
+  },
+  toastText: {
+    fontSize: 14,
+    fontFamily: "Inter_500Medium",
+    flex: 1,
+  },
+  toastTextSuccess: {
+    color: "#065F46",
+  },
+  toastTextError: {
+    color: "#991B1B",
+  },
+  toastTextInfo: {
+    color: "#1E40AF",
   },
 });
