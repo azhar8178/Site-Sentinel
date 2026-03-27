@@ -1,0 +1,72 @@
+ubuntu@ip-172-33-86-172:~/Site-Sentinel$ docker compose down -v
+docker compose up -d --build
+docker compose logs api --tail 30
+[+] down 4/4
+ ✔ Container site-sentinel-api-1      Removed                                                                                                                          0.0s
+ ✔ Container site-sentinel-postgres-1 Removed                                                                                                                          0.2s
+ ✔ Volume site-sentinel_pgdata        Removed                                                                                                                          0.1s
+ ✔ Network site-sentinel_default      Removed                                                                                                                          0.1s
+[+] Building 0.9s (14/14) FINISHED                                                                                                                                         
+ => [internal] load local bake definitions                                                                                                                            0.0s
+ => => reading from stdin 504B                                                                                                                                        0.0s
+ => [internal] load build definition from Dockerfile                                                                                                                  0.0s
+ => => transferring dockerfile: 611B                                                                                                                                  0.0s
+ => [internal] load metadata for docker.io/library/node:24-slim                                                                                                       0.4s
+ => [internal] load .dockerignore                                                                                                                                     0.0s
+ => => transferring context: 269B                                                                                                                                     0.0s
+ => [1/7] FROM docker.io/library/node:24-slim@sha256:06e5c9f86bfa0aaa7163cf37a5eaa8805f16b9acb48e3f85645b09d459fc2a9f                                                 0.0s
+ => => resolve docker.io/library/node:24-slim@sha256:06e5c9f86bfa0aaa7163cf37a5eaa8805f16b9acb48e3f85645b09d459fc2a9f                                                 0.0s
+ => [internal] load build context                                                                                                                                     0.0s
+ => => transferring context: 11.05kB                                                                                                                                  0.0s
+ => CACHED [2/7] RUN npm install -g pnpm@10                                                                                                                           0.0s
+ => CACHED [3/7] WORKDIR /app                                                                                                                                         0.0s
+ => CACHED [4/7] COPY . .                                                                                                                                             0.0s
+ => CACHED [5/7] RUN pnpm install --frozen-lockfile                                                                                                                   0.0s
+ => CACHED [6/7] RUN pnpm --filter @workspace/api-server run build                                                                                                    0.0s
+ => CACHED [7/7] RUN cd artifacts/mobile && pnpm exec expo export --platform web                                                                                      0.0s
+ => exporting to image                                                                                                                                                0.1s
+ => => exporting layers                                                                                                                                               0.0s
+ => => exporting manifest sha256:fa95d17be2b86d5b8adc986f2564676dec7733f6f6145f6b15a22a1c3ada79c8                                                                     0.0s
+ => => exporting config sha256:34043e5258bf9fea8330e240474eb90819848e175d85c8bcc9463eafe8357d6d                                                                       0.0s
+ => => exporting attestation manifest sha256:a37309a9540ed375536e64db254a0817c4ad7fc4082dde8746a0daade28c05b0                                                         0.0s
+ => => exporting manifest list sha256:9c010b740574864f06952528c744c0eebb281fef87c6bb0568dcc1ab6b5c32ea                                                                0.0s
+ => => naming to docker.io/library/site-sentinel-api:latest                                                                                                           0.0s
+ => => unpacking to docker.io/library/site-sentinel-api:latest                                                                                                        0.0s
+ => resolving provenance for metadata file                                                                                                                            0.0s
+[+] up 5/5
+ ✔ Image site-sentinel-api            Built                                                                                                                           1.0ss
+ ✔ Network site-sentinel_default      Created                                                                                                                         0.1ss
+ ✔ Volume site-sentinel_pgdata        Created                                                                                                                         0.0ss
+ ✔ Container site-sentinel-postgres-1 Healthy                                                                                                                         11.0s
+ ✔ Container site-sentinel-api-1      Started                                                                                                                         11.1s
+ubuntu@ip-172-33-86-172:~/Site-Sentinel$ docker compose logs api --tail 30
+api-1  |   table: undefined,
+api-1  |   column: undefined,
+api-1  |   dataType: undefined,
+api-1  |   constraint: undefined,
+api-1  |   file: 'namespace.c',
+api-1  |   line: '434',
+api-1  |   routine: 'RangeVarGetRelidExtended'
+api-1  | }
+api-1  | Migration failed: error: relation "users" does not exist
+api-1  |     at /app/node_modules/.pnpm/pg@8.20.0/node_modules/pg/lib/client.js:631:17
+api-1  |     at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+api-1  |     at async file:///app/artifacts/api-server/scripts/migrate.mjs:26:5 {
+api-1  |   length: 103,
+api-1  |   severity: 'ERROR',
+api-1  |   code: '42P01',
+api-1  |   detail: undefined,
+api-1  |   hint: undefined,
+api-1  |   position: undefined,
+api-1  |   internalPosition: undefined,
+api-1  |   internalQuery: undefined,
+api-1  |   where: undefined,
+api-1  |   schema: undefined,
+api-1  |   table: undefined,
+api-1  |   column: undefined,
+api-1  |   dataType: undefined,
+api-1  |   constraint: undefined,
+api-1  |   file: 'namespace.c',
+api-1  |   line: '434',
+api-1  |   routine: 'RangeVarGetRelidExtended'
+api-1  | }
