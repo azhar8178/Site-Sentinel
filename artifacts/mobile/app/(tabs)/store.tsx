@@ -69,16 +69,16 @@ export default function StoreScreen() {
   const [activeTab, setActiveTab] = useState<TabType>("orders");
 
   const { data: stats, isLoading: statsLoading, refetch: refetchStats, isRefetching } = useGetMagentoStats({
-    query: { refetchInterval: 60000 },
+    query: { refetchInterval: 60000, retry: 3, retryDelay: 1000 },
   });
   const { data: orders, isLoading: ordersLoading, refetch: refetchOrders } = useGetMagentoOrders({ limit: 20 }, {
-    query: { refetchInterval: 60000 },
+    query: { refetchInterval: 60000, retry: 3, retryDelay: 1000 },
   });
   const { data: carts, isLoading: cartsLoading, refetch: refetchCarts } = useGetMagentoCarts({ limit: 20 }, {
-    query: { refetchInterval: 60000 },
+    query: { refetchInterval: 60000, retry: 3, retryDelay: 1000 },
   });
   const { data: syncLogs, refetch: refetchSync } = useGetMagentoSyncStatus({
-    query: { refetchInterval: 60000 },
+    query: { refetchInterval: 60000, retry: 3, retryDelay: 1000 },
   });
 
   const lastSync = syncLogs && syncLogs.length > 0 ? syncLogs[0] : null;
