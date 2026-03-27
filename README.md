@@ -1,6 +1,6 @@
 # Site Monitor
 
-A self-hosted monitoring and alerting system for your websites. Checks availability every 60 seconds, sends email alerts when issues are detected, and provides a mobile dashboard for real-time status.
+A self-hosted monitoring and alerting system for your websites. Checks availability every 60 seconds, sends email alerts when issues are detected, and provides a mobile dashboard + web dashboard for real-time status.
 
 Built for **Love Furniture IE** and **Love Furniture UK** Magento stores.
 
@@ -9,7 +9,9 @@ Built for **Love Furniture IE** and **Love Furniture UK** Magento stores.
 - Checks your sites every 60 seconds
 - Detects downtime, slow responses, and recovery
 - Sends email alerts via any SMTP server (Gmail, Microsoft 365, AWS SES, etc.)
-- Mobile app (Android APK) for real-time dashboard, alert history, and settings
+- **Magento integration**: Syncs orders and carts every 5 minutes, tracks abandonment rate
+- **Server vitals monitoring**: CPU, memory, disk, network via lightweight agent
+- Mobile app (Android APK) + web dashboard for real-time monitoring
 - Simple username/password authentication
 - Per-site configurable slow response thresholds
 
@@ -17,15 +19,25 @@ Built for **Love Furniture IE** and **Love Furniture UK** Magento stores.
 
 ```
 ┌─────────────────────┐     ┌──────────────────┐     ┌──────────────┐
-│   Mobile App        │────▶│  API Server      │────▶│  PostgreSQL  │
-│   (Android APK)     │     │  (Node.js)       │     │              │
+│   Mobile App /      │────▶│  API Server      │────▶│  PostgreSQL  │
+│   Web Dashboard     │     │  (Node.js)       │     │              │
 └─────────────────────┘     │                  │     └──────────────┘
                             │  ┌────────────┐  │
                             │  │ Monitor    │  │     ┌──────────────┐
                             │  │ Worker     │──┼────▶│  SMTP Server │
                             │  │ (60s loop) │  │     │  (Email)     │
                             │  └────────────┘  │     └──────────────┘
+                            │  ┌────────────┐  │
+                            │  │ Magento    │  │     ┌──────────────┐
+                            │  │ Sync       │──┼────▶│  Magento API │
+                            │  │ (5m loop)  │  │     │  (REST V1)   │
+                            │  └────────────┘  │     └──────────────┘
                             └──────────────────┘
+                                    ▲
+┌─────────────────────┐             │
+│  Server Agent       │─────────────┘
+│  (monitor-agent.js) │  Reports CPU/mem/disk/net every 30s
+└─────────────────────┘
 ```
 
 ---
@@ -130,10 +142,38 @@ DATABASE_URL=postgresql://monitor:changeme_db_password@postgres:5432/site_monito
 JWT_SECRET=$(openssl rand -hex 32)
 PORT=8080
 NODE_ENV=production
+
+# Magento Integration (optional — remove if not using Magento)
+MAGENTO_API_URL=https://www.lovefurniture.ie
+MAGENTO_ADMIN_USER=azhar
+MAGENTO_ADMIN_PASS=YourMagentoAdminPassword
 EOF
 ```
 
 Change `changeme_db_password` to a strong password of your choice.
+
+**Magento environment variables explained:**
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `MAGENTO_API_URL` | Yes (for Magento) | Base URL of your Magento store (e.g. `https://www.lovefurniture.ie`) |
+| `MAGENTO_ADMIN_USER` | Recommended | Magento admin username — auto-refreshes API tokens |
+| `MAGENTO_ADMIN_PASS` | Recommended | Magento admin password |
+| `MAGENTO_API_TOKEN` | Fallback | Static bearer token (expires ~1hr). Only needed if username/password auth is unavailable |
+
+When `MAGENTO_ADMIN_USER` and `MAGENTO_ADMIN_PASS` are set, the API server automatically fetches and refreshes Magento tokens. This is the recommended approach for self-hosted setups where the API server runs on the same network as Magento.
+
+If running on a different network where token endpoint is blocked by WAF, generate a static token on the Magento server:
+
+```bash
+curl -X POST http://localhost/rest/V1/integration/admin/token \
+  -H "Content-Type: application/json" \
+  -d '{"username":"azhar","password":"YourPassword"}'
+```
+
+Then set `MAGENTO_API_TOKEN` in your `.env`. Note: static tokens expire after ~1 hour by default (configurable in Magento admin).
+
+**Important:** The Magento admin user needs the **Administrators** role (or equivalent permissions for Sales and Cart API access).
 
 ---
 
@@ -355,7 +395,50 @@ Go to **Settings** tab > **SMTP Server** section, fill in your details, and hit 
 
 ---
 
-### Step 9: Build the Android APK
+### Step 9: Set Up the Server Vitals Agent
+
+The server agent is a lightweight Node.js script that runs on each server you want to monitor. It reports CPU, memory, disk, and network stats every 30 seconds.
+
+**On the API server (or any server you want to monitor):**
+
+First, register the server in the app. Go to the **Servers** tab and add a new server. Copy the **API Key** that's generated.
+
+Then install the agent:
+
+```bash
+sudo mkdir -p /opt/monitor-agent
+sudo cp agent/monitor-agent.js /opt/monitor-agent/
+
+cat > /opt/monitor-agent/.env << EOF
+MONITOR_API_URL=https://monitor.yourdomain.com
+MONITOR_API_KEY=sm_xxxxxxxxxxxx
+MONITOR_INTERVAL=30
+EOF
+```
+
+Install as a systemd service (runs on boot, auto-restarts):
+
+```bash
+sudo cp agent/monitor-agent.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable monitor-agent
+sudo systemctl start monitor-agent
+```
+
+Verify it's running:
+
+```bash
+sudo systemctl status monitor-agent
+sudo journalctl -u monitor-agent -f
+```
+
+You should see lines like `CPU: 12.3% | Mem: 45.2% | Disk: 23.1% | Load: 0.5` every 30 seconds.
+
+Repeat this for each server you want to monitor (your Magento web server, database server, etc.).
+
+---
+
+### Step 10: Build the Android APK
 
 This is done on your local dev machine (not the server). You need Node.js, pnpm, and Android SDK installed.
 
@@ -409,13 +492,58 @@ docker compose logs -f postgres
 docker compose restart api
 ```
 
-### Updating
+### Updating (Redeployment)
+
+When you've pulled new code (e.g. after adding Magento integration, new tabs, etc.):
 
 ```bash
 cd /opt/site-monitor
 git pull
+
+# Update the .env if new variables are needed (e.g. Magento)
+nano .env
+
+# Rebuild and restart the API server
 docker compose build api
 docker compose up -d api
+
+# Run database migrations (creates any new tables like magento_orders, magento_carts, etc.)
+export DATABASE_URL=postgresql://monitor:changeme_db_password@localhost:5432/site_monitor
+pnpm install
+pnpm --filter @workspace/db run push
+
+# Verify the new tables exist
+docker compose exec postgres psql -U monitor -d site_monitor -c "\dt"
+
+# Check API server is healthy
+curl -s https://monitor.yourdomain.com/api/healthz
+```
+
+If you also need to update the **web dashboard**:
+
+```bash
+cd /opt/site-monitor/artifacts/mobile
+EXPO_PUBLIC_DOMAIN=monitor.yourdomain.com npx expo export --platform web
+sudo cp -r dist/* /var/www/site-monitor/
+sudo chown -R www-data:www-data /var/www/site-monitor
+```
+
+If you need to rebuild the **Android APK** (on your dev machine):
+
+```bash
+cd site-monitor
+git pull
+pnpm install
+cd artifacts/mobile
+EXPO_PUBLIC_DOMAIN=monitor.yourdomain.com npx expo prebuild --platform android --clean
+cd android && ./gradlew assembleRelease
+```
+
+If you updated the **server agent**:
+
+```bash
+sudo cp agent/monitor-agent.js /opt/monitor-agent/
+sudo systemctl restart monitor-agent
 ```
 
 ### Backup Database
@@ -456,7 +584,27 @@ docker compose exec -T postgres psql -U monitor site_monitor < backup_20260326.s
 | PUT | `/api/config` | Update alert/SMTP config |
 | POST | `/api/config/test-smtp` | Test SMTP connection |
 
-All endpoints except auth require a JWT token in the `Authorization: Bearer <token>` header.
+### Server Vitals
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| GET | `/api/servers` | JWT | List registered servers |
+| POST | `/api/servers` | JWT | Register a new server (returns API key) |
+| DELETE | `/api/servers/:id` | JWT | Remove a server |
+| GET | `/api/servers/:id/vitals` | JWT | Get vitals history for a server |
+| POST | `/api/servers/report` | API Key (`x-api-key`) | Agent reports metrics (no JWT needed) |
+
+### Magento Store
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/magento/stats` | Order stats (today, this week, abandonment rate) |
+| GET | `/api/magento/orders` | Recent orders (query: `?limit=20`) |
+| GET | `/api/magento/carts` | Abandoned/active carts (query: `?limit=20`) |
+| GET | `/api/magento/sync` | Last sync status log |
+| POST | `/api/magento/sync` | Trigger manual sync |
+
+All endpoints except auth and server report require a JWT token in the `Authorization: Bearer <token>` header.
 
 ---
 
@@ -483,6 +631,20 @@ All endpoints except auth require a JWT token in the `Authorization: Bearer <tok
 - The server must be accessible over HTTPS (the app uses `https://`)
 - Check that Nginx is running and SSL certificate is valid
 
+### Magento sync not working
+- Check API logs: `docker compose logs -f api | grep magento`
+- Verify `MAGENTO_API_URL` is reachable from the server: `curl -s https://www.lovefurniture.ie/rest/V1/store/storeConfigs`
+- If using admin user/pass, verify the credentials work: `curl -X POST https://www.lovefurniture.ie/rest/V1/integration/admin/token -H "Content-Type: application/json" -d '{"username":"azhar","password":"YourPassword"}'`
+- If the WAF blocks the token endpoint, use `MAGENTO_API_TOKEN` instead (generate from localhost on the Magento server)
+- Verify the Magento admin user has **Administrators** role permissions
+- Sync runs every 5 minutes automatically; force a manual sync via the Store tab or API: `curl -X POST https://monitor.yourdomain.com/api/magento/sync -H "Authorization: Bearer $TOKEN"`
+
+### Server vitals agent not reporting
+- Check agent status: `sudo systemctl status monitor-agent`
+- Check agent logs: `sudo journalctl -u monitor-agent -f`
+- Verify the API key matches: the key shown when you registered the server in the app
+- Verify the server can reach the API: `curl -s https://monitor.yourdomain.com/api/healthz`
+
 ### Database issues
 - Verify PostgreSQL is running: `docker compose ps`
 - Check connection: `docker compose exec postgres psql -U monitor -d site_monitor -c "SELECT 1;"`
@@ -498,16 +660,33 @@ site-monitor/
 │   ├── api-server/              # API server + monitoring worker
 │   │   └── src/
 │   │       ├── middleware/auth.ts    # JWT authentication
-│   │       ├── services/monitor.ts  # 60s check loop
+│   │       ├── services/monitor.ts  # 60s site check loop
 │   │       ├── services/email.ts    # SMTP email alerts
-│   │       └── routes/              # API endpoints
+│   │       ├── services/magento.ts  # Magento sync (5m loop, pagination, auto-token)
+│   │       └── routes/
+│   │           ├── sites.ts         # Site monitoring endpoints
+│   │           ├── servers.ts       # Server vitals endpoints
+│   │           └── magento.ts       # Magento order/cart endpoints
 │   └── mobile/                  # Mobile app (Expo/React Native)
 │       ├── app/
 │       │   ├── login.tsx            # Login screen
-│       │   └── (tabs)/             # Dashboard, History, Alerts, Settings
+│       │   └── (tabs)/
+│       │       ├── index.tsx        # Dashboard (site status)
+│       │       ├── history.tsx      # Check history
+│       │       ├── alerts.tsx       # Alert history
+│       │       ├── servers.tsx      # Server vitals
+│       │       ├── store.tsx        # Magento orders & carts
+│       │       └── settings.tsx     # SMTP, auth, config
 │       └── contexts/AuthContext.tsx
+├── agent/
+│   ├── monitor-agent.js         # Server vitals agent (install on each server)
+│   └── monitor-agent.service    # Systemd service file
 ├── lib/
 │   ├── db/                      # Database schema (Drizzle ORM)
+│   │   └── src/schema/
+│   │       ├── index.ts             # Main schema exports
+│   │       ├── magento.ts           # Magento orders/carts/sync tables
+│   │       └── servers.ts           # Server vitals tables
 │   ├── api-spec/                # OpenAPI specification
 │   ├── api-client-react/        # Generated API hooks
 │   └── api-zod/                 # Generated validation schemas
