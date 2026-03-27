@@ -1,0 +1,175 @@
+> Configure project :app
+Checking the license for package NDK (Side by side) 27.1.12297006 in /home/ubuntu/android-sdk/licenses
+License for package NDK (Side by side) 27.1.12297006 accepted.
+Preparing "Install NDK (Side by side) 27.1.12297006 v.27.1.12297006".
+"Install NDK (Side by side) 27.1.12297006 v.27.1.12297006" ready.
+Installing NDK (Side by side) 27.1.12297006 in /home/ubuntu/android-sdk/ndk/27.1.12297006
+"Install NDK (Side by side) 27.1.12297006 v.27.1.12297006" complete.
+"Install NDK (Side by side) 27.1.12297006 v.27.1.12297006" finished.
+
+> Configure project :expo
+
+Using expo modules
+  - expo-constants (18.0.13)ING [35s]
+  - expo-modules-core (3.0.29)G [38s]
+  - [📦] expo-asset (12.0.12)
+  - [📦] expo-blur (15.0.8)
+  - [📦] expo-file-system (19.0.21)
+  - [📦] expo-font (14.0.11)
+  - [📦] expo-haptics (15.0.8)
+  - [📦] expo-image (3.0.11)
+  - [📦] expo-image-loader (6.0.0)
+  - [📦] expo-image-picker (17.0.10)
+  - [📦] expo-keep-awake (15.0.8)
+  - [📦] expo-linear-gradient (15.0.8)
+  - [📦] expo-linking (8.0.11)
+  - [📦] expo-location (19.0.8)
+  - [📦] expo-splash-screen (31.0.13)
+  - [📦] expo-system-ui (6.0.9)
+  - [📦] expo-web-browser (15.0.10)
+
+Checking the license for package Android SDK Platform 36 in /home/ubuntu/android-sdk/licenses
+License for package Android SDK Platform 36 accepted.
+Preparing "Install Android SDK Platform 36 (revision 2)".
+"Install Android SDK Platform 36 (revision 2)" ready.
+Installing Android SDK Platform 36 in /home/ubuntu/android-sdk/platforms/android-36
+"Install Android SDK Platform 36 (revision 2)" complete.
+"Install Android SDK Platform 36 (revision 2)" finished.
+[=======================================] 100% Fetch remote repository...       
+Checking the license for package Android SDK Build-Tools 36 in /home/ubuntu/android-sdk/licenses
+License for package Android SDK Build-Tools 36 accepted.
+Preparing "Install Android SDK Build-Tools 36 v.36.0.0".
+"Install Android SDK Build-Tools 36 v.36.0.0" ready.
+Installing Android SDK Build-Tools 36 in /home/ubuntu/android-sdk/build-tools/36.0.0
+"Install Android SDK Build-Tools 36 v.36.0.0" complete.
+"Install Android SDK Build-Tools 36 v.36.0.0" finished.
+[=======================================] 100% Fetch remote repository...       
+
+> Task :expo-constants:createExpoConfig
+The NODE_ENV environment variable is required but was not specified. Ensure the project is bundled with Expo CLI or NODE_ENV is set. Using only .env.local and .env
+
+> Task :expo-modules-core:configureCMakeRelWithDebInfo[arm64-v8a]
+Checking the license for package CMake 3.22.1 in /home/ubuntu/android-sdk/licenses
+License for package CMake 3.22.1 accepted.
+Preparing "Install CMake 3.22.1 v.3.22.1".
+"Install CMake 3.22.1 v.3.22.1" ready.
+Installing CMake 3.22.1 in /home/ubuntu/android-sdk/cmake/3.22.1
+"Install CMake 3.22.1 v.3.22.1" complete.
+"Install CMake 3.22.1 v.3.22.1" finished.
+<-------------> 6% EXECUTING [2m 51s]
+> :react-native-worklets:configureCMakeRelWithDebInfo[arm64-v8a] > Resolve files of configuration ':react-native-worklets:releaseCompileClasspath' > ExtractAarTransform h
+> :expo-modules-core:configureCMakeRelWithDebInfo[arm64-v8a] > Resolve files of configuration ':expo-modules-core:releaseCompileClasspath' > ExtractAarTransform react-and
+> IDLE
+Welcome to Ubuntu 22.04.5 LTS (GNU/Linux 6.8.0-1046-aws x86_64)
+
+ * Documentation:  https://help.ubuntu.com
+ * Management:     https://landscape.canonical.com
+ * Support:        https://ubuntu.com/pro
+
+ System information as of Fri Mar 27 03:05:56 UTC 2026
+
+  System load:  1.26               Processes:             124
+  Usage of /:   65.9% of 19.20GB   Users logged in:       0
+  Memory usage: 77%                IPv4 address for ens5: 172.33.86.172
+  Swap usage:   0%
+
+ * Ubuntu Pro delivers the most comprehensive open source security and
+   compliance features.
+
+   https://ubuntu.com/aws/pro
+
+Expanded Security Maintenance for Applications is not enabled.
+
+9 updates can be applied immediately.
+9 of these updates are standard security updates.
+To see these additional updates run: apt list --upgradable
+
+1 additional security update can be applied with ESM Apps.
+Learn more about enabling ESM Apps service at https://ubuntu.com/esm
+
+New release '24.04.4 LTS' available.
+Run 'do-release-upgrade' to upgrade to it.
+
+
+Last login: Fri Mar 27 02:52:54 2026 from 18.171.125.159
+ubuntu@ip-172-33-86-172:~$ cd ~/Site-Sentinel/artifacts/mobile/android
+ubuntu@ip-172-33-86-172:~/Site-Sentinel/artifacts/mobile/android$ ./gradlew assembleRelease
+
+> Configure project :
+[ExpoRootProject] Using the following versions:
+  - buildTools:  36.0.0
+  - minSdk:      24
+  - compileSdk:  36
+  - targetSdk:   36
+  - ndk:         27.1.12297006
+  - kotlin:      2.1.20
+  - ksp:         2.1.20-2.0.1
+
+[Incubating] Problems report is available at: file:///home/ubuntu/Site-Sentinel/artifacts/mobile/android/build/reports/problems/problems-report.html
+
+FAILURE: Build failed with an exception.
+
+* Where:
+Build file '/home/ubuntu/Site-Sentinel/artifacts/mobile/android/build.gradle' line: 24
+
+* What went wrong:
+A problem occurred evaluating root project 'Site Monitor'.
+> Failed to apply plugin 'com.facebook.react.rootproject'.
+   > A problem occurred configuring project ':app'.
+      > SDK location not found. Define a valid SDK location with an ANDROID_HOME environment variable or by setting the sdk.dir path in your project's local properties file at '/home/ubuntu/Site-Sentinel/artifacts/mobile/android/local.properties'.
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 9.0.
+
+You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+
+For more on this, please refer to https://docs.gradle.org/8.14.3/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+
+BUILD FAILED in 5s
+24 actionable tasks: 24 up-to-date
+ubuntu@ip-172-33-86-172:~/Site-Sentinel/artifacts/mobile/android$ export PATH=$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$PATH
+ubuntu@ip-172-33-86-172:~/Site-Sentinel/artifacts/mobile/android$ ./gradlew assembleRelease
+
+> Configure project :
+[ExpoRootProject] Using the following versions:
+  - buildTools:  36.0.0
+  - minSdk:      24
+  - compileSdk:  36
+  - targetSdk:   36
+  - ndk:         27.1.12297006
+  - kotlin:      2.1.20
+  - ksp:         2.1.20-2.0.1
+
+[Incubating] Problems report is available at: file:///home/ubuntu/Site-Sentinel/artifacts/mobile/android/build/reports/problems/problems-report.html
+
+FAILURE: Build failed with an exception.
+
+* Where:
+Build file '/home/ubuntu/Site-Sentinel/artifacts/mobile/android/build.gradle' line: 24
+
+* What went wrong:
+A problem occurred evaluating root project 'Site Monitor'.
+> Failed to apply plugin 'com.facebook.react.rootproject'.
+   > A problem occurred configuring project ':app'.
+      > SDK location not found. Define a valid SDK location with an ANDROID_HOME environment variable or by setting the sdk.dir path in your project's local properties file at '/home/ubuntu/Site-Sentinel/artifacts/mobile/android/local.properties'.
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 9.0.
+
+You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+
+For more on this, please refer to https://docs.gradle.org/8.14.3/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+
+BUILD FAILED in 3s
+24 actionable tasks: 24 up-to-date
+ubuntu@ip-172-33-86-172:~/Site-Sentinel/artifacts/mobile/android$ 
