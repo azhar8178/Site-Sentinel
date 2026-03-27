@@ -535,6 +535,58 @@ export const GetMagentoCartsResponseItem = zod.object({
 export const GetMagentoCartsResponse = zod.array(GetMagentoCartsResponseItem);
 
 /**
+ * @summary List all users
+ */
+export const ListUsersResponseItem = zod.object({
+  id: zod.number(),
+  username: zod.string(),
+  role: zod.enum(["admin", "editor", "viewer"]),
+  createdAt: zod.date(),
+  updatedAt: zod.date(),
+});
+export const ListUsersResponse = zod.array(ListUsersResponseItem);
+
+/**
+ * @summary Create a new user
+ */
+export const CreateUserBody = zod.object({
+  username: zod.string(),
+  password: zod.string(),
+  role: zod.enum(["admin", "editor", "viewer"]).optional(),
+});
+
+/**
+ * @summary Update user role or reset password
+ */
+export const UpdateUserParams = zod.object({
+  userId: zod.coerce.number(),
+});
+
+export const UpdateUserBody = zod.object({
+  role: zod.enum(["admin", "editor", "viewer"]).optional(),
+  password: zod.string().optional(),
+});
+
+export const UpdateUserResponse = zod.object({
+  id: zod.number(),
+  username: zod.string(),
+  role: zod.enum(["admin", "editor", "viewer"]),
+  createdAt: zod.date(),
+  updatedAt: zod.date(),
+});
+
+/**
+ * @summary Delete a user
+ */
+export const DeleteUserParams = zod.object({
+  userId: zod.coerce.number(),
+});
+
+export const DeleteUserResponse = zod.object({
+  success: zod.boolean(),
+});
+
+/**
  * @summary Get last sync status
  */
 export const GetMagentoSyncStatusResponseItem = zod.object({

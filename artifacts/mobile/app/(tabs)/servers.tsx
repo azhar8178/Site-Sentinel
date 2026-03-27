@@ -23,6 +23,7 @@ import { useQueryClient } from "@tanstack/react-query";
 
 import Colors from "@/constants/colors";
 import { SimpleChart } from "@/components/SimpleChart";
+import { useAuth } from "@/contexts/AuthContext";
 
 function formatBytes(bytes: number): string {
   if (bytes === 0) return "0 B";
@@ -213,6 +214,7 @@ export default function ServersScreen() {
   const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
   const isWeb = Platform.OS === "web";
+  const { canEditConfig } = useAuth();
   const { data: servers, isLoading, refetch, isRefetching } = useListServers({
     query: { refetchInterval: 30000 },
   });
@@ -269,9 +271,11 @@ export default function ServersScreen() {
               {isLoading ? "Loading..." : `${servers?.length ?? 0} servers monitored`}
             </Text>
           </View>
-          <Pressable onPress={() => setShowAdd(true)} style={styles.addBtn}>
-            <Feather name="plus" size={20} color="#fff" />
-          </Pressable>
+          {canEditConfig && (
+            <Pressable onPress={() => setShowAdd(true)} style={styles.addBtn}>
+              <Feather name="plus" size={20} color="#fff" />
+            </Pressable>
+          )}
         </View>
 
         {showAdd && (
@@ -355,9 +359,11 @@ export default function ServersScreen() {
                   </View>
                   <View style={styles.serverActions}>
                     <Text style={styles.lastSeen}>{timeSince(server.lastSeenAt)}</Text>
-                    <Pressable onPress={() => handleDelete(server.id, server.name)} hitSlop={8}>
-                      <Feather name="trash-2" size={16} color={Colors.light.danger} />
-                    </Pressable>
+                    {canEditConfig && (
+                      <Pressable onPress={() => handleDelete(server.id, server.name)} hitSlop={8}>
+                        <Feather name="trash-2" size={16} color={Colors.light.danger} />
+                      </Pressable>
+                    )}
                   </View>
                 </View>
 

@@ -3,6 +3,7 @@ import { db } from "@workspace/db";
 import { sitesTable, checkResultsTable } from "@workspace/db/schema";
 import { eq, desc, and, gte, count } from "drizzle-orm";
 import { checkSite, processCheckResult } from "../services/monitor";
+import { requireRole } from "../middleware/auth";
 
 const router: IRouter = Router();
 
@@ -29,7 +30,7 @@ router.get("/sites/:siteId", async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-router.put("/sites/:siteId", async (req, res, next) => {
+router.put("/sites/:siteId", requireRole("editor", "admin"), async (req, res, next) => {
   try {
     const siteId = parseSiteId(req.params.siteId);
     if (!siteId) { res.status(400).json({ error: "Invalid site ID" }); return; }

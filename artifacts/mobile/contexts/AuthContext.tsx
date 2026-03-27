@@ -3,10 +3,12 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { setAuthTokenGetter } from "@workspace/api-client-react";
 import { getBaseUrl } from "@/utils/getBaseUrl";
 
+type UserRole = "admin" | "editor" | "viewer";
+
 interface AuthUser {
   id: number;
   username: string;
-  isAdmin: boolean;
+  role: UserRole;
 }
 
 interface AuthContextType {
@@ -16,6 +18,10 @@ interface AuthContextType {
   login: (username: string, password: string) => Promise<void>;
   register: (username: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  isAdmin: boolean;
+  isEditor: boolean;
+  canEditConfig: boolean;
+  canManageUsers: boolean;
 }
 
 let _onUnauthorized: (() => void) | null = null;
@@ -46,8 +52,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const savedToken = await AsyncStorage.getItem(TOKEN_KEY);
         const savedUser = await AsyncStorage.getItem(USER_KEY);
         if (savedToken && savedUser) {
+          const parsed = JSON.parse(savedUser);
+          if (parsed.isAdmin !== undefined && !parsed.role) {
+            parsed.role = parsed.isAdmin ? "admin" : "editor";
+            delete parsed.isAdmin;
+            await AsyncStorage.setItem(USER_KEY, JSON.stringify(parsed));
+          }
           setToken(savedToken);
-          setUser(JSON.parse(savedUser));
+          setUser(parsed);
           setAuthTokenGetter(() => Promise.resolve(savedToken));
         }
       } catch {}
@@ -100,8 +112,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => { _onUnauthorized = null; };
   }, [logout]);
 
+  const isAdmin = user?.role === "admin";
+  const isEditor = user?.role === "editor";
+  const canEditConfig = user?.role === "admin" || user?.role === "editor";
+  const canManageUsers = user?.role === "admin";
+
   return (
-    <AuthContext.Provider value={{ user, token, isLoading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, token, isLoading, login, register, logout, isAdmin, isEditor, canEditConfig, canManageUsers }}>
       {children}
     </AuthContext.Provider>
   );

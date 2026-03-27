@@ -53,14 +53,14 @@ router.post("/auth/login", async (req, res, next) => {
       await db.update(usersTable).set({ passwordHash: newHash }).where(eq(usersTable.id, user.id));
     }
 
-    const token = signToken({ userId: user.id, username: user.username });
+    const token = signToken({ userId: user.id, username: user.username, role: user.role });
 
     res.json({
       token,
       user: {
         id: user.id,
         username: user.username,
-        isAdmin: user.isAdmin,
+        role: user.role,
       },
     });
   } catch (err) { next(err); }
@@ -96,25 +96,20 @@ router.post("/auth/register", async (req, res, next) => {
     if (!isFirstUser) {
       const authHeader = req.headers.authorization;
       if (!authHeader?.startsWith("Bearer ")) {
-        res.status(403).json({ error: "Only existing users can create new accounts" });
+        res.status(403).json({ error: "Only admins can create new accounts" });
         return;
       }
 
-      const jwt = await import("jsonwebtoken");
-      const jwtSecret = process.env["JWT_SECRET"];
-      if (!jwtSecret) {
-        res.status(500).json({ error: "Server configuration error" });
+      const { verifyToken } = await import("../middleware/auth");
+      const payload = verifyToken(authHeader.slice(7));
+      if (!payload) {
+        res.status(403).json({ error: "Only admins can create new accounts" });
         return;
       }
-      try {
-        const payload = jwt.default.verify(authHeader.slice(7), jwtSecret) as { userId: number };
-        const adminCheck = await db.select().from(usersTable).where(eq(usersTable.id, payload.userId));
-        if (adminCheck.length === 0) {
-          res.status(403).json({ error: "Only existing users can create new accounts" });
-          return;
-        }
-      } catch {
-        res.status(403).json({ error: "Only existing users can create new accounts" });
+
+      const adminCheck = await db.select().from(usersTable).where(eq(usersTable.id, payload.userId));
+      if (adminCheck.length === 0 || adminCheck[0].role !== "admin") {
+        res.status(403).json({ error: "Only admins can create new accounts" });
         return;
       }
     }
@@ -124,19 +119,19 @@ router.post("/auth/register", async (req, res, next) => {
       .values({
         username: username.toLowerCase().trim(),
         passwordHash: await hashPassword(password),
-        isAdmin: isFirstUser,
+        role: isFirstUser ? "admin" : "viewer",
       })
       .returning();
 
     const user = inserted[0];
-    const token = signToken({ userId: user.id, username: user.username });
+    const token = signToken({ userId: user.id, username: user.username, role: user.role });
 
     res.status(201).json({
       token,
       user: {
         id: user.id,
         username: user.username,
-        isAdmin: user.isAdmin,
+        role: user.role,
       },
     });
   } catch (err) { next(err); }
@@ -158,7 +153,7 @@ router.get("/auth/me", requireAuth, async (req, res, next) => {
     res.json({
       id: user.id,
       username: user.username,
-      isAdmin: user.isAdmin,
+      role: user.role,
     });
   } catch (err) { next(err); }
 });

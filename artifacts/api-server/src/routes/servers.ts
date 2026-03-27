@@ -3,6 +3,7 @@ import crypto from "crypto";
 import { db } from "@workspace/db";
 import { serversTable, serverMetricsTable } from "@workspace/db/schema";
 import { eq, desc, and, gte } from "drizzle-orm";
+import { requireRole } from "../middleware/auth";
 
 function hashApiKey(key: string): string {
   return crypto.createHash("sha256").update(key).digest("hex");
@@ -123,7 +124,7 @@ serversRouter.get("/servers/:id/metrics", async (req, res, next) => {
   }
 });
 
-serversRouter.post("/servers", async (req, res, next) => {
+serversRouter.post("/servers", requireRole("editor", "admin"), async (req, res, next) => {
   try {
     const { name, hostname } = req.body;
 
@@ -160,7 +161,7 @@ serversRouter.post("/servers", async (req, res, next) => {
   }
 });
 
-serversRouter.delete("/servers/:id", async (req, res, next) => {
+serversRouter.delete("/servers/:id", requireRole("editor", "admin"), async (req, res, next) => {
   try {
     const id = Number(req.params.id);
     if (!Number.isInteger(id) || id <= 0) {

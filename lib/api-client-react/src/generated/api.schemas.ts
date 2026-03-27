@@ -263,6 +263,52 @@ export interface MagentoCart {
   syncedAt: string;
 }
 
+export type UserResponseRole =
+  (typeof UserResponseRole)[keyof typeof UserResponseRole];
+
+export const UserResponseRole = {
+  admin: "admin",
+  editor: "editor",
+  viewer: "viewer",
+} as const;
+
+export interface UserResponse {
+  id: number;
+  username: string;
+  role: UserResponseRole;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type CreateUserInputRole =
+  (typeof CreateUserInputRole)[keyof typeof CreateUserInputRole];
+
+export const CreateUserInputRole = {
+  admin: "admin",
+  editor: "editor",
+  viewer: "viewer",
+} as const;
+
+export interface CreateUserInput {
+  username: string;
+  password: string;
+  role?: CreateUserInputRole;
+}
+
+export type UpdateUserInputRole =
+  (typeof UpdateUserInputRole)[keyof typeof UpdateUserInputRole];
+
+export const UpdateUserInputRole = {
+  admin: "admin",
+  editor: "editor",
+  viewer: "viewer",
+} as const;
+
+export interface UpdateUserInput {
+  role?: UpdateUserInputRole;
+  password?: string;
+}
+
 export interface MagentoSyncLog {
   id: number;
   syncType: string;

@@ -119,16 +119,32 @@ artifacts-monorepo/
 - `GET /api/magento/orders` - Recent orders list
 - `GET /api/magento/carts` - Abandoned carts list
 - `GET /api/magento/sync` - Last sync status/errors
+- `GET /api/users` - List all users (admin only)
+- `POST /api/users` - Create user with role (admin only)
+- `PUT /api/users/:id` - Update role or reset password (admin only)
+- `DELETE /api/users/:id` - Remove user (admin only, cannot delete self)
 
-## User Authentication
+## User Authentication & Role-Based Access Control
 
-Simple username/password authentication with JWT tokens:
-- First registered user is auto-admin
-- Subsequent registrations require an existing auth token
-- Auth middleware protects all API routes except `/api/health` and `/api/auth/*`
+Username/password authentication with JWT tokens and role-based permissions:
+- Three roles: `admin`, `editor`, `viewer` (stored as `user_role` enum in DB)
+- First registered user is auto-admin; subsequent registrations default to viewer
+- `requireRole(...roles)` middleware enforces permissions on API routes
+- Config/settings routes require `editor` or `admin` role
+- User management routes (`/api/users`) require `admin` role
+- Data viewing routes (sites, alerts, magento, servers) require any authenticated role
+- JWT payload includes `role` field alongside `userId` and `username`
 - JWT tokens expire after 7 days
 - Auth state persisted via AsyncStorage in mobile app
 - Login screen gates access to the main dashboard
+
+### User Management (Admin only)
+- `GET /api/users` - List all users with roles
+- `POST /api/users` - Create user with role assignment
+- `PUT /api/users/:id` - Update role or reset password
+- `DELETE /api/users/:id` - Remove user (cannot delete self)
+- Team management UI in Settings tab with add/edit/remove controls
+- Viewers see read-only dashboards; editors can edit config but not manage users
 
 ## Email / SMTP
 

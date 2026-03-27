@@ -1,5 +1,9 @@
 import type { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
+import { eq } from "drizzle-orm";
+import { db } from "@workspace/db";
+import { usersTable as users } from "@workspace/db/schema";
+import type { UserRole } from "@workspace/db/schema";
 import { logger } from "../lib/logger";
 
 function getJwtSecret(): string {
@@ -18,6 +22,7 @@ const JWT_SECRET = getJwtSecret();
 export interface AuthPayload {
   userId: number;
   username: string;
+  role: UserRole;
 }
 
 declare global {
@@ -40,7 +45,7 @@ export function verifyToken(token: string): AuthPayload | null {
   }
 }
 
-export function requireAuth(req: Request, res: Response, next: NextFunction): void {
+export async function requireAuth(req: Request, res: Response, next: NextFunction): Promise<void> {
   const authHeader = req.headers.authorization;
 
   if (!authHeader?.startsWith("Bearer ")) {
@@ -56,6 +61,37 @@ export function requireAuth(req: Request, res: Response, next: NextFunction): vo
     return;
   }
 
-  req.user = payload;
-  next();
+  try {
+    const [dbUser] = await db.select({ id: users.id, username: users.username, role: users.role })
+      .from(users)
+      .where(eq(users.id, payload.userId))
+      .limit(1);
+
+    if (!dbUser) {
+      res.status(401).json({ error: "User account no longer exists" });
+      return;
+    }
+
+    req.user = { userId: dbUser.id, username: dbUser.username, role: dbUser.role };
+    next();
+  } catch (err) {
+    logger.error("Auth DB lookup failed", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+}
+
+export function requireRole(...roles: UserRole[]) {
+  return (req: Request, res: Response, next: NextFunction): void => {
+    if (!req.user) {
+      res.status(401).json({ error: "Authentication required" });
+      return;
+    }
+
+    if (!roles.includes(req.user.role)) {
+      res.status(403).json({ error: "Insufficient permissions" });
+      return;
+    }
+
+    next();
+  };
 }

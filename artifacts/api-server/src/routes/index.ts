@@ -6,7 +6,8 @@ import alertsRouter from "./alerts";
 import configRouter from "./config";
 import { serversRouter, reportRouter } from "./servers";
 import magentoRouter from "./magento";
-import { requireAuth } from "../middleware/auth";
+import usersRouter from "./users";
+import { requireAuth, requireRole } from "../middleware/auth";
 
 const router: IRouter = Router();
 
@@ -15,10 +16,14 @@ router.use(authRouter);
 router.use(reportRouter);
 
 router.use(requireAuth);
+
 router.use(sitesRouter);
 router.use(alertsRouter);
-router.use(configRouter);
-router.use(serversRouter);
 router.use(magentoRouter);
+router.use(serversRouter);
+
+router.use("/", requireRole("editor", "admin"), configRouter);
+
+router.use("/", requireRole("admin"), usersRouter);
 
 export default router;
