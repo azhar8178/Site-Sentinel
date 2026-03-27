@@ -16,7 +16,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { setBaseUrl } from "@workspace/api-client-react";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { AuthProvider, useAuth, onApiUnauthorized } from "@/contexts/AuthContext";
 import LoginScreen from "./login";
 import { getBaseUrl } from "@/utils/getBaseUrl";
 
@@ -24,11 +24,30 @@ setBaseUrl(getBaseUrl());
 
 SplashScreen.preventAutoHideAsync();
 
+function isUnauthorized(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "status" in error &&
+    (error as any).status === 401
+  );
+}
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       refetchInterval: 30000,
       staleTime: 15000,
+      retry: (failureCount, error) => {
+        if (isUnauthorized(error)) {
+          onApiUnauthorized();
+          return false;
+        }
+        return failureCount < 3;
+      },
+    },
+    mutations: {
+      retry: false,
     },
   },
 });

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { setAuthTokenGetter } from "@workspace/api-client-react";
 import { getBaseUrl } from "@/utils/getBaseUrl";
@@ -16,6 +16,16 @@ interface AuthContextType {
   login: (username: string, password: string) => Promise<void>;
   register: (username: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+}
+
+let _onUnauthorized: (() => void) | null = null;
+let _logoutInFlight = false;
+
+export function onApiUnauthorized() {
+  if (_logoutInFlight) return;
+  _logoutInFlight = true;
+  _onUnauthorized?.();
+  setTimeout(() => { _logoutInFlight = false; }, 2000);
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -82,6 +92,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
     setAuthTokenGetter(() => Promise.resolve(""));
   }, []);
+
+  useEffect(() => {
+    _onUnauthorized = () => {
+      logout();
+    };
+    return () => { _onUnauthorized = null; };
+  }, [logout]);
 
   return (
     <AuthContext.Provider value={{ user, token, isLoading, login, register, logout }}>
