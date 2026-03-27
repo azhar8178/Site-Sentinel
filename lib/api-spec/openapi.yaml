@@ -20,6 +20,8 @@ tags:
     description: Alert configuration operations
   - name: servers
     description: Server vitals monitoring operations
+  - name: magento
+    description: Magento store data operations
 paths:
   /healthz:
     get:
@@ -331,6 +333,78 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/ServerMetric"
+
+  /magento/stats:
+    get:
+      operationId: getMagentoStats
+      tags: [magento]
+      summary: Get order and cart statistics
+      responses:
+        "200":
+          description: Order and cart stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MagentoStats"
+
+  /magento/orders:
+    get:
+      operationId: getMagentoOrders
+      tags: [magento]
+      summary: Get recent orders
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: Recent orders
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MagentoOrder"
+
+  /magento/carts:
+    get:
+      operationId: getMagentoCarts
+      tags: [magento]
+      summary: Get abandoned carts
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: Abandoned carts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MagentoCart"
+
+  /magento/sync:
+    get:
+      operationId: getMagentoSyncStatus
+      tags: [magento]
+      summary: Get last sync status
+      responses:
+        "200":
+          description: Sync logs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MagentoSyncLog"
 
 components:
   schemas:
@@ -688,3 +762,158 @@ components:
       required:
         - name
         - hostname
+
+    MagentoStats:
+      type: object
+      properties:
+        today:
+          type: object
+          properties:
+            orders:
+              type: integer
+            revenue:
+              type: number
+          required: [orders, revenue]
+        week:
+          type: object
+          properties:
+            orders:
+              type: integer
+            revenue:
+              type: number
+          required: [orders, revenue]
+        carts:
+          type: object
+          properties:
+            active:
+              type: integer
+            activeValue:
+              type: number
+            abandoned:
+              type: integer
+            abandonedValue:
+              type: number
+            abandonmentRate:
+              type: integer
+          required: [active, activeValue, abandoned, abandonedValue, abandonmentRate]
+      required: [today, week, carts]
+
+    MagentoOrder:
+      type: object
+      properties:
+        id:
+          type: integer
+        orderId:
+          type: integer
+        incrementId:
+          type: string
+        status:
+          type: string
+        grandTotal:
+          type: number
+        currency:
+          type: string
+        customerEmail:
+          type: string
+          nullable: true
+        customerFirstname:
+          type: string
+          nullable: true
+        customerLastname:
+          type: string
+          nullable: true
+        itemsCount:
+          type: integer
+        storeId:
+          type: integer
+        orderCreatedAt:
+          type: string
+          format: date-time
+        syncedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - orderId
+        - incrementId
+        - status
+        - grandTotal
+        - currency
+        - itemsCount
+        - storeId
+        - orderCreatedAt
+        - syncedAt
+
+    MagentoCart:
+      type: object
+      properties:
+        id:
+          type: integer
+        quoteId:
+          type: integer
+        customerEmail:
+          type: string
+          nullable: true
+        customerFirstname:
+          type: string
+          nullable: true
+        customerLastname:
+          type: string
+          nullable: true
+        isActive:
+          type: boolean
+        itemsCount:
+          type: integer
+        grandTotal:
+          type: number
+        currency:
+          type: string
+        storeId:
+          type: integer
+        cartCreatedAt:
+          type: string
+          format: date-time
+        cartUpdatedAt:
+          type: string
+          format: date-time
+        syncedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - quoteId
+        - isActive
+        - itemsCount
+        - grandTotal
+        - currency
+        - storeId
+        - cartCreatedAt
+        - cartUpdatedAt
+        - syncedAt
+
+    MagentoSyncLog:
+      type: object
+      properties:
+        id:
+          type: integer
+        syncType:
+          type: string
+        status:
+          type: string
+        recordsFetched:
+          type: integer
+        durationMs:
+          type: integer
+        error:
+          type: string
+          nullable: true
+        syncedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - syncType
+        - status
+        - recordsFetched
+        - durationMs
+        - syncedAt

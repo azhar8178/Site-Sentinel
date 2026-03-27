@@ -27,7 +27,8 @@ artifacts-monorepo/
 │   │   └── src/
 │   │       ├── services/
 │   │       │   ├── monitor.ts   # Site monitoring worker (60s interval)
-│   │       │   └── email.ts     # AWS SES email alerts
+│   │       │   ├── magento.ts   # Magento sync service (5m interval)
+│   │       │   └── email.ts     # SMTP email alerts
 │   │       └── routes/
 │   │           └── index.ts     # All API routes (sites, checks, alerts, config)
 │   ├── mobile/              # Expo mobile app (Site Monitor dashboard)
@@ -36,6 +37,7 @@ artifacts-monorepo/
 │   │       └── (tabs)/
 │   │           ├── index.tsx    # Dashboard tab
 │   │           ├── history.tsx  # Response time history charts
+│   │           ├── store.tsx    # Magento orders & cart tracking
 │   │           ├── servers.tsx  # Server vitals (CPU/mem/disk/net)
 │   │           ├── alerts.tsx   # Alert log viewer
 │   │           └── settings.tsx # Email & threshold settings
@@ -48,6 +50,7 @@ artifacts-monorepo/
 │       └── src/schema/
 │           ├── sites.ts    # sites, check_results, alerts, alert_config tables
 │           ├── servers.ts  # servers, server_metrics tables
+│           ├── magento.ts  # magento_orders, magento_carts, magento_sync_log tables
 │           └── users.ts    # users table
 ├── scripts/
 │   └── src/
@@ -86,6 +89,16 @@ artifacts-monorepo/
 - Install via `agent/install.sh` which sets up a systemd service
 - Server detail modal shows historical charts (1h/6h/24h)
 
+### Magento Integration
+- Background sync every 5 minutes fetches orders (7 days) and carts (48 hours)
+- Paginated fetching handles large stores (100 per page, loops until complete)
+- Mutex prevents overlapping sync runs when API is slow
+- Cart abandonment: active carts with no update for 1+ hour
+- Stats: today's orders/revenue, weekly orders/revenue, active carts, abandoned carts, abandonment rate
+- Sync status tracked in `magento_sync_log` table
+- Requires `MAGENTO_API_URL` and `MAGENTO_API_TOKEN` environment variables
+- API token needs `Magento_Sales::actions_view` and `Magento_Cart::manage` permissions
+
 ### API Endpoints
 - `GET /api/sites` - List all monitored sites
 - `POST /api/sites/:id/check` - Trigger manual site check
@@ -100,6 +113,10 @@ artifacts-monorepo/
 - `DELETE /api/servers/:id` - Remove a server
 - `GET /api/servers/:id/metrics` - Get historical metrics
 - `POST /api/servers/report` - Agent reports metrics (API key auth, no JWT)
+- `GET /api/magento/stats` - Order and cart statistics
+- `GET /api/magento/orders` - Recent orders list
+- `GET /api/magento/carts` - Abandoned carts list
+- `GET /api/magento/sync` - Last sync status/errors
 
 ## User Authentication
 
@@ -120,6 +137,8 @@ The SMTP password is masked ("••••••••") in API responses. A `/a
 ## Environment Secrets Required
 
 - `JWT_SECRET` - Secret for signing JWT tokens (generate with `openssl rand -hex 32`)
+- `MAGENTO_API_URL` - Magento REST API base URL (e.g. `https://www.lovefurniture.ie/rest/V1`)
+- `MAGENTO_API_TOKEN` - Magento integration access token (needs Sales and Cart API permissions)
 
 ## TypeScript & Composite Projects
 
@@ -152,7 +171,7 @@ Express 5 API server with site monitoring worker. Routes live in `src/routes/` a
 
 Expo React Native app for site monitoring dashboard. Uses generated React Query hooks from `@workspace/api-client-react`.
 
-- Tab-based navigation: Dashboard, History, Servers, Alerts, Settings
+- Tab-based navigation: Dashboard, History, Store, Servers, Alerts, Settings
 - API base URL configured via `EXPO_PUBLIC_DOMAIN` environment variable
 - Custom `SimpleChart` component (no native dependencies required)
 

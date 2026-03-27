@@ -165,6 +165,72 @@ export interface CreateServerInput {
   hostname: string;
 }
 
+export type MagentoStatsToday = {
+  orders: number;
+  revenue: number;
+};
+
+export type MagentoStatsWeek = {
+  orders: number;
+  revenue: number;
+};
+
+export type MagentoStatsCarts = {
+  active: number;
+  activeValue: number;
+  abandoned: number;
+  abandonedValue: number;
+  abandonmentRate: number;
+};
+
+export interface MagentoStats {
+  today: MagentoStatsToday;
+  week: MagentoStatsWeek;
+  carts: MagentoStatsCarts;
+}
+
+export interface MagentoOrder {
+  id: number;
+  orderId: number;
+  incrementId: string;
+  status: string;
+  grandTotal: number;
+  currency: string;
+  customerEmail?: string | null;
+  customerFirstname?: string | null;
+  customerLastname?: string | null;
+  itemsCount: number;
+  storeId: number;
+  orderCreatedAt: string;
+  syncedAt: string;
+}
+
+export interface MagentoCart {
+  id: number;
+  quoteId: number;
+  customerEmail?: string | null;
+  customerFirstname?: string | null;
+  customerLastname?: string | null;
+  isActive: boolean;
+  itemsCount: number;
+  grandTotal: number;
+  currency: string;
+  storeId: number;
+  cartCreatedAt: string;
+  cartUpdatedAt: string;
+  syncedAt: string;
+}
+
+export interface MagentoSyncLog {
+  id: number;
+  syncType: string;
+  status: string;
+  recordsFetched: number;
+  durationMs: number;
+  error?: string | null;
+  syncedAt: string;
+}
+
 export type GetCheckHistoryParams = {
   /**
    * Number of hours of history to return
@@ -185,4 +251,12 @@ export type GetServerMetricsParams = {
    * Number of hours of history
    */
   hours?: number;
+};
+
+export type GetMagentoOrdersParams = {
+  limit?: number;
+};
+
+export type GetMagentoCartsParams = {
+  limit?: number;
 };

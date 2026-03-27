@@ -23,9 +23,15 @@ import type {
   CheckResultResponse,
   CreateServerInput,
   GetCheckHistoryParams,
+  GetMagentoCartsParams,
+  GetMagentoOrdersParams,
   GetServerMetricsParams,
   HealthStatus,
   ListAlertsParams,
+  MagentoCart,
+  MagentoOrder,
+  MagentoStats,
+  MagentoSyncLog,
   ServerCreateResponse,
   ServerMetric,
   ServerWithMetrics,
@@ -1330,6 +1336,347 @@ export function useGetServerMetrics<
     params,
     options,
   );
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Get order and cart statistics
+ */
+export const getGetMagentoStatsUrl = () => {
+  return `/api/magento/stats`;
+};
+
+export const getMagentoStats = async (
+  options?: RequestInit,
+): Promise<MagentoStats> => {
+  return customFetch<MagentoStats>(getGetMagentoStatsUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetMagentoStatsQueryKey = () => {
+  return [`/api/magento/stats`] as const;
+};
+
+export const getGetMagentoStatsQueryOptions = <
+  TData = Awaited<ReturnType<typeof getMagentoStats>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getMagentoStats>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetMagentoStatsQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getMagentoStats>>> = ({
+    signal,
+  }) => getMagentoStats({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getMagentoStats>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetMagentoStatsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getMagentoStats>>
+>;
+export type GetMagentoStatsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get order and cart statistics
+ */
+
+export function useGetMagentoStats<
+  TData = Awaited<ReturnType<typeof getMagentoStats>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getMagentoStats>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetMagentoStatsQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Get recent orders
+ */
+export const getGetMagentoOrdersUrl = (params?: GetMagentoOrdersParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/magento/orders?${stringifiedParams}`
+    : `/api/magento/orders`;
+};
+
+export const getMagentoOrders = async (
+  params?: GetMagentoOrdersParams,
+  options?: RequestInit,
+): Promise<MagentoOrder[]> => {
+  return customFetch<MagentoOrder[]>(getGetMagentoOrdersUrl(params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetMagentoOrdersQueryKey = (
+  params?: GetMagentoOrdersParams,
+) => {
+  return [`/api/magento/orders`, ...(params ? [params] : [])] as const;
+};
+
+export const getGetMagentoOrdersQueryOptions = <
+  TData = Awaited<ReturnType<typeof getMagentoOrders>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: GetMagentoOrdersParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getMagentoOrders>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetMagentoOrdersQueryKey(params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getMagentoOrders>>
+  > = ({ signal }) => getMagentoOrders(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getMagentoOrders>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetMagentoOrdersQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getMagentoOrders>>
+>;
+export type GetMagentoOrdersQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get recent orders
+ */
+
+export function useGetMagentoOrders<
+  TData = Awaited<ReturnType<typeof getMagentoOrders>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: GetMagentoOrdersParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getMagentoOrders>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetMagentoOrdersQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Get abandoned carts
+ */
+export const getGetMagentoCartsUrl = (params?: GetMagentoCartsParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/magento/carts?${stringifiedParams}`
+    : `/api/magento/carts`;
+};
+
+export const getMagentoCarts = async (
+  params?: GetMagentoCartsParams,
+  options?: RequestInit,
+): Promise<MagentoCart[]> => {
+  return customFetch<MagentoCart[]>(getGetMagentoCartsUrl(params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetMagentoCartsQueryKey = (params?: GetMagentoCartsParams) => {
+  return [`/api/magento/carts`, ...(params ? [params] : [])] as const;
+};
+
+export const getGetMagentoCartsQueryOptions = <
+  TData = Awaited<ReturnType<typeof getMagentoCarts>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: GetMagentoCartsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getMagentoCarts>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetMagentoCartsQueryKey(params);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getMagentoCarts>>> = ({
+    signal,
+  }) => getMagentoCarts(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getMagentoCarts>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetMagentoCartsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getMagentoCarts>>
+>;
+export type GetMagentoCartsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get abandoned carts
+ */
+
+export function useGetMagentoCarts<
+  TData = Awaited<ReturnType<typeof getMagentoCarts>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: GetMagentoCartsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getMagentoCarts>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetMagentoCartsQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Get last sync status
+ */
+export const getGetMagentoSyncStatusUrl = () => {
+  return `/api/magento/sync`;
+};
+
+export const getMagentoSyncStatus = async (
+  options?: RequestInit,
+): Promise<MagentoSyncLog[]> => {
+  return customFetch<MagentoSyncLog[]>(getGetMagentoSyncStatusUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetMagentoSyncStatusQueryKey = () => {
+  return [`/api/magento/sync`] as const;
+};
+
+export const getGetMagentoSyncStatusQueryOptions = <
+  TData = Awaited<ReturnType<typeof getMagentoSyncStatus>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getMagentoSyncStatus>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetMagentoSyncStatusQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getMagentoSyncStatus>>
+  > = ({ signal }) => getMagentoSyncStatus({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getMagentoSyncStatus>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetMagentoSyncStatusQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getMagentoSyncStatus>>
+>;
+export type GetMagentoSyncStatusQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get last sync status
+ */
+
+export function useGetMagentoSyncStatus<
+  TData = Awaited<ReturnType<typeof getMagentoSyncStatus>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getMagentoSyncStatus>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetMagentoSyncStatusQueryOptions(options);
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
     queryKey: QueryKey;

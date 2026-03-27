@@ -338,3 +338,92 @@ export const GetServerMetricsResponseItem = zod.object({
   recordedAt: zod.date(),
 });
 export const GetServerMetricsResponse = zod.array(GetServerMetricsResponseItem);
+
+/**
+ * @summary Get order and cart statistics
+ */
+export const GetMagentoStatsResponse = zod.object({
+  today: zod.object({
+    orders: zod.number(),
+    revenue: zod.number(),
+  }),
+  week: zod.object({
+    orders: zod.number(),
+    revenue: zod.number(),
+  }),
+  carts: zod.object({
+    active: zod.number(),
+    activeValue: zod.number(),
+    abandoned: zod.number(),
+    abandonedValue: zod.number(),
+    abandonmentRate: zod.number(),
+  }),
+});
+
+/**
+ * @summary Get recent orders
+ */
+export const getMagentoOrdersQueryLimitDefault = 20;
+
+export const GetMagentoOrdersQueryParams = zod.object({
+  limit: zod.coerce.number().default(getMagentoOrdersQueryLimitDefault),
+});
+
+export const GetMagentoOrdersResponseItem = zod.object({
+  id: zod.number(),
+  orderId: zod.number(),
+  incrementId: zod.string(),
+  status: zod.string(),
+  grandTotal: zod.number(),
+  currency: zod.string(),
+  customerEmail: zod.string().nullish(),
+  customerFirstname: zod.string().nullish(),
+  customerLastname: zod.string().nullish(),
+  itemsCount: zod.number(),
+  storeId: zod.number(),
+  orderCreatedAt: zod.date(),
+  syncedAt: zod.date(),
+});
+export const GetMagentoOrdersResponse = zod.array(GetMagentoOrdersResponseItem);
+
+/**
+ * @summary Get abandoned carts
+ */
+export const getMagentoCartsQueryLimitDefault = 20;
+
+export const GetMagentoCartsQueryParams = zod.object({
+  limit: zod.coerce.number().default(getMagentoCartsQueryLimitDefault),
+});
+
+export const GetMagentoCartsResponseItem = zod.object({
+  id: zod.number(),
+  quoteId: zod.number(),
+  customerEmail: zod.string().nullish(),
+  customerFirstname: zod.string().nullish(),
+  customerLastname: zod.string().nullish(),
+  isActive: zod.boolean(),
+  itemsCount: zod.number(),
+  grandTotal: zod.number(),
+  currency: zod.string(),
+  storeId: zod.number(),
+  cartCreatedAt: zod.date(),
+  cartUpdatedAt: zod.date(),
+  syncedAt: zod.date(),
+});
+export const GetMagentoCartsResponse = zod.array(GetMagentoCartsResponseItem);
+
+/**
+ * @summary Get last sync status
+ */
+export const GetMagentoSyncStatusResponseItem = zod.object({
+  id: zod.number(),
+  syncType: zod.string(),
+  status: zod.string(),
+  recordsFetched: zod.number(),
+  durationMs: zod.number(),
+  error: zod.string().nullish(),
+  syncedAt: zod.date(),
+});
+export const GetMagentoSyncStatusResponse = zod.array(
+  GetMagentoSyncStatusResponseItem,
+);
