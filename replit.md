@@ -166,6 +166,16 @@ Email alerts use generic SMTP (nodemailer), not AWS SES. All SMTP settings (host
 
 The SMTP password is masked ("••••••••") in API responses. A `/api/config/test-smtp` endpoint lets users verify their SMTP settings from the app before saving.
 
+## Self-Hosted Deployment
+
+Deployment files for Docker-based self-hosting:
+- `Dockerfile` — Multi-stage build (builder + production image with health check)
+- `docker-compose.yml` — PostgreSQL + API server with health checks; reads secrets from `.env`
+- `.env.example` — Template for required environment variables
+- `deploy/nginx.conf` — Nginx reverse proxy config (for HTTPS with Certbot)
+- `deploy/DEPLOY.md` — Full step-by-step deployment guide
+- `artifacts/api-server/scripts/migrate.mjs` — Idempotent DB migration (runs on container startup)
+
 ## Environment Secrets Required
 
 - `JWT_SECRET` - Secret for signing JWT tokens (generate with `openssl rand -hex 32`)

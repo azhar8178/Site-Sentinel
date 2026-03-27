@@ -11,3 +11,5 @@ artifacts/mobile/.expo
 artifacts/mobile/dist
 artifacts/mobile/static-build
 artifacts/mockup-sandbox
+deploy/
+screenshots/

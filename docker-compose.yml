@@ -5,18 +5,32 @@ services:
     environment:
       POSTGRES_DB: site_monitor
       POSTGRES_USER: monitor
-      POSTGRES_PASSWORD: changeme_db_password
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-changeme_db_password}
     volumes:
       - pgdata:/var/lib/postgresql/data
     ports:
       - "127.0.0.1:5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U monitor -d site_monitor"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   api:
     build: .
     restart: always
     depends_on:
-      - postgres
-    env_file: .env
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://monitor:${DB_PASSWORD:-changeme_db_password}@postgres:5432/site_monitor
+      JWT_SECRET: ${JWT_SECRET}
+      PORT: "8080"
+      NODE_ENV: production
+      MAGENTO_API_URL: ${MAGENTO_API_URL}
+      MAGENTO_API_TOKEN: ${MAGENTO_API_TOKEN}
+      MAGENTO_ADMIN_USER: ${MAGENTO_ADMIN_USER}
+      MAGENTO_ADMIN_PASS: ${MAGENTO_ADMIN_PASS}
     ports:
       - "127.0.0.1:8080:8080"
 
