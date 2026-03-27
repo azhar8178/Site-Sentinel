@@ -1,4 +1,5 @@
 FROM node:24-slim
+ENV CI=true
 RUN npm install -g pnpm@10
 
 WORKDIR /app

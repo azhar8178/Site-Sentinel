@@ -1,0 +1,62 @@
+ubuntu@ip-172-33-86-172:~$ cd ~/Site-Sentinel
+git pull
+docker compose down
+docker compose build --no-cache api
+docker compose up -d
+Updating a3b2517..d9736a8
+error: The following untracked working tree files would be overwritten by merge:
+        Dockerfile
+        docker-compose.yml
+Please move or remove them before you merge.
+Aborting
+[+] down 3/3
+ ✔ Container site-sentinel-api-1      Removed                                                                                                                         10.2s
+ ✔ Container site-sentinel-postgres-1 Removed                                                                                                                         0.2s
+ ✔ Network site-sentinel_default      Removed                                                                                                                         0.1s
+[+] Building 124.1s (10/11)                                                                                                                                                
+ => [internal] load local bake definitions                                                                                                                            0.0s
+ => => reading from stdin 528B                                                                                                                                        0.0s
+ => [internal] load build definition from Dockerfile                                                                                                                  0.0s
+ => => transferring dockerfile: 290B                                                                                                                                  0.0s
+ => [internal] load metadata for docker.io/library/node:24-slim                                                                                                       1.1s
+ => [internal] load .dockerignore                                                                                                                                     0.0s
+ => => transferring context: 2B                                                                                                                                       0.0s
+ => [1/6] FROM docker.io/library/node:24-slim@sha256:06e5c9f86bfa0aaa7163cf37a5eaa8805f16b9acb48e3f85645b09d459fc2a9f                                                 0.2s
+ => => resolve docker.io/library/node:24-slim@sha256:06e5c9f86bfa0aaa7163cf37a5eaa8805f16b9acb48e3f85645b09d459fc2a9f                                                 0.0s
+ => [internal] load build context                                                                                                                                    50.3s
+ => => transferring context: 2.13GB                                                                                                                                  49.8s
+ => [2/6] RUN npm install -g pnpm@10                                                                                                                                  6.3s
+ => [3/6] WORKDIR /app                                                                                                                                                0.1s
+ => [4/6] COPY . .                                                                                                                                                   70.2s 
+ => ERROR [5/6] RUN pnpm install --frozen-lockfile                                                                                                                    1.8s 
+------                                                                                                                                                                     
+ > [5/6] RUN pnpm install --frozen-lockfile:                                                                                                                               
+1.407 Scope: all 9 workspace projects                                                                                                                                      
+1.698  ERR_PNPM_ABORTED_REMOVE_MODULES_DIR_NO_TTY  Aborted removal of modules directory due to no TTY
+1.698 
+1.698 If you are running pnpm in CI, set the CI environment variable to "true", or set "confirmModulesPurge" to "false".
+------
+[+] build 0/1
+ ⠙ Image site-sentinel-api Building                                                                                                                                  124.2s
+Dockerfile:6
+
+--------------------
+
+   4 |     WORKDIR /app
+
+   5 |     COPY . .
+
+   6 | >>> RUN pnpm install --frozen-lockfile
+
+   7 |     
+
+   8 |     # Build the API server
+
+--------------------
+
+failed to solve: process "/bin/sh -c pnpm install --frozen-lockfile" did not complete successfully: exit code: 1
+
+[+] up 3/3
+ ✔ Network site-sentinel_default      Created                                                                                                                          0.1s
+ ✔ Container site-sentinel-postgres-1 Started                                                                                                                          0.4s
+ ✔ Container site-sentinel-api-1      Started                                                                                                                          0.6s
