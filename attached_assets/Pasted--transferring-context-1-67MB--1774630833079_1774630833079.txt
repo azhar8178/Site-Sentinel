@@ -1,0 +1,33 @@
+=> => transferring context: 1.67MB                                                                                                                                   0.1s
+ => [builder 2/7] RUN npm install -g pnpm@10                                                                                                                          2.1s
+ => [builder 3/7] WORKDIR /app                                                                                                                                        0.2s
+ => [builder 4/7] COPY . .                                                                                                                                            0.1s
+ => [builder 5/7] RUN pnpm install --frozen-lockfile                                                                                                                 15.8s
+ => [builder 6/7] RUN pnpm --filter @workspace/api-server run build                                                                                                   1.8s 
+ => [builder 7/7] RUN cd artifacts/mobile && pnpm exec expo export --platform web                                                                                    57.4s 
+ => CACHED [stage-1  4/16] COPY --from=builder /app/package.json /app/pnpm-lock.yaml /app/pnpm-workspace.yaml ./                                                      0.0s 
+ => CACHED [stage-1  5/16] COPY --from=builder /app/artifacts/api-server/package.json ./artifacts/api-server/package.json                                             0.0s 
+ => CACHED [stage-1  6/16] COPY --from=builder /app/artifacts/mobile/package.json ./artifacts/mobile/package.json                                                     0.0s 
+ => ERROR [stage-1  7/16] COPY --from=builder /app/artifacts/mockup-sandbox/package.json ./artifacts/mockup-sandbox/package.json                                      0.0s 
+------                                                                                                                                                                     
+ > [stage-1  7/16] COPY --from=builder /app/artifacts/mockup-sandbox/package.json ./artifacts/mockup-sandbox/package.json:                                                 
+------
+[+] up 0/1
+ ⠙ Image site-sentinel-api Building                                                                                                                                   80.0s
+Dockerfile:20
+
+--------------------
+
+  18 |     COPY --from=builder /app/artifacts/api-server/package.json ./artifacts/api-server/package.json
+
+  19 |     COPY --from=builder /app/artifacts/mobile/package.json ./artifacts/mobile/package.json
+
+  20 | >>> COPY --from=builder /app/artifacts/mockup-sandbox/package.json ./artifacts/mockup-sandbox/package.json
+
+  21 |     COPY --from=builder /app/lib/db/package.json ./lib/db/package.json
+
+  22 |     COPY --from=builder /app/lib/api-spec/package.json ./lib/api-spec/package.json
+
+--------------------
+
+failed to solve: failed to compute cache key: failed to calculate checksum of ref d5o337nr0jbh2lrss9j20hwin::ea3ockr76y5va1o6u8mqmkh1b: "/app/artifacts/mockup-sandbox/package.json": not found
