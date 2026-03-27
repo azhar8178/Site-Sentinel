@@ -1,10 +1,4 @@
-import { createRequire } from "node:module";
-import { fileURLToPath } from "node:url";
-import { dirname, resolve } from "node:path";
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const rootDir = resolve(__dirname, "..", "..", "..");
-const require = createRequire(resolve(rootDir, "lib", "db", "package.json"));
-const pg = require("pg");
+import pg from "pg";
 
 const client = new pg.Client({ connectionString: process.env.DATABASE_URL });
 await client.connect();

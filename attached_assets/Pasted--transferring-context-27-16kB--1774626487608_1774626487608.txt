@@ -1,0 +1,21 @@
+ => => transferring context: 27.16kB                                                                                                                                  0.0s
+ => CACHED [2/7] RUN npm install -g pnpm@10                                                                                                                           0.0s
+ => CACHED [3/7] WORKDIR /app                                                                                                                                         0.0s
+ => [4/7] COPY . .                                                                                                                                                    0.1s
+ => [5/7] RUN pnpm install --frozen-lockfile                                                                                                                         15.2s
+ => [6/7] RUN pnpm --filter @workspace/api-server run build                                                                                                           1.9s 
+ => [7/7] RUN cd artifacts/mobile && pnpm exec expo export --platform web                                                                                            57.1s 
+ => ERROR exporting to image                                                                                                                                         46.9s 
+ => => exporting layers                                                                                                                                              46.7s 
+ => => exporting manifest sha256:c17b3bf81d588bef0495c04da7547963222368d1a8ec9116f41b0af018e94b1a                                                                     0.0s 
+ => => exporting config sha256:94798e6f16864cb94311601173c9b0aa43278265bc21144695d22eb5bbc1ae70                                                                       0.0s 
+ => => exporting attestation manifest sha256:4a44f381fd034e99195806f2c92c1233f7bee42d8cbb4d195abb8bf7413b09ff                                                         0.0s 
+ => => exporting manifest list sha256:caade41a158187c83a28c315299105635b484625ef701a7fa6962b561b9975c8                                                                0.0s 
+ => => naming to docker.io/library/site-sentinel-api:latest                                                                                                           0.0s
+ => => unpacking to docker.io/library/site-sentinel-api:latest                                                                                                        0.0s
+------
+ > exporting to image:
+------
+[+] up 0/1
+ ⠙ Image site-sentinel-api Building                                                                                                                                  122.1s
+failed to solve: failed to prepare extraction snapshot "extract-114953074-7KKs sha256:e9ac66adb52b7a485c6b9f5737b142d661c15a5c77cc9af3b992ec643f650e33": parent snapshot sha256:435613c6ee9a38b4bba8fda4596dae18f09b6834c43d2a677b94bbe2c9f384af does not exist: not found
