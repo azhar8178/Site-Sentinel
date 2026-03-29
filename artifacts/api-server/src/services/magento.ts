@@ -81,10 +81,17 @@ async function getToken(): Promise<string> {
   }
 
   if (creds.apiToken) {
+    logger.info({ tokenPrefix: creds.apiToken.substring(0, 8) + "..." }, "Using static Magento API token from config");
     return creds.apiToken;
   }
 
   throw new Error("No Magento authentication configured");
+}
+
+export function clearMagentoTokenCache() {
+  cachedToken = null;
+  tokenExpiresAt = 0;
+  logger.info("Magento token cache cleared");
 }
 
 async function hasMagentoConfig(): Promise<boolean> {

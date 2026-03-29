@@ -5,6 +5,7 @@ import { eq } from "drizzle-orm";
 import { testSmtpConnection, sendAlertEmail } from "../services/email";
 import { testSlackWebhook } from "../services/slack";
 import { testWhatsAppConnection } from "../services/whatsapp";
+import { clearMagentoTokenCache } from "../services/magento";
 
 const router: IRouter = Router();
 
@@ -244,6 +245,8 @@ router.put("/config/magento", async (req, res, next) => {
       .set(updates)
       .where(eq(magentoConfigTable.id, config.id))
       .returning();
+
+    clearMagentoTokenCache();
 
     res.json(sanitizeMagentoConfig(updated[0]));
   } catch (err) { next(err); }
