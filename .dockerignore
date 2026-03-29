@@ -10,6 +10,7 @@ artifacts/mobile/ios
 artifacts/mobile/.expo
 artifacts/mobile/dist
 artifacts/mobile/static-build
+artifacts/web-dashboard/dist
 artifacts/mockup-sandbox/node_modules
 deploy/
 screenshots/

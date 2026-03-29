@@ -6,7 +6,7 @@ WORKDIR /app
 COPY . .
 RUN pnpm install --frozen-lockfile
 RUN pnpm --filter @workspace/api-server run build
-RUN cd artifacts/mobile && pnpm exec expo export --platform web
+RUN pnpm --filter @workspace/web-dashboard run build
 
 FROM node:24-slim
 ENV CI=true
@@ -17,6 +17,7 @@ WORKDIR /app
 COPY --from=builder /app/package.json /app/pnpm-lock.yaml /app/pnpm-workspace.yaml ./
 COPY --from=builder /app/artifacts/api-server/package.json ./artifacts/api-server/package.json
 COPY --from=builder /app/artifacts/mobile/package.json ./artifacts/mobile/package.json
+COPY --from=builder /app/artifacts/web-dashboard/package.json ./artifacts/web-dashboard/package.json
 COPY --from=builder /app/lib/db/package.json ./lib/db/package.json
 COPY --from=builder /app/lib/api-spec/package.json ./lib/api-spec/package.json
 COPY --from=builder /app/lib/api-zod/package.json ./lib/api-zod/package.json
@@ -28,7 +29,7 @@ RUN pnpm install --frozen-lockfile --prod
 
 COPY --from=builder /app/artifacts/api-server/dist ./artifacts/api-server/dist
 COPY --from=builder /app/artifacts/api-server/scripts ./artifacts/api-server/scripts
-COPY --from=builder /app/artifacts/mobile/dist ./artifacts/mobile/dist
+COPY --from=builder /app/artifacts/web-dashboard/dist ./artifacts/web-dashboard/dist
 
 EXPOSE 8080
 

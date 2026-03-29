@@ -1,0 +1,23 @@
+packages:
+  "recharts": "Dashboard analytics charts and data visualization for metrics"
+  "date-fns": "Human-readable date formatting for history and alerts"
+  "framer-motion": "Page transitions and smooth interactive animations"
+  "react-hook-form": "Form state management for complex settings pages"
+  "@hookform/resolvers": "Zod validation integration with react-hook-form"
+  "lucide-react": "Beautiful consistent iconography across the dashboard"
+  "clsx": "Utility for conditionally joining classNames"
+  "tailwind-merge": "Utility to merge tailwind classes safely"
+  "zod": "Schema validation for custom login and forms"
+
+images:
+  - path: "artifacts/web-dashboard/public/images/logo-mark.png"
+    description: "Minimalist modern geometric logo mark for a product called Site Sentinel, depicting a stylized eye or shield in vibrant blue on a transparent background"
+    aspect_ratio: "1:1"
+  - path: "artifacts/web-dashboard/public/images/auth-bg.png"
+    description: "Abstract soft gradient mesh background in very light blues, whites, and subtle grays, clean corporate software aesthetic"
+    aspect_ratio: "16:9"
+
+notes:
+  - Auth token is stored in localStorage and injected via setAuthTokenGetter
+  - Login endpoint is manually fetched at /api/auth/login as it's not in the OpenAPI spec
+  - API base URL is configured at app boot using setBaseUrl

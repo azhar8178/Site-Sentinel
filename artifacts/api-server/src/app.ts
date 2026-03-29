@@ -33,10 +33,10 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use("/api", router);
 
-const webDistPath = resolve(process.cwd(), "artifacts", "mobile", "dist");
+const webDistPath = resolve(process.cwd(), "artifacts", "web-dashboard", "dist");
 
 if (existsSync(webDistPath)) {
-  logger.info({ webDistPath }, "Serving Expo web build");
+  logger.info({ webDistPath }, "Serving web dashboard");
   app.use(express.static(webDistPath));
   app.get("/{*splat}", (req, res, next) => {
     if (req.path.startsWith("/api")) return next();
