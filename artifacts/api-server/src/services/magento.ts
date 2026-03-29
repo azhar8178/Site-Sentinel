@@ -49,11 +49,18 @@ async function getToken(): Promise<string> {
 
   const creds = await getCredentials();
 
+  if (creds.apiToken) {
+    logger.info({ tokenPrefix: creds.apiToken.substring(0, 8) + "..." }, "Using static Magento API token");
+    cachedToken = creds.apiToken;
+    tokenExpiresAt = Date.now() + 50 * 60 * 1000;
+    return cachedToken;
+  }
+
   if (creds.adminUser && creds.adminPass) {
     const baseUrl = creds.apiUrl.replace(/\/rest\/V[12]$/, "");
     const tokenUrl = `${baseUrl}/rest/V1/integration/admin/token`;
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 30_000);
+    const timeout = setTimeout(() => controller.abort(), 15_000);
 
     try {
       const response = await fetch(tokenUrl, {
@@ -65,24 +72,19 @@ async function getToken(): Promise<string> {
 
       if (!response.ok) {
         const text = await response.text().catch(() => "");
-        logger.warn({ status: response.status, body: text.substring(0, 200) }, "Failed to fetch admin token, falling back to static token");
+        logger.warn({ status: response.status, body: text.substring(0, 200) }, "Failed to fetch admin token");
       } else {
         const token = (await response.json()) as string;
         cachedToken = token.replace(/^"|"$/g, "");
-        tokenExpiresAt = Date.now() + 60 * 60 * 1000;
+        tokenExpiresAt = Date.now() + 50 * 60 * 1000;
         logger.info("Fetched fresh Magento admin token");
         return cachedToken;
       }
     } catch (err: any) {
-      logger.warn({ error: err.message }, "Admin token fetch failed, falling back to static token");
+      logger.warn({ error: err.message }, "Admin token fetch failed");
     } finally {
       clearTimeout(timeout);
     }
-  }
-
-  if (creds.apiToken) {
-    logger.info({ tokenPrefix: creds.apiToken.substring(0, 8) + "..." }, "Using static Magento API token from config");
-    return creds.apiToken;
   }
 
   throw new Error("No Magento authentication configured");
