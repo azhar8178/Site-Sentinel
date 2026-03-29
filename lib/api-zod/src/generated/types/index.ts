@@ -44,6 +44,7 @@ export * from "./testWhatsAppConnectionBody";
 export * from "./updateAlertConfigInput";
 export * from "./updateMagentoConfigInput";
 export * from "./updateServerAlertConfigInput";
+export * from "./updateServerBody";
 export * from "./updateSiteInput";
 export * from "./updateUserInput";
 export * from "./updateUserInputRole";

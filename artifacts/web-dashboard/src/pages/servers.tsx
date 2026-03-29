@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useListServers, useCreateServer, useDeleteServer, useGetServerMetrics } from "@workspace/api-client-react";
+import { useListServers, useCreateServer, useDeleteServer, useUpdateServer, useGetServerMetrics } from "@workspace/api-client-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
@@ -10,7 +10,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   Server as ServerIcon, Cpu, HardDrive, MemoryStick, Trash2,
-  Activity, Plus, X, Copy, Check,
+  Activity, Plus, X, Copy, Check, Edit2, Save,
 } from "lucide-react";
 import { formatBytes } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
@@ -23,14 +23,31 @@ function getStatusColor(percent: number) {
 }
 
 function ServerDetailModal({
-  serverId, serverName, onClose,
+  serverId, serverName, serverHostname, onClose, canEdit,
 }: {
-  serverId: number; serverName: string; onClose: () => void;
+  serverId: number; serverName: string; serverHostname: string; onClose: () => void; canEdit: boolean;
 }) {
   const [hours, setHours] = useState(1);
   const { data: metrics, isLoading } = useGetServerMetrics(serverId, { hours }, {
     query: { refetchInterval: 30000 },
   });
+  const updateServer = useUpdateServer();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const [editing, setEditing] = useState(false);
+  const [editName, setEditName] = useState(serverName);
+  const [editHostname, setEditHostname] = useState(serverHostname);
+
+  const handleSaveEdit = async () => {
+    try {
+      await updateServer.mutateAsync({ serverId, data: { name: editName.trim(), hostname: editHostname.trim() } });
+      queryClient.invalidateQueries({ queryKey: ["/api/servers"] });
+      setEditing(false);
+      toast({ title: "Updated", description: "Server details saved." });
+    } catch (e: any) {
+      toast({ variant: "destructive", title: "Error", description: e.message });
+    }
+  };
 
   const cpuData = (metrics ?? []).map((m: any) => ({
     time: new Date(m.recordedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
@@ -45,8 +62,30 @@ function ServerDetailModal({
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="bg-white rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-auto shadow-2xl" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between p-6 border-b sticky top-0 bg-white z-10">
-          <h2 className="text-xl font-bold font-display">{serverName}</h2>
-          <button onClick={onClose} className="p-2 hover:bg-secondary rounded-full">
+          {editing ? (
+            <div className="flex-1 flex items-center gap-3 mr-4">
+              <div className="flex-1 space-y-2">
+                <Input value={editName} onChange={e => setEditName(e.target.value)} placeholder="Server name" className="font-semibold" />
+                <Input value={editHostname} onChange={e => setEditHostname(e.target.value)} placeholder="Hostname" className="text-sm font-mono" />
+              </div>
+              <Button size="sm" onClick={handleSaveEdit} disabled={updateServer.isPending} className="gap-1">
+                <Save className="w-4 h-4" /> Save
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => { setEditing(false); setEditName(serverName); setEditHostname(serverHostname); }}>
+                Cancel
+              </Button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-3">
+              <h2 className="text-xl font-bold font-display">{editName !== serverName ? editName : serverName}</h2>
+              {canEdit && (
+                <button onClick={() => setEditing(true)} className="p-1.5 hover:bg-secondary rounded-lg text-muted-foreground hover:text-foreground">
+                  <Edit2 className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+          )}
+          <button onClick={onClose} className="p-2 hover:bg-secondary rounded-full shrink-0">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -137,7 +176,7 @@ export default function Servers() {
   const [newHostname, setNewHostname] = useState("");
   const [showApiKey, setShowApiKey] = useState<string | null>(null);
   const [copiedKey, setCopiedKey] = useState(false);
-  const [selectedServer, setSelectedServer] = useState<{ id: number; name: string } | null>(null);
+  const [selectedServer, setSelectedServer] = useState<{ id: number; name: string; hostname: string } | null>(null);
 
   const canEdit = user?.role === "admin" || user?.role === "editor";
 
@@ -245,7 +284,7 @@ export default function Servers() {
               <Card
                 key={server.id}
                 className="overflow-hidden hover:shadow-lg transition-all duration-300 border-border/50 group relative cursor-pointer"
-                onClick={() => setSelectedServer({ id: server.id, name: server.name })}
+                onClick={() => setSelectedServer({ id: server.id, name: server.name, hostname: server.hostname })}
               >
                 {canEdit && (
                   <button
@@ -332,7 +371,9 @@ export default function Servers() {
         <ServerDetailModal
           serverId={selectedServer.id}
           serverName={selectedServer.name}
+          serverHostname={selectedServer.hostname}
           onClose={() => setSelectedServer(null)}
+          canEdit={canEdit}
         />
       )}
     </div>

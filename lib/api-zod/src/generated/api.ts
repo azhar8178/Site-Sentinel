@@ -464,6 +464,44 @@ export const GetServerResponse = zod.object({
 });
 
 /**
+ * @summary Update server name or hostname
+ */
+export const UpdateServerParams = zod.object({
+  serverId: zod.coerce.number(),
+});
+
+export const UpdateServerBody = zod.object({
+  name: zod.string().optional(),
+  hostname: zod.string().optional(),
+});
+
+export const UpdateServerResponse = zod.object({
+  id: zod.number(),
+  name: zod.string(),
+  hostname: zod.string(),
+  isActive: zod.boolean(),
+  lastSeenAt: zod.date().nullish(),
+  createdAt: zod.date(),
+  latestMetrics: zod
+    .object({
+      id: zod.number(),
+      serverId: zod.number(),
+      cpuPercent: zod.number(),
+      memUsedBytes: zod.number(),
+      memTotalBytes: zod.number(),
+      diskUsedBytes: zod.number(),
+      diskTotalBytes: zod.number(),
+      netRxBytes: zod.number(),
+      netTxBytes: zod.number(),
+      loadAvg1m: zod.number(),
+      loadAvg5m: zod.number(),
+      loadAvg15m: zod.number(),
+      recordedAt: zod.date(),
+    })
+    .nullish(),
+});
+
+/**
  * @summary Delete a server
  */
 export const DeleteServerParams = zod.object({

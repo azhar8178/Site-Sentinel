@@ -161,6 +161,44 @@ serversRouter.post("/servers", requireRole("editor", "admin"), async (req, res, 
   }
 });
 
+serversRouter.put("/servers/:id", requireRole("editor", "admin"), async (req, res, next) => {
+  try {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id) || id <= 0) {
+      res.status(400).json({ error: "Invalid server ID" });
+      return;
+    }
+
+    const { name, hostname } = req.body;
+    const updates: Record<string, any> = { updatedAt: new Date() };
+    if (name && typeof name === "string" && name.trim().length > 0) updates.name = name.trim();
+    if (hostname && typeof hostname === "string" && hostname.trim().length > 0) updates.hostname = hostname.trim();
+
+    if (Object.keys(updates).length <= 1) {
+      res.status(400).json({ error: "Provide name or hostname to update" });
+      return;
+    }
+
+    const updated = await db.update(serversTable).set(updates).where(eq(serversTable.id, id)).returning({
+      id: serversTable.id,
+      name: serversTable.name,
+      hostname: serversTable.hostname,
+      isActive: serversTable.isActive,
+      lastSeenAt: serversTable.lastSeenAt,
+      createdAt: serversTable.createdAt,
+    });
+
+    if (updated.length === 0) {
+      res.status(404).json({ error: "Server not found" });
+      return;
+    }
+
+    res.json(updated[0]);
+  } catch (err) {
+    next(err);
+  }
+});
+
 serversRouter.delete("/servers/:id", requireRole("editor", "admin"), async (req, res, next) => {
   try {
     const id = Number(req.params.id);

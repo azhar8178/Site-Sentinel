@@ -438,6 +438,36 @@ paths:
                 $ref: "#/components/schemas/ServerWithMetrics"
         "404":
           description: Server not found
+    put:
+      operationId: updateServer
+      tags: [servers]
+      summary: Update server name or hostname
+      parameters:
+        - name: serverId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                hostname:
+                  type: string
+      responses:
+        "200":
+          description: Updated server
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ServerWithMetrics"
+        "404":
+          description: Server not found
     delete:
       operationId: deleteServer
       tags: [servers]

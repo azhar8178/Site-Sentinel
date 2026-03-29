@@ -370,6 +370,11 @@ export type TestWhatsAppConnectionBody = {
   testRecipient: string;
 };
 
+export type UpdateServerBody = {
+  name?: string;
+  hostname?: string;
+};
+
 export type GetServerMetricsParams = {
   /**
    * Number of hours of history

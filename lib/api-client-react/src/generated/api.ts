@@ -48,6 +48,7 @@ import type {
   UpdateAlertConfigInput,
   UpdateMagentoConfigInput,
   UpdateServerAlertConfigInput,
+  UpdateServerBody,
   UpdateSiteInput,
   UpdateUserInput,
   UserResponse,
@@ -1825,6 +1826,93 @@ export function useGetServer<
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
+
+/**
+ * @summary Update server name or hostname
+ */
+export const getUpdateServerUrl = (serverId: number) => {
+  return `/api/servers/${serverId}`;
+};
+
+export const updateServer = async (
+  serverId: number,
+  updateServerBody: UpdateServerBody,
+  options?: RequestInit,
+): Promise<ServerWithMetrics> => {
+  return customFetch<ServerWithMetrics>(getUpdateServerUrl(serverId), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(updateServerBody),
+  });
+};
+
+export const getUpdateServerMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateServer>>,
+    TError,
+    { serverId: number; data: BodyType<UpdateServerBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateServer>>,
+  TError,
+  { serverId: number; data: BodyType<UpdateServerBody> },
+  TContext
+> => {
+  const mutationKey = ["updateServer"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateServer>>,
+    { serverId: number; data: BodyType<UpdateServerBody> }
+  > = (props) => {
+    const { serverId, data } = props ?? {};
+
+    return updateServer(serverId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateServerMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateServer>>
+>;
+export type UpdateServerMutationBody = BodyType<UpdateServerBody>;
+export type UpdateServerMutationError = ErrorType<void>;
+
+/**
+ * @summary Update server name or hostname
+ */
+export const useUpdateServer = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateServer>>,
+    TError,
+    { serverId: number; data: BodyType<UpdateServerBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateServer>>,
+  TError,
+  { serverId: number; data: BodyType<UpdateServerBody> },
+  TContext
+> => {
+  return useMutation(getUpdateServerMutationOptions(options));
+};
 
 /**
  * @summary Delete a server
