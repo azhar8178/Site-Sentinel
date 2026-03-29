@@ -213,6 +213,12 @@ try {
     await run("drop is_admin", `ALTER TABLE users DROP COLUMN is_admin`);
   }
 
+  const { rows: existingSites } = await client.query(`SELECT 1 FROM sites LIMIT 1`);
+  if (existingSites.length === 0) {
+    await run("seed Love Furniture IE", `INSERT INTO sites (name, url, is_active, slow_threshold_ms) VALUES ('Love Furniture IE', 'https://www.lovefurniture.ie/', true, 5000)`);
+    await run("seed Love Furniture UK", `INSERT INTO sites (name, url, is_active, slow_threshold_ms) VALUES ('Love Furniture UK', 'https://www.lovefurniture.co.uk/', true, 5000)`);
+  }
+
   console.log("Migration completed successfully");
 } catch (err) {
   console.error("Migration failed:", err);
