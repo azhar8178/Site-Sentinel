@@ -1,11 +1,11 @@
 {
   "expo": {
     "name": "Site Monitor",
-    "slug": "mobile",
+    "slug": "site-monitor",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "mobile",
+    "scheme": "sitemonitor",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
@@ -14,9 +14,16 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": false
+      "supportsTablet": false,
+      "bundleIdentifier": "ie.lovefurniture.sitemonitor"
     },
-    "android": {},
+    "android": {
+      "package": "ie.lovefurniture.sitemonitor",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/icon.png",
+        "backgroundColor": "#1e40af"
+      }
+    },
     "web": {
       "favicon": "./assets/images/icon.png"
     },
@@ -24,7 +31,7 @@
       [
         "expo-router",
         {
-          "origin": "https://replit.com/"
+          "origin": "https://monit.lovefurniture.ie"
         }
       ],
       "expo-font",
@@ -33,6 +40,11 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": ""
+      }
     }
   }
 }
