@@ -22,22 +22,25 @@ interface MagentoCredentials {
 }
 
 async function getCredentials(): Promise<MagentoCredentials> {
+  let dbConfig: { apiUrl?: string; adminUser?: string; adminPass?: string; apiToken?: string; isEnabled?: boolean } = {};
   try {
     const configs = await db.select().from(magentoConfigTable).limit(1);
-    if (configs.length > 0 && configs[0].isEnabled && configs[0].apiUrl) {
-      return {
-        apiUrl: configs[0].apiUrl,
-        adminUser: configs[0].adminUser,
-        adminPass: configs[0].adminPass,
-        apiToken: configs[0].apiToken,
+    if (configs.length > 0 && configs[0].isEnabled) {
+      dbConfig = {
+        apiUrl: configs[0].apiUrl || undefined,
+        adminUser: configs[0].adminUser || undefined,
+        adminPass: configs[0].adminPass || undefined,
+        apiToken: configs[0].apiToken || undefined,
+        isEnabled: configs[0].isEnabled,
       };
     }
   } catch {}
+
   return {
-    apiUrl: ENV_MAGENTO_API_URL,
-    adminUser: ENV_MAGENTO_ADMIN_USER,
-    adminPass: ENV_MAGENTO_ADMIN_PASS,
-    apiToken: ENV_MAGENTO_API_TOKEN,
+    apiUrl: dbConfig.apiUrl || ENV_MAGENTO_API_URL,
+    adminUser: dbConfig.adminUser || ENV_MAGENTO_ADMIN_USER,
+    adminPass: dbConfig.adminPass || ENV_MAGENTO_ADMIN_PASS,
+    apiToken: dbConfig.apiToken || ENV_MAGENTO_API_TOKEN,
   };
 }
 
