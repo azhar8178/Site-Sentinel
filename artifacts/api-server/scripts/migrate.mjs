@@ -1,4 +1,5 @@
 import pg from "pg";
+import bcrypt from "bcryptjs";
 
 const client = new pg.Client({ connectionString: process.env.DATABASE_URL });
 await client.connect();
@@ -191,6 +192,14 @@ try {
 
   await run("seed alert_config", `INSERT INTO alert_config (is_enabled) SELECT true WHERE NOT EXISTS (SELECT 1 FROM alert_config LIMIT 1)`);
   await run("seed server_alert_config", `INSERT INTO server_alert_config (is_enabled, cpu_threshold, ram_threshold, disk_threshold, offline_timeout_minutes) SELECT true, 90, 90, 95, 5 WHERE NOT EXISTS (SELECT 1 FROM server_alert_config LIMIT 1)`);
+  await run("seed magento_config", `INSERT INTO magento_config (is_enabled) SELECT false WHERE NOT EXISTS (SELECT 1 FROM magento_config LIMIT 1)`);
+
+  const { rows: existingUsers } = await client.query(`SELECT 1 FROM users LIMIT 1`);
+  if (existingUsers.length === 0) {
+    const hash = await bcrypt.hash("admin123", 10);
+    await client.query(`INSERT INTO users (username, password_hash, role) VALUES ('admin', $1, 'admin')`, [hash]);
+    console.log("  OK: seed default admin user (admin / admin123)");
+  }
 
   const { rows: siteIdNull } = await client.query(`SELECT is_nullable FROM information_schema.columns WHERE table_name = 'alerts' AND column_name = 'site_id'`);
   if (siteIdNull.length > 0 && siteIdNull[0].is_nullable === "NO") {
