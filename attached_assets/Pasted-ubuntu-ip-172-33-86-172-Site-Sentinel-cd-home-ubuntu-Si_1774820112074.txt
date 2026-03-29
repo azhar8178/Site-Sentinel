@@ -1,0 +1,67 @@
+ubuntu@ip-172-33-86-172:~/Site-Sentinel$ cd /home/ubuntu/Site-Sentinel
+git stash
+git pull
+docker compose up -d --build
+error: Entry 'artifacts/mobile/eas.json' not uptodate. Cannot merge.
+Cannot save the current worktree state
+remote: Enumerating objects: 6, done.
+remote: Counting objects: 100% (6/6), done.
+remote: Compressing objects: 100% (2/2), done.
+remote: Total 4 (delta 2), reused 4 (delta 2), pack-reused 0 (from 0)
+Unpacking objects: 100% (4/4), 94.73 KiB | 447.00 KiB/s, done.
+From github.com:azhar8178/Site-Sentinel
+   05e1a5a..b1ab0fc  main       -> origin/main
+Updating 4b984de..b1ab0fc
+error: Your local changes to the following files would be overwritten by merge:
+        artifacts/mobile/eas.json
+Please commit your changes or stash them before you merge.
+error: Your local changes to the following files would be overwritten by merge:
+        artifacts/mobile/app.json
+Please commit your changes or stash them before you merge.
+Aborting
+[+] Building 1.0s (29/29) FINISHED                                                                                                                                         
+ => [internal] load local bake definitions                                                                                                                            0.0s
+ => => reading from stdin 504B                                                                                                                                        0.0s
+ => [internal] load build definition from Dockerfile                                                                                                                  0.0s
+ => => transferring dockerfile: 1.87kB                                                                                                                                0.0s
+ => [internal] load metadata for docker.io/library/node:24-slim                                                                                                       0.3s
+ => [internal] load .dockerignore                                                                                                                                     0.0s
+ => => transferring context: 311B                                                                                                                                     0.0s
+ => [internal] load build context                                                                                                                                     0.0s
+ => => transferring context: 25.50kB                                                                                                                                  0.0s
+ => [builder 1/7] FROM docker.io/library/node:24-slim@sha256:06e5c9f86bfa0aaa7163cf37a5eaa8805f16b9acb48e3f85645b09d459fc2a9f                                         0.0s
+ => => resolve docker.io/library/node:24-slim@sha256:06e5c9f86bfa0aaa7163cf37a5eaa8805f16b9acb48e3f85645b09d459fc2a9f                                                 0.0s
+ => CACHED [builder 2/7] RUN npm install -g pnpm@10                                                                                                                   0.0s
+ => CACHED [builder 3/7] WORKDIR /app                                                                                                                                 0.0s
+ => CACHED [builder 4/7] COPY . .                                                                                                                                     0.0s
+ => CACHED [builder 5/7] RUN pnpm install --frozen-lockfile                                                                                                           0.0s
+ => CACHED [builder 6/7] RUN pnpm --filter @workspace/api-server run build                                                                                            0.0s
+ => CACHED [builder 7/7] RUN pnpm --filter @workspace/web-dashboard run build                                                                                         0.0s
+ => CACHED [stage-1  4/18] COPY --from=builder /app/package.json /app/pnpm-lock.yaml /app/pnpm-workspace.yaml ./                                                      0.0s
+ => CACHED [stage-1  5/18] COPY --from=builder /app/artifacts/api-server/package.json ./artifacts/api-server/package.json                                             0.0s
+ => CACHED [stage-1  6/18] COPY --from=builder /app/artifacts/mobile/package.json ./artifacts/mobile/package.json                                                     0.0s
+ => CACHED [stage-1  7/18] COPY --from=builder /app/artifacts/web-dashboard/package.json ./artifacts/web-dashboard/package.json                                       0.0s
+ => CACHED [stage-1  8/18] COPY --from=builder /app/lib/db/package.json ./lib/db/package.json                                                                         0.0s
+ => CACHED [stage-1  9/18] COPY --from=builder /app/lib/api-spec/package.json ./lib/api-spec/package.json                                                             0.0s
+ => CACHED [stage-1 10/18] COPY --from=builder /app/lib/api-zod/package.json ./lib/api-zod/package.json                                                               0.0s
+ => CACHED [stage-1 11/18] COPY --from=builder /app/lib/api-client-react/package.json ./lib/api-client-react/package.json                                             0.0s
+ => CACHED [stage-1 12/18] COPY --from=builder /app/scripts/package.json ./scripts/package.json                                                                       0.0s
+ => CACHED [stage-1 13/18] COPY --from=builder /app/artifacts/mockup-sandbox/package.json ./artifacts/mockup-sandbox/package.json                                     0.0s
+ => CACHED [stage-1 14/18] RUN pnpm install --frozen-lockfile --prod                                                                                                  0.0s
+ => CACHED [stage-1 15/18] COPY --from=builder /app/artifacts/api-server/dist ./artifacts/api-server/dist                                                             0.0s
+ => CACHED [stage-1 16/18] COPY --from=builder /app/artifacts/api-server/scripts ./artifacts/api-server/scripts                                                       0.0s
+ => CACHED [stage-1 17/18] COPY --from=builder /app/artifacts/web-dashboard/dist ./artifacts/web-dashboard/dist                                                       0.0s
+ => CACHED [stage-1 18/18] COPY --from=builder /app/agent ./agent                                                                                                     0.0s
+ => exporting to image                                                                                                                                                0.1s
+ => => exporting layers                                                                                                                                               0.0s
+ => => exporting manifest sha256:299dde435331fbd8bd8b2f070cd509b5f4180677418c9cf27920f26787cdc462                                                                     0.0s
+ => => exporting config sha256:56b75e0e0c8afec750c1aec3cf643ec80249dc08d64614a70dcdb8e46af900c5                                                                       0.0s
+ => => exporting attestation manifest sha256:60f1042f2fa4d958a6551fca1d943ba6778be7c87b07dbe4a386cd715c0624d0                                                         0.0s
+ => => exporting manifest list sha256:b8d8773edd657f8f13648bb74fdebb72d0e450789737bb2d4feef4311d1c179d                                                                0.0s
+ => => naming to docker.io/library/site-sentinel-api:latest                                                                                                           0.0s
+ => => unpacking to docker.io/library/site-sentinel-api:latest                                                                                                        0.0s
+ => resolving provenance for metadata file                                                                                                                            0.0s
+[+] up 3/3
+ ✔ Image site-sentinel-api            Built                                                                                                                           1.0ss
+ ✔ Container site-sentinel-postgres-1 Healthy                                                                                                                         10.8s
+ ✔ Container site-sentinel-api-1      Started                                                                                                                         11.0s
