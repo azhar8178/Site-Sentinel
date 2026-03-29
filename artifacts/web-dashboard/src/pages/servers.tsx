@@ -76,9 +76,15 @@ function ServerDetailModal({
     cpu: m.cpuPercent,
     mem: m.memTotalBytes > 0 ? (m.memUsedBytes / m.memTotalBytes) * 100 : 0,
     disk: m.diskTotalBytes > 0 ? (m.diskUsedBytes / m.diskTotalBytes) * 100 : 0,
+    connections: m.connectionCount || 0,
+    httpConnections: m.httpConnectionCount || 0,
+    processes: m.processCount || 0,
+    phpActive: m.phpFpm?.active || 0,
+    phpTotal: m.phpFpm?.total || 0,
   }));
 
   const latest = metrics && metrics.length > 0 ? metrics[metrics.length - 1] : null;
+  const latestProcesses: any[] = (latest as any)?.topProcesses || [];
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
@@ -152,6 +158,15 @@ function ServerDetailModal({
                     { label: "Memory", value: `${formatBytes((latest as any).memUsedBytes)} / ${formatBytes((latest as any).memTotalBytes)}` },
                     { label: "Disk", value: `${formatBytes((latest as any).diskUsedBytes)} / ${formatBytes((latest as any).diskTotalBytes)}` },
                     { label: "Network", value: `${formatBytes((latest as any).netRxBytes)} rx / ${formatBytes((latest as any).netTxBytes)} tx` },
+                    ...((latest as any).connectionCount != null ? [
+                      { label: "Connections", value: `${(latest as any).connectionCount} total / ${(latest as any).httpConnectionCount || 0} HTTP` },
+                    ] : []),
+                    ...((latest as any).processCount != null ? [
+                      { label: "Processes", value: String((latest as any).processCount) },
+                    ] : []),
+                    ...((latest as any).phpFpm?.total > 0 ? [
+                      { label: "PHP-FPM Workers", value: `${(latest as any).phpFpm.active} active / ${(latest as any).phpFpm.total} total` },
+                    ] : []),
                   ].map(s => (
                     <div key={s.label} className="bg-secondary/50 rounded-xl p-3 border">
                       <p className="text-xs text-muted-foreground mb-1">{s.label}</p>
@@ -179,6 +194,76 @@ function ServerDetailModal({
                       </div>
                     </div>
                   ))}
+
+                  {cpuData.some(d => d.connections > 0 || d.phpActive > 0) && (
+                    <>
+                      <div className="bg-secondary/30 rounded-xl p-4 border">
+                        <p className="text-sm font-semibold mb-3">Connections</p>
+                        <div className="h-[120px]">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <LineChart data={cpuData}>
+                              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                              <XAxis dataKey="time" tick={{ fontSize: 10, fill: "#64748b" }} axisLine={false} tickLine={false} />
+                              <YAxis tick={{ fontSize: 10, fill: "#64748b" }} axisLine={false} tickLine={false} />
+                              <Tooltip contentStyle={{ borderRadius: "8px", border: "none", boxShadow: "0 2px 10px rgba(0,0,0,0.1)" }} />
+                              <Line type="monotone" dataKey="connections" name="Total" stroke="#10b981" strokeWidth={2} dot={false} />
+                              <Line type="monotone" dataKey="httpConnections" name="HTTP" stroke="#06b6d4" strokeWidth={2} dot={false} />
+                            </LineChart>
+                          </ResponsiveContainer>
+                        </div>
+                      </div>
+
+                      {cpuData.some(d => d.phpActive > 0) && (
+                        <div className="bg-secondary/30 rounded-xl p-4 border">
+                          <p className="text-sm font-semibold mb-3">PHP-FPM Workers</p>
+                          <div className="h-[120px]">
+                            <ResponsiveContainer width="100%" height="100%">
+                              <LineChart data={cpuData}>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                                <XAxis dataKey="time" tick={{ fontSize: 10, fill: "#64748b" }} axisLine={false} tickLine={false} />
+                                <YAxis tick={{ fontSize: 10, fill: "#64748b" }} axisLine={false} tickLine={false} />
+                                <Tooltip contentStyle={{ borderRadius: "8px", border: "none", boxShadow: "0 2px 10px rgba(0,0,0,0.1)" }} />
+                                <Line type="monotone" dataKey="phpActive" name="Active" stroke="#ef4444" strokeWidth={2} dot={false} />
+                                <Line type="monotone" dataKey="phpTotal" name="Total" stroke="#94a3b8" strokeWidth={2} dot={false} />
+                              </LineChart>
+                            </ResponsiveContainer>
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )}
+
+                  {latestProcesses.length > 0 && (
+                    <div className="bg-secondary/30 rounded-xl p-4 border">
+                      <p className="text-sm font-semibold mb-3">Top Processes (by CPU)</p>
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-xs">
+                          <thead>
+                            <tr className="border-b text-left text-muted-foreground">
+                              <th className="pb-2 pr-3">PID</th>
+                              <th className="pb-2 pr-3">User</th>
+                              <th className="pb-2 pr-3 text-right">CPU%</th>
+                              <th className="pb-2 pr-3 text-right">MEM%</th>
+                              <th className="pb-2 pr-3 text-right">RSS</th>
+                              <th className="pb-2">Command</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {latestProcesses.map((p: any, i: number) => (
+                              <tr key={i} className={`border-b border-secondary ${p.cpu > 50 ? "bg-red-50" : p.cpu > 20 ? "bg-amber-50" : ""}`}>
+                                <td className="py-1.5 pr-3 font-mono">{p.pid}</td>
+                                <td className="py-1.5 pr-3">{p.user}</td>
+                                <td className="py-1.5 pr-3 text-right font-semibold">{p.cpu?.toFixed(1)}</td>
+                                <td className="py-1.5 pr-3 text-right">{p.mem?.toFixed(1)}</td>
+                                <td className="py-1.5 pr-3 text-right">{formatBytes(p.rss || 0)}</td>
+                                <td className="py-1.5 font-mono text-[10px] truncate max-w-[200px]" title={p.command}>{p.command}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
                 </>
               ) : (
                 <div className="text-center py-12 text-muted-foreground">

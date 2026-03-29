@@ -194,11 +194,47 @@ try {
   await run("seed server_alert_config", `INSERT INTO server_alert_config (is_enabled, cpu_threshold, ram_threshold, disk_threshold, offline_timeout_minutes) SELECT true, 90, 90, 95, 5 WHERE NOT EXISTS (SELECT 1 FROM server_alert_config LIMIT 1)`);
   await run("seed magento_config", `INSERT INTO magento_config (is_enabled) SELECT false WHERE NOT EXISTS (SELECT 1 FROM magento_config LIMIT 1)`);
 
+  if (process.env.MAGENTO_API_URL) {
+    const { rows: mc } = await client.query(`SELECT api_url FROM magento_config LIMIT 1`);
+    if (mc.length > 0 && (!mc[0].api_url || mc[0].api_url === '')) {
+      const apiUrl = process.env.MAGENTO_API_URL || '';
+      const adminUser = process.env.MAGENTO_ADMIN_USER || '';
+      const adminPass = process.env.MAGENTO_ADMIN_PASS || '';
+      const apiToken = process.env.MAGENTO_API_TOKEN || '';
+      const hasAnyCreds = apiToken || (adminUser && adminPass);
+      if (apiUrl && hasAnyCreds) {
+        await client.query(
+          `UPDATE magento_config SET api_url = $1, admin_user = $2, admin_pass = $3, api_token = $4, is_enabled = true WHERE api_url IS NULL OR api_url = ''`,
+          [apiUrl, adminUser, adminPass, apiToken]
+        );
+        console.log("  OK: populated magento_config from environment variables");
+      }
+    }
+  }
+
   const { rows: existingUsers } = await client.query(`SELECT 1 FROM users LIMIT 1`);
   if (existingUsers.length === 0) {
     const hash = await bcrypt.hash("admin123", 10);
     await client.query(`INSERT INTO users (username, password_hash, role) VALUES ('admin', $1, 'admin')`, [hash]);
     console.log("  OK: seed default admin user (admin / admin123)");
+  }
+
+  const newMetricCols = [
+    { name: "process_count", type: "integer" },
+    { name: "connection_count", type: "integer" },
+    { name: "http_connection_count", type: "integer" },
+    { name: "top_processes", type: "jsonb" },
+    { name: "php_fpm", type: "jsonb" },
+    { name: "mysql_stats", type: "jsonb" },
+  ];
+  for (const col of newMetricCols) {
+    const { rows: colExists } = await client.query(
+      `SELECT 1 FROM information_schema.columns WHERE table_name = 'server_metrics' AND column_name = $1`,
+      [col.name]
+    );
+    if (colExists.length === 0) {
+      await run(`server_metrics.${col.name}`, `ALTER TABLE server_metrics ADD COLUMN ${col.name} ${col.type}`);
+    }
   }
 
   const { rows: siteIdNull } = await client.query(`SELECT is_nullable FROM information_schema.columns WHERE table_name = 'alerts' AND column_name = 'site_id'`);

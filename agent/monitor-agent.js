@@ -4,6 +4,7 @@ const fs = require("fs");
 const https = require("https");
 const http = require("http");
 const os = require("os");
+const { execSync } = require("child_process");
 
 const API_URL = process.env.MONITOR_API_URL;
 const API_KEY = process.env.MONITOR_API_KEY;
@@ -22,6 +23,14 @@ let prevNet = null;
 function readFile(path) {
   try {
     return fs.readFileSync(path, "utf-8");
+  } catch {
+    return null;
+  }
+}
+
+function exec(cmd) {
+  try {
+    return execSync(cmd, { timeout: 5000, encoding: "utf-8" }).trim();
   } catch {
     return null;
   }
@@ -111,6 +120,104 @@ function getLoadAvg() {
   };
 }
 
+function getTopProcesses() {
+  const output = exec("ps aux --sort=-%cpu --no-headers | head -10");
+  if (!output) return [];
+
+  return output
+    .split("\n")
+    .filter((l) => l.trim())
+    .map((line) => {
+      const parts = line.trim().split(/\s+/);
+      const user = parts[0];
+      const pid = parseInt(parts[1], 10);
+      const cpu = parseFloat(parts[2]) || 0;
+      const mem = parseFloat(parts[3]) || 0;
+      const rss = parseInt(parts[5], 10) * 1024;
+      const command = parts.slice(10).join(" ").substring(0, 200);
+      return { pid, user, cpu, mem, rss, command };
+    });
+}
+
+function getPhpFpmStatus() {
+  const result = { active: 0, idle: 0, total: 0, maxChildren: 0 };
+
+  const phpProcesses = exec("ps aux | grep 'php-fpm' | grep -v grep");
+  if (phpProcesses) {
+    const lines = phpProcesses.split("\n").filter((l) => l.trim());
+    result.total = lines.length;
+    result.active = lines.filter(
+      (l) => !l.includes("pool") || !l.includes("idle")
+    ).length;
+    result.idle = result.total - result.active;
+  }
+
+  const statusOutput = exec(
+    "curl -s http://127.0.0.1/fpm-status?json 2>/dev/null || curl -s http://127.0.0.1:9000/fpm-status?json 2>/dev/null"
+  );
+  if (statusOutput) {
+    try {
+      const status = JSON.parse(statusOutput);
+      result.active = status["active processes"] || result.active;
+      result.idle = status["idle processes"] || result.idle;
+      result.total = status["total processes"] || result.total;
+      result.maxChildren =
+        status["max children reached"] || result.maxChildren;
+    } catch {}
+  }
+
+  if (result.total === 0) {
+    const conf = exec(
+      "grep -r 'pm.max_children' /etc/php*/*/fpm/pool.d/ 2>/dev/null | head -1"
+    );
+    if (conf) {
+      const m = conf.match(/=\s*(\d+)/);
+      if (m) result.maxChildren = parseInt(m[1], 10);
+    }
+  }
+
+  return result;
+}
+
+function getMySqlStats() {
+  const output = exec(
+    "mysqladmin status 2>/dev/null || mysql -e 'SHOW STATUS' 2>/dev/null | head -5"
+  );
+  if (!output) return null;
+
+  const threads = output.match(/Threads:\s*(\d+)/);
+  const questions = output.match(/Questions:\s*(\d+)/);
+  const slowQueries = output.match(/Slow queries:\s*(\d+)/);
+
+  if (!threads) return null;
+
+  return {
+    threads: parseInt(threads[1], 10) || 0,
+    questions: questions ? parseInt(questions[1], 10) : 0,
+    slowQueries: slowQueries ? parseInt(slowQueries[1], 10) : 0,
+  };
+}
+
+function getConnectionCount() {
+  const output = exec("ss -tun state established 2>/dev/null | wc -l");
+  if (!output) return 0;
+  return Math.max(0, parseInt(output, 10) - 1);
+}
+
+function getProcessCount() {
+  const output = exec("ls -1 /proc | grep -c '^[0-9]' 2>/dev/null");
+  if (!output) return 0;
+  return parseInt(output, 10) || 0;
+}
+
+function getHttpConnections() {
+  const output = exec(
+    "ss -tun state established '( dport = :80 or dport = :443 or sport = :80 or sport = :443 )' 2>/dev/null | wc -l"
+  );
+  if (!output) return 0;
+  return Math.max(0, parseInt(output, 10) - 1);
+}
+
 function postMetrics(data) {
   const url = new URL(`${API_URL}/api/servers/report`);
   const isHttps = url.protocol === "https:";
@@ -166,6 +273,12 @@ async function collect() {
   const disk = getDisk();
   const net = getNetwork();
   const load = getLoadAvg();
+  const topProcesses = getTopProcesses();
+  const phpFpm = getPhpFpmStatus();
+  const mysql = getMySqlStats();
+  const connCount = getConnectionCount();
+  const procCount = getProcessCount();
+  const httpConns = getHttpConnections();
 
   const data = {
     cpuPercent: cpu,
@@ -178,21 +291,30 @@ async function collect() {
     loadAvg1m: load.m1,
     loadAvg5m: load.m5,
     loadAvg15m: load.m15,
+    topProcesses,
+    phpFpm,
+    mysql,
+    connectionCount: connCount,
+    processCount: procCount,
+    httpConnectionCount: httpConns,
   };
 
   const ok = await postMetrics(data);
   if (ok) {
-    const memPct = mem.total > 0 ? ((mem.used / mem.total) * 100).toFixed(1) : "0";
-    const diskPct = disk.total > 0 ? ((disk.used / disk.total) * 100).toFixed(1) : "0";
+    const memPct =
+      mem.total > 0 ? ((mem.used / mem.total) * 100).toFixed(1) : "0";
+    const diskPct =
+      disk.total > 0 ? ((disk.used / disk.total) * 100).toFixed(1) : "0";
     console.log(
-      `[${new Date().toISOString()}] CPU: ${cpu}% | Mem: ${memPct}% | Disk: ${diskPct}% | Load: ${load.m1}`
+      `[${new Date().toISOString()}] CPU: ${cpu}% | Mem: ${memPct}% | Disk: ${diskPct}% | Load: ${load.m1} | PHP: ${phpFpm.active}/${phpFpm.total} | Conns: ${connCount} | Procs: ${procCount}`
     );
   }
 }
 
-console.log(`Site Monitor Agent started`);
+console.log(`Site Monitor Agent v2.0 started`);
 console.log(`  API: ${API_URL}`);
 console.log(`  Interval: ${INTERVAL / 1000}s`);
+console.log(`  Features: CPU, Memory, Disk, Network, Load, Top Processes, PHP-FPM, MySQL, Connections`);
 
 getCpuUsage();
 

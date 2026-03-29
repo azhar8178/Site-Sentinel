@@ -285,6 +285,13 @@ reportRouter.post("/servers/report", async (req, res, next) => {
     const loadAvg5m = clampNum(b.loadAvg5m, 0, 10000, 0);
     const loadAvg15m = clampNum(b.loadAvg15m, 0, 10000, 0);
 
+    const topProcesses = Array.isArray(b.topProcesses) ? b.topProcesses.slice(0, 10) : null;
+    const phpFpm = b.phpFpm && typeof b.phpFpm === "object" ? b.phpFpm : null;
+    const mysql = b.mysql && typeof b.mysql === "object" ? b.mysql : null;
+    const processCount = b.processCount ? clampNum(b.processCount, 0, 100000, 0) : null;
+    const connectionCount = b.connectionCount ? clampNum(b.connectionCount, 0, 100000, 0) : null;
+    const httpConnectionCount = b.httpConnectionCount ? clampNum(b.httpConnectionCount, 0, 100000, 0) : null;
+
     await db.insert(serverMetricsTable).values({
       serverId: server.id,
       cpuPercent,
@@ -297,6 +304,12 @@ reportRouter.post("/servers/report", async (req, res, next) => {
       loadAvg1m,
       loadAvg5m,
       loadAvg15m,
+      processCount,
+      connectionCount,
+      httpConnectionCount,
+      topProcesses,
+      phpFpm,
+      mysql,
     });
 
     await db

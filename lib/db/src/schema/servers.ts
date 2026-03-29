@@ -1,4 +1,4 @@
-import { pgTable, serial, text, integer, boolean, timestamp, real, bigint } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, integer, boolean, timestamp, real, bigint, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { relations } from "drizzle-orm";
@@ -35,6 +35,12 @@ export const serverMetricsTable = pgTable("server_metrics", {
   loadAvg1m: real("load_avg_1m").notNull(),
   loadAvg5m: real("load_avg_5m").notNull(),
   loadAvg15m: real("load_avg_15m").notNull(),
+  processCount: integer("process_count"),
+  connectionCount: integer("connection_count"),
+  httpConnectionCount: integer("http_connection_count"),
+  topProcesses: jsonb("top_processes"),
+  phpFpm: jsonb("php_fpm"),
+  mysql: jsonb("mysql_stats"),
   recordedAt: timestamp("recorded_at").notNull().defaultNow(),
 });
 

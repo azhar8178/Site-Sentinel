@@ -29,7 +29,7 @@ The project is built as a pnpm monorepo, leveraging Node.js 24 and TypeScript 5.
 - **API Server (`artifacts/api-server`):** Express 5 API that serves both the API endpoints and the built web dashboard static files. Includes monitoring worker (60s site checks), server vitals alerting (60s), Magento sync (5m), and notification services (email, Slack, WhatsApp).
 - **Web Dashboard (`artifacts/web-dashboard`):** React + Vite + Tailwind CSS web application. Pages: Dashboard, History, Store, Servers, Alerts, Settings. Built into the Docker image and served by the API server.
 - **Mobile App (`artifacts/mobile`):** Expo (React Native) application for Android APK builds. Mirrors the web dashboard's functionality.
-- **Server Agent (`agent/`):** Lightweight Node.js script that runs on each monitored server. Reports CPU, memory, disk, and network stats every 30s via API key authentication.
+- **Server Agent (`agent/`):** Lightweight Node.js v2 script that runs on each monitored server. Reports CPU, memory, disk, network, load average, top processes (by CPU), PHP-FPM worker stats, MySQL stats, connection counts every 30s via API key authentication.
 
 **Technical Details:**
 - **Database:** PostgreSQL with Drizzle ORM. Schema in `lib/db/src/schema/`.
