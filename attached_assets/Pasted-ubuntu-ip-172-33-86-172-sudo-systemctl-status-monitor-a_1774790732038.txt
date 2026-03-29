@@ -1,0 +1,32 @@
+ubuntu@ip-172-33-86-172:~$ sudo systemctl status monitor-agent
+sudo journalctl -u monitor-agent -f
+● monitor-agent.service - Site Monitor Agent
+     Loaded: loaded (/etc/systemd/system/monitor-agent.service; enabled; vendor preset: enabled)
+     Active: active (running) since Sun 2026-03-29 12:17:44 UTC; 1h 7min ago
+   Main PID: 747702 (MainThread)
+      Tasks: 11 (limit: 4528)
+     Memory: 56.1M
+        CPU: 435ms
+     CGroup: /system.slice/monitor-agent.service
+             └─747702 /usr/bin/node /opt/monitor-agent/monitor-agent.js
+
+Mar 29 13:20:46 ip-172-33-86-172 node[747702]: Report failed: HTTP 401 - {"error":"Authentication required"}
+Mar 29 13:21:16 ip-172-33-86-172 node[747702]: Report failed: HTTP 401 - {"error":"Authentication required"}
+Mar 29 13:21:46 ip-172-33-86-172 node[747702]: Report failed: HTTP 401 - {"error":"Authentication required"}
+Mar 29 13:22:16 ip-172-33-86-172 node[747702]: Report failed: HTTP 401 - {"error":"Authentication required"}
+Mar 29 13:22:46 ip-172-33-86-172 node[747702]: Report failed: HTTP 401 - {"error":"Authentication required"}
+Mar 29 13:23:16 ip-172-33-86-172 node[747702]: Report failed: HTTP 401 - {"error":"Authentication required"}
+Mar 29 13:23:46 ip-172-33-86-172 node[747702]: Report failed: HTTP 401 - {"error":"Authentication required"}
+Mar 29 13:24:16 ip-172-33-86-172 node[747702]: Report failed: HTTP 401 - {"error":"Authentication required"}
+Mar 29 13:24:46 ip-172-33-86-172 node[747702]: Report failed: HTTP 401 - {"error":"Authentication required"}
+Mar 29 13:25:16 ip-172-33-86-172 node[747702]: Report failed: HTTP 401 - {"error":"Authentication required"}
+Mar 29 13:20:46 ip-172-33-86-172 node[747702]: Report failed: HTTP 401 - {"error":"Authentication required"}
+Mar 29 13:21:16 ip-172-33-86-172 node[747702]: Report failed: HTTP 401 - {"error":"Authentication required"}
+Mar 29 13:21:46 ip-172-33-86-172 node[747702]: Report failed: HTTP 401 - {"error":"Authentication required"}
+Mar 29 13:22:16 ip-172-33-86-172 node[747702]: Report failed: HTTP 401 - {"error":"Authentication required"}
+Mar 29 13:22:46 ip-172-33-86-172 node[747702]: Report failed: HTTP 401 - {"error":"Authentication required"}
+Mar 29 13:23:16 ip-172-33-86-172 node[747702]: Report failed: HTTP 401 - {"error":"Authentication required"}
+Mar 29 13:23:46 ip-172-33-86-172 node[747702]: Report failed: HTTP 401 - {"error":"Authentication required"}
+Mar 29 13:24:16 ip-172-33-86-172 node[747702]: Report failed: HTTP 401 - {"error":"Authentication required"}
+Mar 29 13:24:46 ip-172-33-86-172 node[747702]: Report failed: HTTP 401 - {"error":"Authentication required"}
+Mar 29 13:25:16 ip-172-33-86-172 node[747702]: Report failed: HTTP 401 - {"error":"Authentication required"}
