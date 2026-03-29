@@ -1,0 +1,20 @@
+ubuntu@ip-172-33-86-172:~/Site-Sentinel$ curl -s https://monit.lovefurniture.ie/api/healthz
+{"status":"ok"}ubuntu@ip-172-33-86-172:~/docker psinel$ docker ps
+docker compose logs --tail=10 | grep -i "magento\|sync\|listening"
+CONTAINER ID   IMAGE                COMMAND                  CREATED             STATUS                       PORTS                      NAMES
+fcc099ad88d2   site-sentinel-api    "docker-entrypoint.s…"   6 minutes ago       Up 6 minutes (healthy)       127.0.0.1:8080->8080/tcp   site-sentinel-api-1
+9a9a6ca6663d   postgres:16-alpine   "docker-entrypoint.s…"   About an hour ago   Up About an hour (healthy)   127.0.0.1:5432->5432/tcp   site-sentinel-postgres-1
+api-1       | {"level":30,"time":1774820812550,"pid":18,"hostname":"fcc099ad88d2","req":{"id":92,"method":"GET","url":"/api/magento/stats/by-store"},"res":{"statusCode":401},"responseTime":2,"msg":"request completed"}
+postgres-1  | 2026-03-29 21:41:40.299 UTC [26] LOG:  checkpoint complete: wrote 27 buffers (0.2%); 0 WAL file(s) added, 0 removed, 0 recycled; write=2.607 s, sync=0.002 s, total=2.616 s; sync files=18, longest=0.001 s, average=0.001 s; distance=232 kB, estimate=298 kB; lsn=0/21FAEC0, redo lsn=0/21FAE88
+postgres-1  | 2026-03-29 21:46:40.691 UTC [26] LOG:  checkpoint complete: wrote 34 buffers (0.2%); 0 WAL file(s) added, 0 removed, 0 recycled; write=3.312 s, sync=0.004 s, total=3.324 s; sync files=23, longest=0.003 s, average=0.001 s; distance=221 kB, estimate=290 kB; lsn=0/2232688, redo lsn=0/2232650
+ubuntu@ip-172-33-86-172:~/Site-Sentinel$ docker ps
+curl -s https://monit.lovefurniture.ie/api/healthz
+CONTAINER ID   IMAGE                COMMAND                  CREATED             STATUS                       PORTS                      NAMES
+fcc099ad88d2   site-sentinel-api    "docker-entrypoint.s…"   6 minutes ago       Up 6 minutes (healthy)       127.0.0.1:8080->8080/tcp   site-sentinel-api-1
+9a9a6ca6663d   postgres:16-alpine   "docker-entrypoint.s…"   About an hour ago   Up About an hour (healthy)   127.0.0.1:5432->5432/tcp   site-sentinel-postgres-1
+ubuntu@ip-172-33-86-172:~/Site-Sentinel$ docker compose exec postgres psql -U monitor -d site_monitor -c "SELECT DISTINCT store_id, count(*) FROM magento_orders GROUP BY store_id ORDER BY store_id;"R BY store_id;"
+ store_id | count 
+----------+-------
+        2 |    15
+        3 |    43
+(2 rows)

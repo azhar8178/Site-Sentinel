@@ -352,8 +352,8 @@ export function stopMagentoSync(): void {
 }
 
 const STORE_MAP: Record<number, { name: string; currency: string }> = {
-  1: { name: "Love Furniture IE", currency: "EUR" },
   2: { name: "Love Furniture UK", currency: "GBP" },
+  3: { name: "Love Furniture IE", currency: "EUR" },
 };
 
 async function getStoreStatsForStore(storeId: number | null) {
