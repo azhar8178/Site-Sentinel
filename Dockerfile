@@ -4,7 +4,6 @@ RUN npm install -g pnpm@10
 
 WORKDIR /app
 COPY . .
-RUN mkdir -p artifacts/mockup-sandbox && echo '{"name":"@workspace/mockup-sandbox","version":"0.0.0","private":true}' > artifacts/mockup-sandbox/package.json
 RUN pnpm install --frozen-lockfile
 RUN pnpm --filter @workspace/api-server run build
 RUN cd artifacts/mobile && pnpm exec expo export --platform web
@@ -23,7 +22,7 @@ COPY --from=builder /app/lib/api-spec/package.json ./lib/api-spec/package.json
 COPY --from=builder /app/lib/api-zod/package.json ./lib/api-zod/package.json
 COPY --from=builder /app/lib/api-client-react/package.json ./lib/api-client-react/package.json
 COPY --from=builder /app/scripts/package.json ./scripts/package.json
-RUN mkdir -p artifacts/mockup-sandbox && echo '{"name":"@workspace/mockup-sandbox","version":"0.0.0","private":true}' > artifacts/mockup-sandbox/package.json
+COPY --from=builder /app/artifacts/mockup-sandbox/package.json ./artifacts/mockup-sandbox/package.json
 
 RUN pnpm install --frozen-lockfile --prod
 
