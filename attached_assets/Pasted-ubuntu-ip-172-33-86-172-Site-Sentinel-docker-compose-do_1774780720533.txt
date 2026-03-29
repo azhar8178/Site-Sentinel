@@ -1,0 +1,34 @@
+ubuntu@ip-172-33-86-172:~/Site-Sentinel$ docker compose down -v
+docker compose up -d
+docker compose logs api --tail 20
+[+] down 4/4
+ ✔ Container site-sentinel-api-1      Removed                                                                                                                          0.0s
+ ✔ Container site-sentinel-postgres-1 Removed                                                                                                                          0.2s
+ ✔ Volume site-sentinel_pgdata        Removed                                                                                                                          0.1s
+ ✔ Network site-sentinel_default      Removed                                                                                                                          0.1s
+[+] up 4/4
+ ✔ Network site-sentinel_default      Created                                                                                                                         0.0ss
+ ✔ Volume site-sentinel_pgdata        Created                                                                                                                         0.0ss
+ ✔ Container site-sentinel-postgres-1 Healthy                                                                                                                         11.0s
+ ✔ Container site-sentinel-api-1      Started                                                                                                                         11.1s
+ubuntu@ip-172-33-86-172:~/Site-Sentinel$ docker compose logs api --tail 20
+api-1  |   OK: servers table
+api-1  |   OK: server_metrics table
+api-1  |   OK: sites table
+api-1  |   OK: check_results table
+api-1  |   OK: alerts table
+api-1  |   OK: alert_config table
+api-1  |   OK: server_alert_config table
+api-1  |   OK: magento_orders table
+api-1  |   OK: magento_carts table
+api-1  |   OK: magento_sync_log table
+api-1  |   OK: magento_config table
+api-1  |   OK: seed alert_config
+api-1  |   OK: seed server_alert_config
+api-1  | Migration completed successfully
+api-1  | {"level":30,"time":1774780685669,"pid":20,"hostname":"01014c4d60b1","webDistPath":"/app/artifacts/mobile/dist","msg":"Serving Expo web build"}
+api-1  | {"level":30,"time":1774780685672,"pid":20,"hostname":"01014c4d60b1","port":8080,"msg":"Server listening"}
+api-1  | {"level":30,"time":1774780685672,"pid":20,"hostname":"01014c4d60b1","intervalMs":60000,"msg":"Starting site monitoring"}
+api-1  | {"level":30,"time":1774780685673,"pid":20,"hostname":"01014c4d60b1","intervalMs":60000,"msg":"Starting server vitals monitoring"}
+api-1  | {"level":30,"time":1774780685720,"pid":20,"hostname":"01014c4d60b1","msg":"Magento API not configured yet. Sync will start when configured via Settings."}
+api-1  | {"level":30,"time":1774780690183,"pid":20,"hostname":"01014c4d60b1","req":{"id":1,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":6,"msg":"request completed"}
