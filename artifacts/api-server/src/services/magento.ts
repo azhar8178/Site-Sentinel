@@ -113,7 +113,7 @@ async function magentoFetch(endpoint: string): Promise<any> {
   const apiUrl = await getMagentoApiUrl();
 
   const url = `${apiUrl}${endpoint}`;
-  logger.debug({ url: url.substring(0, 120) }, "Magento API request");
+  logger.info({ url: url.substring(0, 200), apiUrl, endpoint: endpoint.substring(0, 80) }, "Magento API request");
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
