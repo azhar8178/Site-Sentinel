@@ -9,7 +9,12 @@ import { motion } from "framer-motion";
 
 async function apiFetch<T>(url: string): Promise<T> {
   const base = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
-  const res = await fetch(`${base}${url}`);
+  const token = localStorage.getItem("sentinel_token");
+  const headers: Record<string, string> = {};
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+  const res = await fetch(`${base}${url}`, { headers });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
 }
