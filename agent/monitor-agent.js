@@ -311,14 +311,51 @@ async function collect() {
   }
 }
 
-console.log(`Site Monitor Agent v2.0 started`);
+const AGENT_VERSION = "2.0.0";
+const UPDATE_CHECK_INTERVAL = 3600000;
+let lastUpdateCheck = 0;
+
+function checkForUpdates() {
+  if (Date.now() - lastUpdateCheck < UPDATE_CHECK_INTERVAL) return;
+  lastUpdateCheck = Date.now();
+
+  const url = new URL(`${API_URL}/api/agent/version`);
+  const isHttps = url.protocol === "https:";
+  const mod = isHttps ? https : http;
+
+  const req = mod.get(url.href, (res) => {
+    let data = "";
+    res.on("data", (d) => (data += d));
+    res.on("end", () => {
+      try {
+        const info = JSON.parse(data);
+        if (info.version && info.version !== AGENT_VERSION) {
+          console.log(
+            `[UPDATE] New agent version available: ${info.version} (current: ${AGENT_VERSION})`
+          );
+          console.log(
+            `[UPDATE] Run: curl -sf "${API_URL}/api/agent/script" -H "x-api-key: $MONITOR_API_KEY" -o /opt/monitor-agent/monitor-agent.js && sudo systemctl restart monitor-agent`
+          );
+        }
+      } catch {}
+    });
+  });
+  req.on("error", () => {});
+  req.setTimeout(5000, () => req.destroy());
+}
+
+console.log(`Site Sentinel Monitor Agent v${AGENT_VERSION}`);
 console.log(`  API: ${API_URL}`);
 console.log(`  Interval: ${INTERVAL / 1000}s`);
-console.log(`  Features: CPU, Memory, Disk, Network, Load, Top Processes, PHP-FPM, MySQL, Connections`);
+console.log(
+  `  Features: CPU, Memory, Disk, Network, Load, Top Processes, PHP-FPM, MySQL, Connections`
+);
 
 getCpuUsage();
 
 setTimeout(() => {
   collect();
+  checkForUpdates();
   setInterval(collect, INTERVAL);
+  setInterval(checkForUpdates, UPDATE_CHECK_INTERVAL);
 }, 1000);

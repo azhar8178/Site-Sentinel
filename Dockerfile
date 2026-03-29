@@ -30,6 +30,7 @@ RUN pnpm install --frozen-lockfile --prod
 COPY --from=builder /app/artifacts/api-server/dist ./artifacts/api-server/dist
 COPY --from=builder /app/artifacts/api-server/scripts ./artifacts/api-server/scripts
 COPY --from=builder /app/artifacts/web-dashboard/dist ./artifacts/web-dashboard/dist
+COPY --from=builder /app/agent ./agent
 
 EXPOSE 8080
 
