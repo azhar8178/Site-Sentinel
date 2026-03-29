@@ -486,6 +486,30 @@ paths:
               schema:
                 $ref: "#/components/schemas/SuccessResponse"
 
+  /servers/{serverId}/regenerate-key:
+    post:
+      operationId: regenerateServerKey
+      tags: [servers]
+      summary: Regenerate API key for a server
+      parameters:
+        - name: serverId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: New API key
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  apiKey:
+                    type: string
+        "404":
+          description: Server not found
+
   /servers/{serverId}/metrics:
     get:
       operationId: getServerMetrics

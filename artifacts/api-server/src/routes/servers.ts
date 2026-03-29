@@ -199,6 +199,30 @@ serversRouter.put("/servers/:id", requireRole("editor", "admin"), async (req, re
   }
 });
 
+serversRouter.post("/servers/:id/regenerate-key", requireRole("admin"), async (req, res, next) => {
+  try {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id) || id <= 0) {
+      res.status(400).json({ error: "Invalid server ID" });
+      return;
+    }
+
+    const rawKey = `sm_${crypto.randomBytes(24).toString("hex")}`;
+    const hashedKey = hashApiKey(rawKey);
+
+    const updated = await db.update(serversTable).set({ apiKey: hashedKey, updatedAt: new Date() }).where(eq(serversTable.id, id)).returning({ id: serversTable.id });
+
+    if (updated.length === 0) {
+      res.status(404).json({ error: "Server not found" });
+      return;
+    }
+
+    res.json({ apiKey: rawKey });
+  } catch (err) {
+    next(err);
+  }
+});
+
 serversRouter.delete("/servers/:id", requireRole("editor", "admin"), async (req, res, next) => {
   try {
     const id = Number(req.params.id);

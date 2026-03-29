@@ -34,6 +34,7 @@ import type {
   MagentoOrder,
   MagentoStats,
   MagentoSyncLog,
+  RegenerateServerKey200,
   ServerAlertConfigResponse,
   ServerCreateResponse,
   ServerMetric,
@@ -1996,6 +1997,93 @@ export const useDeleteServer = <
   TContext
 > => {
   return useMutation(getDeleteServerMutationOptions(options));
+};
+
+/**
+ * @summary Regenerate API key for a server
+ */
+export const getRegenerateServerKeyUrl = (serverId: number) => {
+  return `/api/servers/${serverId}/regenerate-key`;
+};
+
+export const regenerateServerKey = async (
+  serverId: number,
+  options?: RequestInit,
+): Promise<RegenerateServerKey200> => {
+  return customFetch<RegenerateServerKey200>(
+    getRegenerateServerKeyUrl(serverId),
+    {
+      ...options,
+      method: "POST",
+    },
+  );
+};
+
+export const getRegenerateServerKeyMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof regenerateServerKey>>,
+    TError,
+    { serverId: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof regenerateServerKey>>,
+  TError,
+  { serverId: number },
+  TContext
+> => {
+  const mutationKey = ["regenerateServerKey"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof regenerateServerKey>>,
+    { serverId: number }
+  > = (props) => {
+    const { serverId } = props ?? {};
+
+    return regenerateServerKey(serverId, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type RegenerateServerKeyMutationResult = NonNullable<
+  Awaited<ReturnType<typeof regenerateServerKey>>
+>;
+
+export type RegenerateServerKeyMutationError = ErrorType<void>;
+
+/**
+ * @summary Regenerate API key for a server
+ */
+export const useRegenerateServerKey = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof regenerateServerKey>>,
+    TError,
+    { serverId: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof regenerateServerKey>>,
+  TError,
+  { serverId: number },
+  TContext
+> => {
+  return useMutation(getRegenerateServerKeyMutationOptions(options));
 };
 
 /**

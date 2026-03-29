@@ -513,6 +513,17 @@ export const DeleteServerResponse = zod.object({
 });
 
 /**
+ * @summary Regenerate API key for a server
+ */
+export const RegenerateServerKeyParams = zod.object({
+  serverId: zod.coerce.number(),
+});
+
+export const RegenerateServerKeyResponse = zod.object({
+  apiKey: zod.string().optional(),
+});
+
+/**
  * @summary Get server metrics history
  */
 export const GetServerMetricsParams = zod.object({

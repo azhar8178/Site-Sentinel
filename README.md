@@ -1,44 +1,54 @@
-# Site Monitor
+# Site Sentinel
 
-A self-hosted monitoring and alerting system for your websites. Checks availability every 60 seconds, sends email alerts when issues are detected, and provides a mobile dashboard + web dashboard for real-time status.
+A self-hosted monitoring and alerting system for your websites. Checks site availability every 60 seconds, monitors server vitals (CPU/memory/disk/network), tracks Magento orders and carts, and sends alerts via Email, Slack, and WhatsApp.
 
 Built for **Love Furniture IE** and **Love Furniture UK** Magento stores.
 
 ## What It Does
 
-- Checks your sites every 60 seconds
-- Detects downtime, slow responses, and recovery
-- Sends email alerts via any SMTP server (Gmail, Microsoft 365, AWS SES, etc.)
-- **Magento integration**: Syncs orders and carts every 5 minutes, tracks abandonment rate
-- **Server vitals monitoring**: CPU, memory, disk, network via lightweight agent
-- Mobile app (Android APK) + web dashboard for real-time monitoring
-- Simple username/password authentication
+- Checks your sites every 60 seconds — detects downtime, slow responses, and recovery
+- Server vitals monitoring: CPU, memory, disk, network via lightweight agent
+- Magento integration: syncs orders and abandoned carts every 5 minutes
+- Multi-channel alerts: Email (SMTP), Slack (webhook), WhatsApp (Meta API)
+- Web dashboard (React + Vite) for browser access
+- Mobile app (React Native / Expo) for Android APK builds
+- Team management: admin/editor/viewer roles with user CRUD
 - Per-site configurable slow response thresholds
+- Per-server configurable alert thresholds (CPU/mem/disk)
+- Simple username/password authentication with JWT
 
 ## Architecture
 
 ```
 ┌─────────────────────┐     ┌──────────────────┐     ┌──────────────┐
-│   Mobile App /      │────▶│  API Server      │────▶│  PostgreSQL  │
-│   Web Dashboard     │     │  (Node.js)       │     │              │
-└─────────────────────┘     │                  │     └──────────────┘
-                            │  ┌────────────┐  │
-                            │  │ Monitor    │  │     ┌──────────────┐
-                            │  │ Worker     │──┼────▶│  SMTP Server │
-                            │  │ (60s loop) │  │     │  (Email)     │
+│   Web Dashboard     │────▶│  API Server      │────▶│  PostgreSQL  │
+│   (React + Vite)    │     │  (Node.js)       │     │              │
+│                     │     │                  │     └──────────────┘
+│   Mobile App        │────▶│  ┌────────────┐  │
+│   (React Native)    │     │  │ Site        │  │     ┌──────────────┐
+└─────────────────────┘     │  │ Monitor    │──┼────▶│  SMTP / Slack │
+                            │  │ (60s loop) │  │     │  / WhatsApp  │
                             │  └────────────┘  │     └──────────────┘
                             │  ┌────────────┐  │
                             │  │ Magento    │  │     ┌──────────────┐
                             │  │ Sync       │──┼────▶│  Magento API │
                             │  │ (5m loop)  │  │     │  (REST V1)   │
                             │  └────────────┘  │     └──────────────┘
+                            │  ┌────────────┐  │
+                            │  │ Server     │  │
+                            │  │ Vitals     │  │
+                            │  │ Monitor    │  │
+                            │  │ (60s loop) │  │
+                            │  └────────────┘  │
                             └──────────────────┘
                                     ▲
 ┌─────────────────────┐             │
 │  Server Agent       │─────────────┘
 │  (monitor-agent.js) │  Reports CPU/mem/disk/net every 30s
-└─────────────────────┘
+└─────────────────────┘  (one per monitored server)
 ```
+
+The Docker image builds both the Vite web dashboard and the API server. The API server serves the static dashboard files and the API — Nginx just proxies everything to port 8080.
 
 ---
 
@@ -47,51 +57,33 @@ Built for **Love Furniture IE** and **Love Furniture UK** Magento stores.
 ### What You Need
 
 - A Linux server (EC2 t3.micro is plenty, or any VPS with Ubuntu 22.04/24.04)
-- A domain name pointing to your server (e.g., `monitor.yourdomain.com`)
-- An SMTP mail server for alerts (configured later in-app)
+- A domain name pointing to your server (e.g., `monit.lovefurniture.ie`)
+- An SMTP mail server for email alerts (configured later in the dashboard)
 
 ### Overview of Steps
 
-1. Prepare the server (install Docker, Node.js, pnpm, Git)
+1. Prepare the server (install Docker, Git)
 2. Clone the repo
 3. Configure environment variables
 4. Start PostgreSQL and the API server with Docker Compose
-5. Initialize the database
-6. Set up Nginx + SSL
-7. Create your admin account
-8. Configure email alerts in the app
-9. Build the Android APK and deploy via MDM
+5. Set up Nginx + SSL
+6. Log in and configure alerts
+7. Install the server vitals agent on each server to monitor
+8. (Optional) Build the Android APK
 
 ---
 
 ### Step 1: Prepare the Server
 
-SSH into your fresh server and install all prerequisites:
-
 ```bash
-# Update system packages
 sudo apt-get update && sudo apt-get upgrade -y
-
-# Install essential tools
 sudo apt-get install -y curl git ufw
 
 # Install Docker
 curl -fsSL https://get.docker.com | sudo sh
 sudo usermod -aG docker $USER
 
-# Install Docker Compose plugin (included with modern Docker, verify it works)
-docker compose version
-# If the above fails, install manually:
-# sudo apt-get install -y docker-compose-plugin
-
-# Install Node.js 24 (needed for database setup commands)
-curl -fsSL https://deb.nodesource.com/setup_24.x | sudo -E bash -
-sudo apt-get install -y nodejs
-
-# Install pnpm (needed for database setup commands)
-npm install -g pnpm@10
-
-# Install Nginx (for reverse proxy + SSL)
+# Install Nginx + Certbot for SSL
 sudo apt-get install -y nginx certbot python3-certbot-nginx
 
 # Configure firewall
@@ -100,23 +92,19 @@ sudo ufw allow 'Nginx Full'
 sudo ufw --force enable
 ```
 
-**Important:** Log out and log back in after adding yourself to the `docker` group, so you can run Docker without `sudo`:
+Log out and back in so the docker group takes effect:
 
 ```bash
 exit
-# SSH back in
 ssh your-server
 ```
 
-Verify everything is installed:
+Verify:
 
 ```bash
-docker --version        # Docker 24+ or 27+
-docker compose version  # Docker Compose v2+
-node --version          # v24.x
-pnpm --version          # 10.x
-nginx -v                # nginx/1.x
-git --version           # git 2.x
+docker --version         # Docker 24+ or 27+
+docker compose version   # Docker Compose v2+
+nginx -v                 # nginx/1.x
 ```
 
 ---
@@ -134,298 +122,160 @@ cd site-monitor
 
 ### Step 3: Configure Environment
 
-Generate a secure JWT secret and create a `.env` file:
-
 ```bash
 cat > .env << EOF
 DATABASE_URL=postgresql://monitor:changeme_db_password@postgres:5432/site_monitor
 JWT_SECRET=$(openssl rand -hex 32)
 PORT=8080
 NODE_ENV=production
+BASE_PATH=/
+EOF
+```
 
-# Magento Integration (optional — remove if not using Magento)
+Change `changeme_db_password` to a strong password.
+
+**Optional — Magento Integration:**
+
+If you want Magento order/cart tracking, add these to your `.env`:
+
+```bash
+cat >> .env << EOF
 MAGENTO_API_URL=https://www.lovefurniture.ie
 MAGENTO_ADMIN_USER=azhar
 MAGENTO_ADMIN_PASS=YourMagentoAdminPassword
 EOF
 ```
 
-Change `changeme_db_password` to a strong password of your choice.
-
-**Magento environment variables explained:**
-
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `MAGENTO_API_URL` | Yes (for Magento) | Base URL of your Magento store (e.g. `https://www.lovefurniture.ie`) |
+| `MAGENTO_API_URL` | Yes (for Magento) | Base URL of your Magento store |
 | `MAGENTO_ADMIN_USER` | Recommended | Magento admin username — auto-refreshes API tokens |
 | `MAGENTO_ADMIN_PASS` | Recommended | Magento admin password |
-| `MAGENTO_API_TOKEN` | Fallback | Static bearer token (expires ~1hr). Only needed if username/password auth is unavailable |
-
-When `MAGENTO_ADMIN_USER` and `MAGENTO_ADMIN_PASS` are set, the API server automatically fetches and refreshes Magento tokens. This is the recommended approach for self-hosted setups where the API server runs on the same network as Magento.
-
-If running on a different network where token endpoint is blocked by WAF, generate a static token on the Magento server:
-
-```bash
-curl -X POST http://localhost/rest/V1/integration/admin/token \
-  -H "Content-Type: application/json" \
-  -d '{"username":"azhar","password":"YourPassword"}'
-```
-
-Then set `MAGENTO_API_TOKEN` in your `.env`. Note: static tokens expire after ~1 hour by default (configurable in Magento admin).
-
-**Important:** The Magento admin user needs the **Administrators** role (or equivalent permissions for Sales and Cart API access).
+| `MAGENTO_API_TOKEN` | Fallback | Static bearer token (if username/password auth blocked by WAF) |
 
 ---
 
 ### Step 4: Start Everything with Docker Compose
 
-Create a `docker-compose.yml` file:
-
-```yaml
-services:
-  postgres:
-    image: postgres:16-alpine
-    restart: always
-    environment:
-      POSTGRES_DB: site_monitor
-      POSTGRES_USER: monitor
-      POSTGRES_PASSWORD: changeme_db_password  # Match your .env
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-    ports:
-      - "127.0.0.1:5432:5432"
-
-  api:
-    build: .
-    restart: always
-    depends_on:
-      - postgres
-    env_file: .env
-    ports:
-      - "127.0.0.1:8080:8080"
-
-volumes:
-  pgdata:
-```
-
-Create the `Dockerfile`:
-
-```dockerfile
-FROM node:24-slim
-RUN npm install -g pnpm@10
-
-WORKDIR /app
-COPY . .
-RUN pnpm install --frozen-lockfile
-RUN pnpm --filter @workspace/api-server run build
-
-EXPOSE 8080
-CMD ["node", "artifacts/api-server/dist/index.mjs"]
-```
-
-Start everything:
+The project already includes a `Dockerfile` and `docker-compose.yml`. Start everything:
 
 ```bash
-docker compose up -d
+docker compose up -d --build
 ```
 
-Wait about 30 seconds for PostgreSQL to be ready, then check both containers are running:
+Wait about 30 seconds, then verify both containers are running:
 
 ```bash
 docker compose ps
 ```
 
-You should see both `postgres` and `api` with status "Up".
+You should see `postgres` and `api` with status "Up".
+
+The database tables and default admin user (`admin` / `admin123`) are created automatically on first start.
 
 ---
 
-### Step 5: Initialize the Database
+### Step 5: Set Up Nginx + SSL
 
-Run these commands from the project directory on your server (Node.js and pnpm were installed in Step 1):
-
-```bash
-# Install project dependencies on the host (needed for DB commands)
-pnpm install
-
-# Point to PostgreSQL (localhost because we mapped port 5432)
-export DATABASE_URL=postgresql://monitor:changeme_db_password@localhost:5432/site_monitor
-
-# Create all database tables
-pnpm --filter @workspace/db run push
-
-# Add the monitored sites (Love Furniture IE & UK)
-pnpm --filter @workspace/scripts run seed-sites
-```
-
-Verify the database is set up:
-
-```bash
-docker compose exec postgres psql -U monitor -d site_monitor -c "SELECT name, url FROM sites;"
-```
-
-You should see both Love Furniture sites listed.
-
----
-
-### Step 6: Set Up Nginx + SSL
-
-Nginx and Certbot were already installed in Step 1. Now configure them.
-
-First, build the web version of the dashboard:
-
-```bash
-cd ~/Site-Sentinel/artifacts/mobile
-EXPO_PUBLIC_DOMAIN=monitor.yourdomain.com npx expo export --platform web
-```
-
-This creates a `dist/` folder with the static web app. Now copy it where Nginx can serve it:
-
-```bash
-sudo mkdir -p /var/www/site-monitor
-sudo cp -r ~/Site-Sentinel/artifacts/mobile/dist/* /var/www/site-monitor/
-sudo chown -R www-data:www-data /var/www/site-monitor
-```
-
-Create the Nginx config (replace `monitor.yourdomain.com` with your actual domain):
+Create the Nginx config (replace `monit.lovefurniture.ie` with your domain):
 
 ```bash
 sudo tee /etc/nginx/sites-available/site-monitor << 'EOF'
 server {
     listen 80;
-    server_name monitor.yourdomain.com;
+    server_name monit.lovefurniture.ie;
 
-    # API requests go to the backend
-    location /api/ {
+    location / {
         proxy_pass http://127.0.0.1:8080;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
     }
-
-    # Web dashboard (static files)
-    location / {
-        root /var/www/site-monitor;
-        try_files $uri $uri/ /index.html;
-    }
 }
 EOF
 
-sudo ln -s /etc/nginx/sites-available/site-monitor /etc/nginx/sites-enabled/
+sudo ln -sf /etc/nginx/sites-available/site-monitor /etc/nginx/sites-enabled/
 sudo rm -f /etc/nginx/sites-enabled/default
 sudo nginx -t
 sudo systemctl restart nginx
 ```
 
-Add SSL (free, auto-renewing):
+Add SSL:
 
 ```bash
-sudo certbot --nginx -d monitor.yourdomain.com
+sudo certbot --nginx -d monit.lovefurniture.ie
 ```
 
-Verify it's working:
+Verify:
 
 ```bash
-# API should respond
-curl -s https://monitor.yourdomain.com/api/healthz
+curl -s https://monit.lovefurniture.ie/api/healthz
 # Should return: {"status":"ok"}
-
-# Web dashboard should load
-curl -s -o /dev/null -w "%{http_code}" https://monitor.yourdomain.com/
-# Should return: 200
 ```
 
 ---
 
-### Step 7: Create Your Admin Account
+### Step 6: Log In and Configure
 
-Open the API in your browser or use curl:
+Open `https://monit.lovefurniture.ie` in your browser.
 
-```bash
-curl -s -X POST https://monitor.yourdomain.com/api/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{"username": "admin", "password": "your-secure-password"}'
-```
+**Default admin credentials:** `admin` / `admin123`
 
-This first user automatically becomes the admin. Save the token from the response — you'll need it for any API calls.
+**Change your password immediately** in Settings > Team Management.
 
----
-
-### Step 8: Configure Email Alerts
-
-Email is configured from the mobile app (or via API). No environment variables needed.
-
-**Via API** (before you have the app):
-
-```bash
-# Get your token first
-TOKEN=$(curl -s -X POST https://monitor.yourdomain.com/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"username": "admin", "password": "your-secure-password"}' | \
-  node -e "process.stdin.on('data',d=>process.stdout.write(JSON.parse(d).token))")
-
-# Configure SMTP and alert recipients
-curl -X PUT https://monitor.yourdomain.com/api/config \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "smtpHost": "smtp.gmail.com",
-    "smtpPort": 587,
-    "smtpUsername": "your-email@gmail.com",
-    "smtpPassword": "your-app-password",
-    "smtpSecure": false,
-    "senderEmail": "alerts@yourdomain.com",
-    "recipientEmails": "you@company.com, team@company.com",
-    "isEnabled": true
-  }'
-```
-
-**Via the app** (once you have it installed):
-
-Go to **Settings** tab > **SMTP Server** section, fill in your details, and hit **Test Connection** to verify.
-
-### Common SMTP Providers
-
-| Provider | Host | Port | Notes |
-|----------|------|------|-------|
-| Gmail | `smtp.gmail.com` | 587 | Use an [App Password](https://support.google.com/accounts/answer/185833) |
-| Microsoft 365 | `smtp.office365.com` | 587 | Use your M365 credentials |
-| AWS SES | `email-smtp.{region}.amazonaws.com` | 587 | Create SMTP credentials in SES console |
-| Custom | Your mail server | 587/465 | Ask your IT team |
+Then configure your alert channels in Settings:
+- **SMTP** — for email alerts
+- **Slack** — paste your Slack webhook URL
+- **WhatsApp** — enter your Meta API token and phone number ID
 
 ---
 
-### Step 9: Set Up the Server Vitals Agent
+### Step 7: Install the Server Vitals Agent
 
-The server agent is a lightweight Node.js script that runs on each server you want to monitor. It reports CPU, memory, disk, and network stats every 30 seconds.
+The agent is a lightweight Node.js script that runs on each server you want to monitor (your Magento web server, database server, etc.).
 
-**On the API server (or any server you want to monitor):**
+**Step 7a: Register the server in the dashboard**
 
-First, register the server in the app. Go to the **Servers** tab and add a new server. Copy the **API Key** that's generated.
+Go to **Servers** page > click **Add Server** > enter a name and hostname. Copy the **API Key** shown.
 
-Then install the agent:
+**Step 7b: Install the agent on the target server**
+
+SSH into the server you want to monitor:
 
 ```bash
+# Install Node.js (if not already installed)
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+sudo apt-get install -y nodejs
+
+# Create agent directory
 sudo mkdir -p /opt/monitor-agent
-sudo cp agent/monitor-agent.js /opt/monitor-agent/
 
-cat > /opt/monitor-agent/.env << EOF
-MONITOR_API_URL=https://monitor.yourdomain.com
-MONITOR_API_KEY=sm_xxxxxxxxxxxx
+# Copy agent files (from repo clone, scp, or download)
+sudo cp monitor-agent.js /opt/monitor-agent/
+
+# Configure the agent
+sudo tee /opt/monitor-agent/.env > /dev/null << EOF
+MONITOR_API_URL=https://monit.lovefurniture.ie
+MONITOR_API_KEY=sm_YOUR_API_KEY_HERE
 MONITOR_INTERVAL=30
 EOF
-```
 
-Install as a systemd service (runs on boot, auto-restarts):
+sudo chmod 600 /opt/monitor-agent/.env
 
-```bash
-sudo cp agent/monitor-agent.service /etc/systemd/system/
+# Install systemd service
+sudo cp monitor-agent.service /etc/systemd/system/
 sudo systemctl daemon-reload
 sudo systemctl enable monitor-agent
 sudo systemctl start monitor-agent
 ```
 
-Verify it's running:
+**Important notes:**
+- `MONITOR_API_URL` must be the base URL **without** `/api` at the end. The agent appends `/api/servers/report` automatically.
+- The `monitor-agent.service` file must be copied to `/etc/systemd/system/` (not `/opt/monitor-agent/`).
+- The `monitor-agent.js` file goes in `/opt/monitor-agent/`.
+
+**Verify it's working:**
 
 ```bash
 sudo systemctl status monitor-agent
@@ -434,43 +284,28 @@ sudo journalctl -u monitor-agent -f
 
 You should see lines like `CPU: 12.3% | Mem: 45.2% | Disk: 23.1% | Load: 0.5` every 30 seconds.
 
-Repeat this for each server you want to monitor (your Magento web server, database server, etc.).
+**To regenerate an API key** for a server, click the server card in the dashboard, then click "Regenerate API Key". Update the `.env` on the server and restart: `sudo systemctl restart monitor-agent`.
 
 ---
 
-### Step 10: Build the Android APK
+### Step 8: Build the Android APK (Optional)
 
-This is done on your local dev machine (not the server). You need Node.js, pnpm, and Android SDK installed.
+This is done on your local dev machine, not the server:
 
 ```bash
-# Clone the repo on your dev machine (if not already)
 git clone <your-repo-url> site-monitor
 cd site-monitor
 pnpm install
 
-# Set the API server domain (your production server)
-export EXPO_PUBLIC_DOMAIN=monitor.yourdomain.com
+export EXPO_PUBLIC_DOMAIN=monit.lovefurniture.ie
 
-# Generate the Android project
 cd artifacts/mobile
 npx expo prebuild --platform android
-
-# Build the APK
 cd android
 ./gradlew assembleRelease
 ```
 
-The APK will be at:
-```
-artifacts/mobile/android/app/build/outputs/apk/release/app-release.apk
-```
-
-Upload this APK to **ManageEngine MDM** for distribution to your organization's devices.
-
-**Before building**, you may want to customize `artifacts/mobile/app.json`:
-- `name` — Display name on the device
-- `android.package` — Package identifier (e.g., `com.yourcompany.sitemonitor`)
-- `version` — Version number
+The APK will be at: `artifacts/mobile/android/app/build/outputs/apk/release/app-release.apk`
 
 ---
 
@@ -484,65 +319,39 @@ docker compose logs -f api
 
 # PostgreSQL logs
 docker compose logs -f postgres
-```
 
-### Restarting
-
-```bash
-docker compose restart api
+# Server agent logs (on each monitored server)
+sudo journalctl -u monitor-agent -f
 ```
 
 ### Updating (Redeployment)
 
-When you've pulled new code (e.g. after adding Magento integration, new tabs, etc.):
-
 ```bash
 cd /opt/site-monitor
-git pull
+git pull origin main
 
-# Update the .env if new variables are needed (e.g. Magento)
-nano .env
+# Rebuild and restart (keeps database intact)
+docker compose down
+docker compose up -d --build
 
-# Rebuild and restart the API server
-docker compose build api
-docker compose up -d api
-
-# Run database migrations (creates any new tables like magento_orders, magento_carts, etc.)
-export DATABASE_URL=postgresql://monitor:changeme_db_password@localhost:5432/site_monitor
-pnpm install
-pnpm --filter @workspace/db run push
-
-# Verify the new tables exist
-docker compose exec postgres psql -U monitor -d site_monitor -c "\dt"
-
-# Check API server is healthy
-curl -s https://monitor.yourdomain.com/api/healthz
+# Check health
+curl -s https://monit.lovefurniture.ie/api/healthz
 ```
 
-If you also need to update the **web dashboard**:
+To **wipe the database** and start fresh (use `-v` flag):
 
 ```bash
-cd /opt/site-monitor/artifacts/mobile
-EXPO_PUBLIC_DOMAIN=monitor.yourdomain.com npx expo export --platform web
-sudo cp -r dist/* /var/www/site-monitor/
-sudo chown -R www-data:www-data /var/www/site-monitor
+docker compose down -v
+docker compose up -d --build
 ```
 
-If you need to rebuild the **Android APK** (on your dev machine):
+### Update the Server Agent
+
+If you update `agent/monitor-agent.js`:
 
 ```bash
-cd site-monitor
-git pull
-pnpm install
-cd artifacts/mobile
-EXPO_PUBLIC_DOMAIN=monitor.yourdomain.com npx expo prebuild --platform android --clean
-cd android && ./gradlew assembleRelease
-```
-
-If you updated the **server agent**:
-
-```bash
-sudo cp agent/monitor-agent.js /opt/monitor-agent/
+# On each monitored server
+sudo cp monitor-agent.js /opt/monitor-agent/
 sudo systemctl restart monitor-agent
 ```
 
@@ -566,7 +375,6 @@ docker compose exec -T postgres psql -U monitor site_monitor < backup_20260326.s
 
 | Method | Endpoint | Auth | Description |
 |--------|----------|------|-------------|
-| POST | `/api/auth/register` | First user: No / After: Yes | Create account |
 | POST | `/api/auth/login` | No | Sign in, returns JWT |
 | GET | `/api/auth/me` | Yes | Current user info |
 
@@ -580,8 +388,8 @@ docker compose exec -T postgres psql -U monitor site_monitor < backup_20260326.s
 | POST | `/api/sites/:id/check` | Trigger manual check |
 | GET | `/api/sites/:id/checks` | Check history |
 | GET | `/api/alerts` | Alert history |
-| GET | `/api/config` | Get alert/SMTP config |
-| PUT | `/api/config` | Update alert/SMTP config |
+| GET | `/api/config` | Get alert/SMTP/Slack/WhatsApp config |
+| PUT | `/api/config` | Update config |
 | POST | `/api/config/test-smtp` | Test SMTP connection |
 
 ### Server Vitals
@@ -590,18 +398,31 @@ docker compose exec -T postgres psql -U monitor site_monitor < backup_20260326.s
 |--------|----------|------|-------------|
 | GET | `/api/servers` | JWT | List registered servers |
 | POST | `/api/servers` | JWT | Register a new server (returns API key) |
+| GET | `/api/servers/:id` | JWT | Get server details |
+| PUT | `/api/servers/:id` | JWT | Update server name/hostname |
 | DELETE | `/api/servers/:id` | JWT | Remove a server |
-| GET | `/api/servers/:id/vitals` | JWT | Get vitals history for a server |
-| POST | `/api/servers/report` | API Key (`x-api-key`) | Agent reports metrics (no JWT needed) |
+| POST | `/api/servers/:id/regenerate-key` | JWT (admin) | Regenerate API key |
+| GET | `/api/servers/:id/metrics?hours=1` | JWT | Server metrics history |
+| POST | `/api/servers/report` | API Key (`x-api-key`) | Agent reports metrics |
+
+### Team Management
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| GET | `/api/users` | JWT (admin) | List all users |
+| POST | `/api/users` | JWT (admin) | Create user |
+| PUT | `/api/users/:id` | JWT (admin) | Update user |
+| DELETE | `/api/users/:id` | JWT (admin) | Delete user |
+| POST | `/api/users/:id/reset-password` | JWT (admin) | Reset user password |
 
 ### Magento Store
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | GET | `/api/magento/stats` | Order stats (today, this week, abandonment rate) |
-| GET | `/api/magento/orders` | Recent orders (query: `?limit=20`) |
-| GET | `/api/magento/carts` | Abandoned/active carts (query: `?limit=20`) |
-| GET | `/api/magento/sync` | Last sync status log |
+| GET | `/api/magento/orders` | Recent orders |
+| GET | `/api/magento/carts` | Abandoned/active carts |
+| GET | `/api/magento/sync` | Last sync status |
 | POST | `/api/magento/sync` | Trigger manual sync |
 
 All endpoints except auth and server report require a JWT token in the `Authorization: Bearer <token>` header.
@@ -616,38 +437,35 @@ All endpoints except auth and server report require a JWT token in the `Authoriz
 - Verify `DATABASE_URL` in `.env` matches the postgres service credentials
 
 ### Sites not being monitored
-- Check API logs for errors: `docker compose logs -f api`
+- Check API logs: `docker compose logs -f api`
 - Verify the server can reach your sites (no firewall blocking outbound HTTP)
 - Monitoring starts automatically when the API server starts
 
 ### Email alerts not sending
-- Go to Settings > SMTP Server in the app
+- Go to Settings > SMTP Server in the dashboard
 - Click **Test Connection** to verify SMTP settings
-- Check that "Enable Alerts" is ON and recipient emails are configured
-- Check API logs for SMTP error messages
+- Check that alerts are enabled and recipient emails are configured
 
-### Mobile app can't connect
-- Verify the app was built with the correct `EXPO_PUBLIC_DOMAIN`
-- The server must be accessible over HTTPS (the app uses `https://`)
-- Check that Nginx is running and SSL certificate is valid
+### Slack alerts not sending
+- Verify the webhook URL is correct in Settings > Slack
+- Test from the dashboard — it shows success/error inline
+
+### Server agent 401 errors
+- Verify the `MONITOR_API_URL` does **not** end with `/api`. Correct: `https://monit.lovefurniture.ie`. Wrong: `https://monit.lovefurniture.ie/api`.
+- Verify the API key matches what was generated when you registered the server
+- If the key was regenerated, update `/opt/monitor-agent/.env` and restart: `sudo systemctl restart monitor-agent`
+
+### Server agent "service not found"
+- The `.service` file must be in `/etc/systemd/system/`, not `/opt/monitor-agent/`
+- Fix: `sudo cp /opt/monitor-agent/monitor-agent.service /etc/systemd/system/ && sudo systemctl daemon-reload`
 
 ### Magento sync not working
 - Check API logs: `docker compose logs -f api | grep magento`
-- Verify `MAGENTO_API_URL` is reachable from the server: `curl -s https://www.lovefurniture.ie/rest/V1/store/storeConfigs`
-- If using admin user/pass, verify the credentials work: `curl -X POST https://www.lovefurniture.ie/rest/V1/integration/admin/token -H "Content-Type: application/json" -d '{"username":"azhar","password":"YourPassword"}'`
-- If the WAF blocks the token endpoint, use `MAGENTO_API_TOKEN` instead (generate from localhost on the Magento server)
-- Verify the Magento admin user has **Administrators** role permissions
-- Sync runs every 5 minutes automatically; force a manual sync via the Store tab or API: `curl -X POST https://monitor.yourdomain.com/api/magento/sync -H "Authorization: Bearer $TOKEN"`
-
-### Server vitals agent not reporting
-- Check agent status: `sudo systemctl status monitor-agent`
-- Check agent logs: `sudo journalctl -u monitor-agent -f`
-- Verify the API key matches: the key shown when you registered the server in the app
-- Verify the server can reach the API: `curl -s https://monitor.yourdomain.com/api/healthz`
+- If the WAF blocks the token endpoint (403), generate a static token locally on the Magento server and use `MAGENTO_API_TOKEN` in `.env`
+- Verify the Magento admin user has appropriate role permissions
 
 ### Database issues
-- Verify PostgreSQL is running: `docker compose ps`
-- Check connection: `docker compose exec postgres psql -U monitor -d site_monitor -c "SELECT 1;"`
+- Check PostgreSQL: `docker compose exec postgres psql -U monitor -d site_monitor -c "SELECT 1;"`
 - Check disk space: `df -h`
 
 ---
@@ -657,43 +475,40 @@ All endpoints except auth and server report require a JWT token in the `Authoriz
 ```
 site-monitor/
 ├── artifacts/
-│   ├── api-server/              # API server + monitoring worker
+│   ├── api-server/              # API server + monitoring workers
 │   │   └── src/
 │   │       ├── middleware/auth.ts    # JWT authentication
-│   │       ├── services/monitor.ts  # 60s site check loop
-│   │       ├── services/email.ts    # SMTP email alerts
-│   │       ├── services/magento.ts  # Magento sync (5m loop, pagination, auto-token)
+│   │       ├── services/
+│   │       │   ├── monitor.ts       # 60s site check loop + alerts
+│   │       │   ├── email.ts         # SMTP email alerts
+│   │       │   ├── slack.ts         # Slack webhook alerts
+│   │       │   ├── whatsapp.ts      # WhatsApp Meta API alerts
+│   │       │   ├── magento.ts       # Magento sync (5m loop)
+│   │       │   └── server-vitals.ts # Server vitals alerting (60s loop)
 │   │       └── routes/
 │   │           ├── sites.ts         # Site monitoring endpoints
 │   │           ├── servers.ts       # Server vitals endpoints
-│   │           └── magento.ts       # Magento order/cart endpoints
-│   └── mobile/                  # Mobile app (Expo/React Native)
-│       ├── app/
-│       │   ├── login.tsx            # Login screen
-│       │   └── (tabs)/
-│       │       ├── index.tsx        # Dashboard (site status)
-│       │       ├── history.tsx      # Check history
-│       │       ├── alerts.tsx       # Alert history
-│       │       ├── servers.tsx      # Server vitals
-│       │       ├── store.tsx        # Magento orders & carts
-│       │       └── settings.tsx     # SMTP, auth, config
-│       └── contexts/AuthContext.tsx
+│   │           ├── magento.ts       # Magento order/cart endpoints
+│   │           ├── users.ts         # Team management endpoints
+│   │           └── config.ts        # Alert config endpoints
+│   ├── web-dashboard/           # Web dashboard (React + Vite + Tailwind)
+│   │   └── src/
+│   │       └── pages/
+│   │           ├── dashboard.tsx    # Site status overview
+│   │           ├── servers.tsx      # Server vitals + edit + API key regen
+│   │           ├── store.tsx        # Magento orders & carts
+│   │           ├── alerts.tsx       # Alert history
+│   │           ├── history.tsx      # Check history
+│   │           └── settings.tsx     # SMTP/Slack/WhatsApp/Team/Thresholds
+│   └── mobile/                  # Mobile app (Expo / React Native)
 ├── agent/
-│   ├── monitor-agent.js         # Server vitals agent (install on each server)
-│   └── monitor-agent.service    # Systemd service file
+│   ├── monitor-agent.js         # Server vitals agent
+│   ├── monitor-agent.service    # Systemd service file (copy to /etc/systemd/system/)
+│   └── install.sh               # Automated install script
 ├── lib/
 │   ├── db/                      # Database schema (Drizzle ORM)
-│   │   └── src/schema/
-│   │       ├── index.ts             # Main schema exports
-│   │       ├── magento.ts           # Magento orders/carts/sync tables
-│   │       └── servers.ts           # Server vitals tables
-│   ├── api-spec/                # OpenAPI specification
-│   ├── api-client-react/        # Generated API hooks
-│   └── api-zod/                 # Generated validation schemas
-└── scripts/
-    └── src/seed-sites.ts        # Database seed script
+│   ├── api-spec/                # OpenAPI spec
+│   └── api-client-react/        # Generated React Query hooks
+├── Dockerfile                   # Builds web dashboard + API server
+└── docker-compose.yml
 ```
-
-## License
-
-Private — Internal use only.

@@ -29,6 +29,7 @@ export * from "./magentoStatsCarts";
 export * from "./magentoStatsToday";
 export * from "./magentoStatsWeek";
 export * from "./magentoSyncLog";
+export * from "./regenerateServerKey200";
 export * from "./serverAlertConfigResponse";
 export * from "./serverCreateResponse";
 export * from "./serverMetric";

@@ -375,6 +375,10 @@ export type UpdateServerBody = {
   hostname?: string;
 };
 
+export type RegenerateServerKey200 = {
+  apiKey?: string;
+};
+
 export type GetServerMetricsParams = {
   /**
    * Number of hours of history

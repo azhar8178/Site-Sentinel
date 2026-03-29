@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useListServers, useCreateServer, useDeleteServer, useUpdateServer, useGetServerMetrics } from "@workspace/api-client-react";
+import { useListServers, useCreateServer, useDeleteServer, useUpdateServer, useRegenerateServerKey, useGetServerMetrics } from "@workspace/api-client-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
@@ -10,7 +10,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   Server as ServerIcon, Cpu, HardDrive, MemoryStick, Trash2,
-  Activity, Plus, X, Copy, Check, Edit2, Save,
+  Activity, Plus, X, Copy, Check, Edit2, Save, KeyRound, RefreshCw,
 } from "lucide-react";
 import { formatBytes } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
@@ -34,9 +34,12 @@ function ServerDetailModal({
   const updateServer = useUpdateServer();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const regenerateKey = useRegenerateServerKey();
   const [editing, setEditing] = useState(false);
   const [editName, setEditName] = useState(serverName);
   const [editHostname, setEditHostname] = useState(serverHostname);
+  const [newApiKey, setNewApiKey] = useState<string | null>(null);
+  const [copiedKey, setCopiedKey] = useState(false);
 
   const handleSaveEdit = async () => {
     try {
@@ -46,6 +49,25 @@ function ServerDetailModal({
       toast({ title: "Updated", description: "Server details saved." });
     } catch (e: any) {
       toast({ variant: "destructive", title: "Error", description: e.message });
+    }
+  };
+
+  const handleRegenerateKey = async () => {
+    if (!confirm("Regenerate API key? The current agent on this server will stop authenticating until you update its .env file with the new key.")) return;
+    try {
+      const result = await regenerateKey.mutateAsync({ serverId });
+      setNewApiKey((result as any).apiKey);
+      toast({ title: "Key Regenerated", description: "Copy the new key and update the agent on this server." });
+    } catch (e: any) {
+      toast({ variant: "destructive", title: "Error", description: e.message });
+    }
+  };
+
+  const copyKey = () => {
+    if (newApiKey) {
+      navigator.clipboard.writeText(newApiKey);
+      setCopiedKey(true);
+      setTimeout(() => setCopiedKey(false), 2000);
     }
   };
 
@@ -91,6 +113,30 @@ function ServerDetailModal({
         </div>
 
         <div className="p-6 space-y-6">
+          {newApiKey && (
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 space-y-2">
+              <div className="flex items-center gap-2 text-amber-800 font-semibold text-sm">
+                <KeyRound className="w-4 h-4" /> New API Key (copy it now — it won't be shown again)
+              </div>
+              <div className="flex items-center gap-2">
+                <code className="flex-1 bg-white border rounded px-3 py-2 font-mono text-sm break-all">{newApiKey}</code>
+                <Button size="sm" variant="outline" onClick={copyKey} className="shrink-0 gap-1">
+                  {copiedKey ? <Check className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
+                  {copiedKey ? "Copied" : "Copy"}
+                </Button>
+              </div>
+              <p className="text-xs text-amber-700">Update <code>/opt/monitor-agent/.env</code> on this server with the new key, then restart: <code>sudo systemctl restart monitor-agent</code></p>
+            </div>
+          )}
+
+          {canEdit && !editing && (
+            <div className="flex gap-2">
+              <Button size="sm" variant="outline" onClick={handleRegenerateKey} disabled={regenerateKey.isPending} className="gap-1.5 text-amber-700 border-amber-300 hover:bg-amber-50">
+                <RefreshCw className={`w-4 h-4 ${regenerateKey.isPending ? "animate-spin" : ""}`} /> Regenerate API Key
+              </Button>
+            </div>
+          )}
+
           {isLoading ? (
             <div className="flex items-center justify-center py-20">
               <Activity className="w-8 h-8 animate-spin text-primary" />
