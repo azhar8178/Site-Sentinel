@@ -1,0 +1,41 @@
+ubuntu@ip-172-33-86-172:~/Site-Sentinel$ docker compose logs --tail=100 | grep -i "magento"
+api-1  |   OK: magento_orders table
+api-1  |   OK: magento_carts table
+api-1  |   OK: magento_sync_log table
+api-1  |   OK: magento_config table
+api-1  |   OK: seed magento_config
+api-1  | {"level":30,"time":1774816307952,"pid":19,"hostname":"c0f687b8f9a6","intervalMs":300000,"msg":"Starting Magento sync"}
+api-1  | {"level":30,"time":1774816312956,"pid":19,"hostname":"c0f687b8f9a6","tokenPrefix":"06tj5i6o...","msg":"Using static Magento API token"}
+api-1  | {"level":30,"time":1774816312957,"pid":19,"hostname":"c0f687b8f9a6","url":"https://www.lovefurniture.ie/orders?searchCriteria%5BpageSize%5D=100&searchCriteria%5BcurrentPage%5D=1&searchCriteria%5BsortOrders%5D%5B0%5D%5Bfield%5D=entity_id&searchCriteria%5BsortOrders%5D%5B0%5D%","apiUrl":"https://www.lovefurniture.ie","endpoint":"/orders?searchCriteria%5BpageSize%5D=100&searchCriteria%5BcurrentPage%5D=1&searc","msg":"Magento API request"}
+api-1  | {"level":50,"time":1774816313242,"pid":19,"hostname":"c0f687b8f9a6","syncType":"orders","error":"Magento API 404: <!doctype html>\n<html lang=\"en\">\n    <head >\n        <script>\n    var LOCALE = 'en\\u002DIE';\n    var BASE_URL = 'https\\u003A\\u002F\\u002Fwww.lovefurniture.ie\\u002F';\n    var require = {\n        'baseUr","duration":287,"msg":"Magento sync failed"}
+api-1  | {"level":30,"time":1774816313249,"pid":19,"hostname":"c0f687b8f9a6","url":"https://www.lovefurniture.ie/carts/search?searchCriteria%5BpageSize%5D=100&searchCriteria%5BcurrentPage%5D=1&searchCriteria%5BsortOrders%5D%5B0%5D%5Bfield%5D=entity_id&searchCriteria%5BsortOrders%5D%5","apiUrl":"https://www.lovefurniture.ie","endpoint":"/carts/search?searchCriteria%5BpageSize%5D=100&searchCriteria%5BcurrentPage%5D=1","msg":"Magento API request"}
+api-1  | {"level":50,"time":1774816313529,"pid":19,"hostname":"c0f687b8f9a6","syncType":"carts","error":"Magento API 404: <!doctype html>\n<html lang=\"en\">\n    <head >\n        <script>\n    var LOCALE = 'en\\u002DIE';\n    var BASE_URL = 'https\\u003A\\u002F\\u002Fwww.lovefurniture.ie\\u002F';\n    var require = {\n        'baseUr","duration":281,"msg":"Magento sync failed"}
+api-1  | {"level":30,"time":1774816405662,"pid":19,"hostname":"c0f687b8f9a6","req":{"id":19,"method":"GET","url":"/api/magento/stats"},"res":{"statusCode":304},"responseTime":20,"msg":"request completed"}
+api-1  | {"level":30,"time":1774816405663,"pid":19,"hostname":"c0f687b8f9a6","req":{"id":20,"method":"GET","url":"/api/magento/sync"},"res":{"statusCode":200},"responseTime":17,"msg":"request completed"}
+api-1  | {"level":30,"time":1774816405840,"pid":19,"hostname":"c0f687b8f9a6","req":{"id":21,"method":"GET","url":"/api/magento/orders"},"res":{"statusCode":304},"responseTime":3,"msg":"request completed"}
+api-1  | {"level":30,"time":1774816410700,"pid":19,"hostname":"c0f687b8f9a6","req":{"id":25,"method":"GET","url":"/api/config/magento"},"res":{"statusCode":304},"responseTime":3,"msg":"request completed"}
+api-1  | {"level":30,"time":1774816490607,"pid":19,"hostname":"c0f687b8f9a6","req":{"id":39,"method":"GET","url":"/api/magento/stats"},"res":{"statusCode":304},"responseTime":7,"msg":"request completed"}
+api-1  | {"level":30,"time":1774816490827,"pid":19,"hostname":"c0f687b8f9a6","req":{"id":40,"method":"GET","url":"/api/magento/sync"},"res":{"statusCode":304},"responseTime":4,"msg":"request completed"}
+api-1  | {"level":30,"time":1774816490987,"pid":19,"hostname":"c0f687b8f9a6","req":{"id":41,"method":"GET","url":"/api/magento/orders"},"res":{"statusCode":304},"responseTime":2,"msg":"request completed"}
+ubuntu@ip-172-33-86-172:~/Site-Sentinel$ docker compose logs --tail=30 | grep -i "sync\|Starting"
+postgres-1  | 2026-03-29 20:31:36.784 UTC [1] LOG:  starting PostgreSQL 16.13 on x86_64-pc-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit
+api-1       | {"level":30,"time":1774816490827,"pid":19,"hostname":"c0f687b8f9a6","req":{"id":40,"method":"GET","url":"/api/magento/sync"},"res":{"statusCode":304},"responseTime":4,"msg":"request completed"}
+ubuntu@ip-172-33-86-172:~/Site-Sentinel$ docker compose logs --tail=100 | grep -i "magento\|sync\|token"
+api-1       |   OK: magento_orders table
+api-1       |   OK: magento_carts table
+api-1       |   OK: magento_sync_log table
+api-1       |   OK: magento_config table
+api-1       |   OK: seed magento_config
+api-1       | {"level":30,"time":1774816307952,"pid":19,"hostname":"c0f687b8f9a6","intervalMs":300000,"msg":"Starting Magento sync"}
+api-1       | {"level":30,"time":1774816312956,"pid":19,"hostname":"c0f687b8f9a6","tokenPrefix":"06tj5i6o...","msg":"Using static Magento API token"}
+api-1       | {"level":30,"time":1774816312957,"pid":19,"hostname":"c0f687b8f9a6","url":"https://www.lovefurniture.ie/orders?searchCriteria%5BpageSize%5D=100&searchCriteria%5BcurrentPage%5D=1&searchCriteria%5BsortOrders%5D%5B0%5D%5Bfield%5D=entity_id&searchCriteria%5BsortOrders%5D%5B0%5D%","apiUrl":"https://www.lovefurniture.ie","endpoint":"/orders?searchCriteria%5BpageSize%5D=100&searchCriteria%5BcurrentPage%5D=1&searc","msg":"Magento API request"}
+api-1       | {"level":50,"time":1774816313242,"pid":19,"hostname":"c0f687b8f9a6","syncType":"orders","error":"Magento API 404: <!doctype html>\n<html lang=\"en\">\n    <head >\n        <script>\n    var LOCALE = 'en\\u002DIE';\n    var BASE_URL = 'https\\u003A\\u002F\\u002Fwww.lovefurniture.ie\\u002F';\n    var require = {\n        'baseUr","duration":287,"msg":"Magento sync failed"}
+api-1       | {"level":30,"time":1774816313249,"pid":19,"hostname":"c0f687b8f9a6","url":"https://www.lovefurniture.ie/carts/search?searchCriteria%5BpageSize%5D=100&searchCriteria%5BcurrentPage%5D=1&searchCriteria%5BsortOrders%5D%5B0%5D%5Bfield%5D=entity_id&searchCriteria%5BsortOrders%5D%5","apiUrl":"https://www.lovefurniture.ie","endpoint":"/carts/search?searchCriteria%5BpageSize%5D=100&searchCriteria%5BcurrentPage%5D=1","msg":"Magento API request"}
+api-1       | {"level":50,"time":1774816313529,"pid":19,"hostname":"c0f687b8f9a6","syncType":"carts","error":"Magento API 404: <!doctype html>\n<html lang=\"en\">\n    <head >\n        <script>\n    var LOCALE = 'en\\u002DIE';\n    var BASE_URL = 'https\\u003A\\u002F\\u002Fwww.lovefurniture.ie\\u002F';\n    var require = {\n        'baseUr","duration":281,"msg":"Magento sync failed"}
+api-1       | {"level":30,"time":1774816405662,"pid":19,"hostname":"c0f687b8f9a6","req":{"id":19,"method":"GET","url":"/api/magento/stats"},"res":{"statusCode":304},"responseTime":20,"msg":"request completed"}
+api-1       | {"level":30,"time":1774816405663,"pid":19,"hostname":"c0f687b8f9a6","req":{"id":20,"method":"GET","url":"/api/magento/sync"},"res":{"statusCode":200},"responseTime":17,"msg":"request completed"}
+api-1       | {"level":30,"time":1774816405840,"pid":19,"hostname":"c0f687b8f9a6","req":{"id":21,"method":"GET","url":"/api/magento/orders"},"res":{"statusCode":304},"responseTime":3,"msg":"request completed"}
+api-1       | {"level":30,"time":1774816410700,"pid":19,"hostname":"c0f687b8f9a6","req":{"id":25,"method":"GET","url":"/api/config/magento"},"res":{"statusCode":304},"responseTime":3,"msg":"request completed"}
+api-1       | {"level":30,"time":1774816490607,"pid":19,"hostname":"c0f687b8f9a6","req":{"id":39,"method":"GET","url":"/api/magento/stats"},"res":{"statusCode":304},"responseTime":7,"msg":"request completed"}
+api-1       | {"level":30,"time":1774816490827,"pid":19,"hostname":"c0f687b8f9a6","req":{"id":40,"method":"GET","url":"/api/magento/sync"},"res":{"statusCode":304},"responseTime":4,"msg":"request completed"}
+api-1       | {"level":30,"time":1774816490987,"pid":19,"hostname":"c0f687b8f9a6","req":{"id":41,"method":"GET","url":"/api/magento/orders"},"res":{"statusCode":304},"responseTime":2,"msg":"request completed"}

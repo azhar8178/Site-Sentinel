@@ -36,8 +36,13 @@ async function getCredentials(): Promise<MagentoCredentials> {
     }
   } catch {}
 
+  let apiUrl = dbConfig.apiUrl || ENV_MAGENTO_API_URL;
+  if (apiUrl && !apiUrl.match(/\/rest\/V[12]/)) {
+    apiUrl = apiUrl.replace(/\/+$/, "") + "/rest/V1";
+  }
+
   return {
-    apiUrl: dbConfig.apiUrl || ENV_MAGENTO_API_URL,
+    apiUrl,
     adminUser: dbConfig.adminUser || ENV_MAGENTO_ADMIN_USER,
     adminPass: dbConfig.adminPass || ENV_MAGENTO_ADMIN_PASS,
     apiToken: dbConfig.apiToken || ENV_MAGENTO_API_TOKEN,
