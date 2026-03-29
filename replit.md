@@ -56,7 +56,7 @@ The project is built as a pnpm monorepo, leveraging Node.js 24 and TypeScript 5.
 
 - **PostgreSQL:** Primary database for all application data.
 - **Nodemailer:** For sending email alerts via generic SMTP.
-- **Magento REST API:** For fetching e-commerce data (orders, carts).
+- **Magento REST API:** For fetching e-commerce data (orders, carts). Store page shows per-store stats (IE/UK separated) with proper currency symbols (€/£). API supports `storeId` query param filtering. Store mapping: ID 1 = Love Furniture IE (EUR), ID 2 = Love Furniture UK (GBP).
 - **Slack Webhooks:** For sending Slack notifications.
 - **WhatsApp Business API (Meta):** For sending WhatsApp notifications.
 - **Expo:** Framework for building the mobile application.

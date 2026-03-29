@@ -351,11 +351,23 @@ export function stopMagentoSync(): void {
   }
 }
 
-export async function getOrderStats() {
+const STORE_MAP: Record<number, { name: string; currency: string }> = {
+  1: { name: "Love Furniture IE", currency: "EUR" },
+  2: { name: "Love Furniture UK", currency: "GBP" },
+};
+
+async function getStoreStatsForStore(storeId: number | null) {
   const now = new Date();
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const weekStart = new Date(todayStart);
   weekStart.setDate(weekStart.getDate() - 7);
+
+  const storeFilter = storeId !== null
+    ? eq(magentoOrdersTable.storeId, storeId)
+    : undefined;
+  const cartStoreFilter = storeId !== null
+    ? eq(magentoCartsTable.storeId, storeId)
+    : undefined;
 
   const [todayOrders] = await db
     .select({
@@ -363,7 +375,7 @@ export async function getOrderStats() {
       revenue: sql<number>`coalesce(sum(${magentoOrdersTable.grandTotal}), 0)`,
     })
     .from(magentoOrdersTable)
-    .where(gte(magentoOrdersTable.orderCreatedAt, todayStart));
+    .where(and(gte(magentoOrdersTable.orderCreatedAt, todayStart), storeFilter));
 
   const [weekOrders] = await db
     .select({
@@ -371,7 +383,7 @@ export async function getOrderStats() {
       revenue: sql<number>`coalesce(sum(${magentoOrdersTable.grandTotal}), 0)`,
     })
     .from(magentoOrdersTable)
-    .where(gte(magentoOrdersTable.orderCreatedAt, weekStart));
+    .where(and(gte(magentoOrdersTable.orderCreatedAt, weekStart), storeFilter));
 
   const [activeCarts] = await db
     .select({
@@ -382,7 +394,8 @@ export async function getOrderStats() {
     .where(
       and(
         eq(magentoCartsTable.isActive, true),
-        gte(magentoCartsTable.cartUpdatedAt, weekStart)
+        gte(magentoCartsTable.cartUpdatedAt, weekStart),
+        cartStoreFilter
       )
     );
 
@@ -397,13 +410,14 @@ export async function getOrderStats() {
       and(
         eq(magentoCartsTable.isActive, true),
         gte(magentoCartsTable.cartCreatedAt, weekStart),
-        sql`${magentoCartsTable.cartUpdatedAt} < ${abandonedThreshold}`
+        sql`${magentoCartsTable.cartUpdatedAt} < ${abandonedThreshold}`,
+        cartStoreFilter
       )
     );
 
   const totalCartsWeek = (activeCarts?.count || 0) + (weekOrders?.count || 0);
   const abandonmentRate = totalCartsWeek > 0
-    ? Math.round(((abandonedCarts?.count || 0) / totalCartsWeek) * 100)
+    ? ((abandonedCarts?.count || 0) / totalCartsWeek) * 100
     : 0;
 
   return {
@@ -420,32 +434,77 @@ export async function getOrderStats() {
       activeValue: Math.round((activeCarts?.totalValue || 0) * 100) / 100,
       abandoned: abandonedCarts?.count || 0,
       abandonedValue: Math.round((abandonedCarts?.totalValue || 0) * 100) / 100,
-      abandonmentRate,
+      abandonmentRate: Math.round(abandonmentRate * 10) / 10,
     },
   };
 }
 
-export async function getRecentOrders(limit = 20) {
+export async function getOrderStats(storeId?: number) {
+  if (storeId !== undefined) {
+    return getStoreStatsForStore(storeId);
+  }
+  return getStoreStatsForStore(null);
+}
+
+export async function getOrderStatsByStore() {
+  const storeIds = await db
+    .selectDistinct({ storeId: magentoOrdersTable.storeId })
+    .from(magentoOrdersTable);
+
+  const cartStoreIds = await db
+    .selectDistinct({ storeId: magentoCartsTable.storeId })
+    .from(magentoCartsTable);
+
+  const allStoreIds = [...new Set([
+    ...storeIds.map(s => s.storeId),
+    ...cartStoreIds.map(s => s.storeId),
+  ])].filter(id => id > 0).sort();
+
+  const stores = [];
+  for (const sid of allStoreIds) {
+    const stats = await getStoreStatsForStore(sid);
+    const info = STORE_MAP[sid] || { name: `Store ${sid}`, currency: sid === 2 ? "GBP" : "EUR" };
+    stores.push({
+      storeId: sid,
+      name: info.name,
+      currency: info.currency,
+      ...stats,
+    });
+  }
+
+  const combined = await getStoreStatsForStore(null);
+  return { stores, combined };
+}
+
+export async function getRecentOrders(limit = 20, storeId?: number) {
+  const conditions = [];
+  if (storeId !== undefined) {
+    conditions.push(eq(magentoOrdersTable.storeId, storeId));
+  }
   return db
     .select()
     .from(magentoOrdersTable)
+    .where(conditions.length > 0 ? and(...conditions) : undefined)
     .orderBy(desc(magentoOrdersTable.orderCreatedAt))
     .limit(limit);
 }
 
-export async function getAbandonedCarts(limit = 20) {
+export async function getAbandonedCarts(limit = 20, storeId?: number) {
   const abandonedThreshold = new Date(Date.now() - 60 * 60 * 1000);
+
+  const conditions = [
+    eq(magentoCartsTable.isActive, true),
+    sql`${magentoCartsTable.cartUpdatedAt} < ${abandonedThreshold}`,
+    sql`${magentoCartsTable.itemsCount} > 0`,
+  ];
+  if (storeId !== undefined) {
+    conditions.push(eq(magentoCartsTable.storeId, storeId));
+  }
 
   return db
     .select()
     .from(magentoCartsTable)
-    .where(
-      and(
-        eq(magentoCartsTable.isActive, true),
-        sql`${magentoCartsTable.cartUpdatedAt} < ${abandonedThreshold}`,
-        sql`${magentoCartsTable.itemsCount} > 0`
-      )
-    )
+    .where(and(...conditions))
     .orderBy(desc(magentoCartsTable.grandTotal))
     .limit(limit);
 }
