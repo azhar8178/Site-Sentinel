@@ -1,149 +1,686 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { useGetAlertConfig, useUpdateAlertConfig, useListUsers, useGetMagentoConfig } from "@workspace/api-client-react";
+import { Switch } from "@/components/ui/switch";
+import {
+  useGetAlertConfig, useUpdateAlertConfig,
+  useListUsers, useCreateUser, useUpdateUser, useDeleteUser,
+  useGetMagentoConfig, useUpdateMagentoConfig, useTestMagentoConnection,
+  useTestSmtpConnection, useSendTestEmail,
+  useTestSlackConnection, useTestWhatsAppConnection,
+  useListSites, useUpdateSite,
+  useGetServerAlertConfig, useUpdateServerAlertConfig,
+} from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
+import {
+  Mail, MessageSquare, Phone, ShoppingBag, Users, Shield,
+  Server, Eye, EyeOff, UserPlus, Trash2, Edit2, Save,
+  Zap, Send, LogOut, AlertTriangle, Gauge,
+} from "lucide-react";
+
+const MASK = "••••••••";
+
+function PasswordInput({ value, onChange, placeholder }: { value: string; onChange: (v: string) => void; placeholder?: string }) {
+  const [show, setShow] = useState(false);
+  return (
+    <div className="relative">
+      <Input
+        type={show ? "text" : "password"}
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="pr-10"
+      />
+      <button
+        type="button"
+        onClick={() => setShow(!show)}
+        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+      >
+        {show ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+      </button>
+    </div>
+  );
+}
+
+function SectionCard({ icon: Icon, title, description, children, className }: {
+  icon: any; title: string; description: string; children: React.ReactNode; className?: string;
+}) {
+  return (
+    <Card className={className}>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Icon className="w-5 h-5 text-primary" />
+          {title}
+        </CardTitle>
+        <CardDescription>{description}</CardDescription>
+      </CardHeader>
+      <CardContent>{children}</CardContent>
+    </Card>
+  );
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="space-y-1.5">
+      <label className="text-sm font-medium">{label}</label>
+      {children}
+    </div>
+  );
+}
 
 export default function Settings() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const { toast } = useToast();
-  
-  const { data: alertConfig } = useGetAlertConfig();
-  const updateAlertConfig = useUpdateAlertConfig();
+  const queryClient = useQueryClient();
+
+  const { data: config } = useGetAlertConfig();
+  const updateConfig = useUpdateAlertConfig();
+  const { data: sites } = useListSites();
+  const updateSite = useUpdateSite();
+  const testSmtp = useTestSmtpConnection();
+  const sendTestEmail = useSendTestEmail();
+  const testSlack = useTestSlackConnection();
+  const testWhatsApp = useTestWhatsAppConnection();
   const { data: magentoConfig } = useGetMagentoConfig();
-  const { data: users } = useListUsers({ query: { enabled: user?.role === 'admin' } });
+  const updateMagento = useUpdateMagentoConfig();
+  const testMagento = useTestMagentoConnection();
+  const { data: users } = useListUsers({ query: { enabled: user?.role === "admin" } });
+  const createUser = useCreateUser();
+  const updateUser = useUpdateUser();
+  const deleteUser = useDeleteUser();
+  const { data: serverAlertConfig } = useGetServerAlertConfig();
+  const updateServerAlertConfig = useUpdateServerAlertConfig();
 
-  const [emailForm, setEmailForm] = useState({
-    senderEmail: '', recipientEmails: ''
-  });
+  const [isEnabled, setIsEnabled] = useState(true);
+  const [senderEmail, setSenderEmail] = useState("");
+  const [recipientEmails, setRecipientEmails] = useState("");
+  const [smtpHost, setSmtpHost] = useState("");
+  const [smtpPort, setSmtpPort] = useState("587");
+  const [smtpUsername, setSmtpUsername] = useState("");
+  const [smtpPassword, setSmtpPassword] = useState("");
+  const [smtpSecure, setSmtpSecure] = useState(false);
 
-  // Only init once
-  useState(() => {
-    if (alertConfig) {
-      setEmailForm({
-        senderEmail: alertConfig.senderEmail || '',
-        recipientEmails: alertConfig.recipientEmails || ''
-      });
+  const [slackEnabled, setSlackEnabled] = useState(false);
+  const [slackWebhookUrl, setSlackWebhookUrl] = useState("");
+  const [slackChannel, setSlackChannel] = useState("");
+
+  const [whatsappEnabled, setWhatsappEnabled] = useState(false);
+  const [whatsappApiToken, setWhatsappApiToken] = useState("");
+  const [whatsappPhoneNumberId, setWhatsappPhoneNumberId] = useState("");
+  const [whatsappRecipients, setWhatsappRecipients] = useState("");
+
+  const [magApiUrl, setMagApiUrl] = useState("");
+  const [magAdminUser, setMagAdminUser] = useState("");
+  const [magAdminPass, setMagAdminPass] = useState("");
+  const [magApiToken, setMagApiToken] = useState("");
+  const [magEnabled, setMagEnabled] = useState(false);
+
+  const [thresholds, setThresholds] = useState<Record<number, string>>({});
+
+  const [serverAlertsEnabled, setServerAlertsEnabled] = useState(true);
+  const [cpuThreshold, setCpuThreshold] = useState("90");
+  const [ramThreshold, setRamThreshold] = useState("90");
+  const [diskThreshold, setDiskThreshold] = useState("95");
+  const [offlineTimeout, setOfflineTimeout] = useState("5");
+
+  const [showAddUser, setShowAddUser] = useState(false);
+  const [newUsername, setNewUsername] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [newRole, setNewRole] = useState<"viewer" | "editor" | "admin">("viewer");
+  const [editingUser, setEditingUser] = useState<{ id: number; username: string; role: string } | null>(null);
+  const [editRole, setEditRole] = useState<"viewer" | "editor" | "admin">("viewer");
+  const [resetPassword, setResetPassword] = useState("");
+
+  useEffect(() => {
+    if (config) {
+      setIsEnabled(config.isEnabled);
+      setSenderEmail(config.senderEmail);
+      setRecipientEmails(config.recipientEmails);
+      setSmtpHost(config.smtpHost);
+      setSmtpPort(String(config.smtpPort));
+      setSmtpUsername(config.smtpUsername);
+      setSmtpPassword(config.smtpPassword);
+      setSmtpSecure(config.smtpSecure);
+      setSlackEnabled(config.slackEnabled);
+      setSlackWebhookUrl(config.slackWebhookUrl);
+      setSlackChannel(config.slackChannel);
+      setWhatsappEnabled(config.whatsappEnabled);
+      setWhatsappApiToken(config.whatsappApiToken);
+      setWhatsappPhoneNumberId(config.whatsappPhoneNumberId);
+      setWhatsappRecipients(config.whatsappRecipients);
     }
-  });
+  }, [config?.id]);
 
-  const handleSaveAlerts = async (e: React.FormEvent) => {
-    e.preventDefault();
+  useEffect(() => {
+    if (magentoConfig) {
+      setMagApiUrl(magentoConfig.apiUrl);
+      setMagAdminUser(magentoConfig.adminUser);
+      setMagAdminPass(magentoConfig.adminPass);
+      setMagApiToken(magentoConfig.apiToken);
+      setMagEnabled(magentoConfig.isEnabled);
+    }
+  }, [magentoConfig?.id]);
+
+  useEffect(() => {
+    if (sites) {
+      const t: Record<number, string> = {};
+      sites.forEach(s => { t[s.id] = String(s.slowThresholdMs); });
+      setThresholds(t);
+    }
+  }, [sites?.length]);
+
+  useEffect(() => {
+    if (serverAlertConfig) {
+      setServerAlertsEnabled(serverAlertConfig.isEnabled);
+      setCpuThreshold(String(serverAlertConfig.cpuThreshold));
+      setRamThreshold(String(serverAlertConfig.ramThreshold));
+      setDiskThreshold(String(serverAlertConfig.diskThreshold));
+      setOfflineTimeout(String(serverAlertConfig.offlineTimeoutMinutes));
+    }
+  }, [serverAlertConfig?.id]);
+
+  const handleSaveAlerts = async () => {
     try {
-      await updateAlertConfig.mutateAsync({ data: emailForm });
-      toast({ title: "Saved", description: "Alert configuration updated successfully." });
+      await updateConfig.mutateAsync({
+        data: {
+          isEnabled, senderEmail, recipientEmails,
+          smtpHost, smtpPort: Number(smtpPort) || 587, smtpUsername, smtpPassword, smtpSecure,
+          slackEnabled, slackWebhookUrl, slackChannel,
+          whatsappEnabled, whatsappApiToken, whatsappPhoneNumberId, whatsappRecipients,
+        },
+      });
+      for (const site of sites ?? []) {
+        const threshold = Number(thresholds[site.id]);
+        if (!isNaN(threshold) && threshold !== site.slowThresholdMs) {
+          await updateSite.mutateAsync({ siteId: site.id, data: { slowThresholdMs: threshold } });
+        }
+      }
+      queryClient.invalidateQueries({ queryKey: ["/api/config"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/sites"] });
+      toast({ title: "Saved", description: "Alert configuration updated." });
     } catch (e: any) {
       toast({ variant: "destructive", title: "Error", description: e.message });
     }
   };
 
-  if (user?.role === 'viewer') {
+  const handleTestSmtp = async () => {
+    try {
+      const result = await testSmtp.mutateAsync({
+        data: { smtpHost, smtpPort: Number(smtpPort) || 587, smtpUsername, smtpPassword, smtpSecure },
+      });
+      toast({ title: result.success ? "Connected" : "Failed", description: result.message || (result.success ? "SMTP connection successful" : "Connection failed") });
+    } catch (e: any) {
+      toast({ variant: "destructive", title: "Error", description: e.message });
+    }
+  };
+
+  const handleSendTestEmail = async () => {
+    try {
+      const result = await sendTestEmail.mutateAsync({ data: {} });
+      toast({ title: result.success ? "Sent" : "Failed", description: result.message || "Test email sent" });
+    } catch (e: any) {
+      toast({ variant: "destructive", title: "Error", description: e.message });
+    }
+  };
+
+  const handleTestSlack = async () => {
+    try {
+      const result = await testSlack.mutateAsync({ data: { webhookUrl: slackWebhookUrl, channel: slackChannel } });
+      toast({ title: result.success ? "Connected" : "Failed", description: result.message || "Slack test complete" });
+    } catch (e: any) {
+      toast({ variant: "destructive", title: "Error", description: e.message });
+    }
+  };
+
+  const handleTestWhatsApp = async () => {
+    try {
+      const result = await testWhatsApp.mutateAsync({ data: { apiToken: whatsappApiToken, phoneNumberId: whatsappPhoneNumberId, recipients: whatsappRecipients } });
+      toast({ title: result.success ? "Connected" : "Failed", description: result.message || "WhatsApp test complete" });
+    } catch (e: any) {
+      toast({ variant: "destructive", title: "Error", description: e.message });
+    }
+  };
+
+  const handleSaveMagento = async () => {
+    try {
+      await updateMagento.mutateAsync({
+        data: { apiUrl: magApiUrl, adminUser: magAdminUser, adminPass: magAdminPass, apiToken: magApiToken, isEnabled: magEnabled },
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/config/magento"] });
+      toast({ title: "Saved", description: "Magento settings updated." });
+    } catch (e: any) {
+      toast({ variant: "destructive", title: "Error", description: e.message });
+    }
+  };
+
+  const handleTestMagento = async () => {
+    try {
+      const result = await testMagento.mutateAsync({
+        data: { apiUrl: magApiUrl, adminUser: magAdminUser, adminPass: magAdminPass, apiToken: magApiToken },
+      });
+      toast({ title: result.success ? "Connected" : "Failed", description: result.message || "Magento test complete" });
+    } catch (e: any) {
+      toast({ variant: "destructive", title: "Error", description: e.message });
+    }
+  };
+
+  const handleSaveServerAlerts = async () => {
+    try {
+      await updateServerAlertConfig.mutateAsync({
+        data: {
+          isEnabled: serverAlertsEnabled,
+          cpuThreshold: Number(cpuThreshold),
+          ramThreshold: Number(ramThreshold),
+          diskThreshold: Number(diskThreshold),
+          offlineTimeoutMinutes: Number(offlineTimeout),
+        },
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/config/server-alerts"] });
+      toast({ title: "Saved", description: "Server alert thresholds updated." });
+    } catch (e: any) {
+      toast({ variant: "destructive", title: "Error", description: e.message });
+    }
+  };
+
+  const handleCreateUser = async () => {
+    if (!newUsername.trim() || !newPassword.trim()) {
+      toast({ variant: "destructive", title: "Error", description: "Username and password are required." });
+      return;
+    }
+    try {
+      await createUser.mutateAsync({ data: { username: newUsername.trim(), password: newPassword, role: newRole } });
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+      setShowAddUser(false);
+      setNewUsername("");
+      setNewPassword("");
+      setNewRole("viewer");
+      toast({ title: "Created", description: "User created successfully." });
+    } catch (e: any) {
+      toast({ variant: "destructive", title: "Error", description: e.message });
+    }
+  };
+
+  const handleUpdateUser = async () => {
+    if (!editingUser) return;
+    try {
+      const data: any = { role: editRole };
+      if (resetPassword.trim().length > 0) {
+        if (resetPassword.length < 6) {
+          toast({ variant: "destructive", title: "Error", description: "Password must be at least 6 characters." });
+          return;
+        }
+        data.password = resetPassword;
+      }
+      await updateUser.mutateAsync({ userId: editingUser.id, data });
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+      setEditingUser(null);
+      setResetPassword("");
+      toast({ title: "Updated", description: "User updated successfully." });
+    } catch (e: any) {
+      toast({ variant: "destructive", title: "Error", description: e.message });
+    }
+  };
+
+  const handleDeleteUser = async (userId: number, username: string) => {
+    if (!confirm(`Remove "${username}"? This cannot be undone.`)) return;
+    try {
+      await deleteUser.mutateAsync({ userId });
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+      toast({ title: "Removed", description: `${username} has been removed.` });
+    } catch (e: any) {
+      toast({ variant: "destructive", title: "Error", description: e.message });
+    }
+  };
+
+  if (user?.role === "viewer") {
     return (
       <div className="p-8 text-center text-muted-foreground mt-20">
+        <Shield className="w-12 h-12 mx-auto mb-4 text-muted-foreground/50" />
         <h2 className="text-2xl font-bold font-display text-foreground mb-2">Access Denied</h2>
         <p>You do not have permission to view or edit settings.</p>
       </div>
     );
   }
 
+  const roleColors: Record<string, string> = {
+    admin: "bg-red-50 text-red-700 border-red-200",
+    editor: "bg-amber-50 text-amber-700 border-amber-200",
+    viewer: "bg-blue-50 text-blue-700 border-blue-200",
+  };
+
   return (
-    <div className="space-y-8 max-w-5xl">
-      <div>
-        <h1 className="text-3xl font-display font-bold">Settings</h1>
-        <p className="text-muted-foreground mt-1">Configure system behavior and integrations</p>
+    <div className="space-y-8 max-w-5xl pb-12">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-display font-bold">Settings</h1>
+          <p className="text-muted-foreground mt-1">Configure system behavior and integrations</p>
+        </div>
+        <Button variant="outline" onClick={logout} className="gap-2 text-destructive hover:text-destructive hover:bg-destructive/5">
+          <LogOut className="w-4 h-4" /> Sign Out
+        </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        
-        {/* Email Notifications */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Email Alerts</CardTitle>
-            <CardDescription>Who receives critical downtime alerts</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSaveAlerts} className="space-y-4">
-              <div>
-                <label className="text-sm font-medium mb-1 block">Sender Email</label>
-                <Input 
-                  value={emailForm.senderEmail}
-                  onChange={e => setEmailForm(f => ({ ...f, senderEmail: e.target.value }))}
-                  placeholder="alerts@yourdomain.com" 
-                />
-              </div>
-              <div>
-                <label className="text-sm font-medium mb-1 block">Recipient Emails</label>
-                <Input 
-                  value={emailForm.recipientEmails}
-                  onChange={e => setEmailForm(f => ({ ...f, recipientEmails: e.target.value }))}
-                  placeholder="comma separated emails" 
-                />
-              </div>
-              <Button type="submit" disabled={updateAlertConfig.isPending}>
-                Save Changes
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
+      {/* Email Alerts */}
+      <SectionCard icon={Mail} title="Email Alerts" description="SMTP configuration and notification recipients">
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <label className="text-sm font-medium">Enable Email Alerts</label>
+            <Switch checked={isEnabled} onCheckedChange={setIsEnabled} />
+          </div>
 
-        {/* Magento Config Preview */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Magento Integration</CardTitle>
-            <CardDescription>E-commerce data sync settings</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <label className="text-sm font-medium mb-1 block">Store URL</label>
-              <Input value={magentoConfig?.apiUrl || ''} disabled readOnly className="bg-slate-50 text-muted-foreground" />
-            </div>
-            <div>
-              <label className="text-sm font-medium mb-1 block">Admin User</label>
-              <Input value={magentoConfig?.adminUser || ''} disabled readOnly className="bg-slate-50 text-muted-foreground" />
-            </div>
-            <div className="flex items-center gap-2">
-              <div className={`w-3 h-3 rounded-full ${magentoConfig?.isEnabled ? 'bg-success' : 'bg-muted'}`} />
-              <span className="text-sm font-medium">Sync is {magentoConfig?.isEnabled ? 'Active' : 'Disabled'}</span>
-            </div>
-          </CardContent>
-        </Card>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Field label="Sender Email">
+              <Input value={senderEmail} onChange={e => setSenderEmail(e.target.value)} placeholder="alerts@yourdomain.com" />
+            </Field>
+            <Field label="Recipient Emails">
+              <Input value={recipientEmails} onChange={e => setRecipientEmails(e.target.value)} placeholder="comma separated emails" />
+            </Field>
+          </div>
 
-        {/* Team Management - Admin Only */}
-        {user?.role === 'admin' && (
-          <Card className="md:col-span-2">
-            <CardHeader>
-              <CardTitle>Team Management</CardTitle>
-              <CardDescription>Manage who has access to the dashboard</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="border rounded-xl overflow-hidden">
-                <table className="w-full text-sm text-left">
-                  <thead className="bg-slate-50 text-muted-foreground border-b">
-                    <tr>
-                      <th className="px-4 py-3 font-medium">Username</th>
-                      <th className="px-4 py-3 font-medium">Role</th>
-                      <th className="px-4 py-3 font-medium text-right">Actions</th>
+          <div className="border-t pt-4">
+            <p className="text-sm font-medium mb-3">SMTP Server</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Field label="SMTP Host">
+                <Input value={smtpHost} onChange={e => setSmtpHost(e.target.value)} placeholder="smtp.gmail.com" />
+              </Field>
+              <Field label="SMTP Port">
+                <Input value={smtpPort} onChange={e => setSmtpPort(e.target.value)} placeholder="587" />
+              </Field>
+              <Field label="SMTP Username">
+                <Input value={smtpUsername} onChange={e => setSmtpUsername(e.target.value)} placeholder="your@email.com" />
+              </Field>
+              <Field label="SMTP Password">
+                <PasswordInput value={smtpPassword} onChange={setSmtpPassword} placeholder="App password" />
+              </Field>
+            </div>
+            <div className="flex items-center gap-2 mt-3">
+              <Switch checked={smtpSecure} onCheckedChange={setSmtpSecure} />
+              <label className="text-sm">Use SSL/TLS</label>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            <Button onClick={handleSaveAlerts} disabled={updateConfig.isPending} className="gap-2">
+              <Save className="w-4 h-4" /> Save Alert Settings
+            </Button>
+            <Button variant="outline" onClick={handleTestSmtp} disabled={testSmtp.isPending} className="gap-2">
+              <Zap className="w-4 h-4" /> Test SMTP
+            </Button>
+            <Button variant="outline" onClick={handleSendTestEmail} disabled={sendTestEmail.isPending} className="gap-2">
+              <Send className="w-4 h-4" /> Send Test Email
+            </Button>
+          </div>
+        </div>
+      </SectionCard>
+
+      {/* Slack */}
+      <SectionCard icon={MessageSquare} title="Slack Notifications" description="Send alerts to a Slack channel via webhook">
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <label className="text-sm font-medium">Enable Slack</label>
+            <Switch checked={slackEnabled} onCheckedChange={setSlackEnabled} />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Field label="Webhook URL">
+              <Input value={slackWebhookUrl} onChange={e => setSlackWebhookUrl(e.target.value)} placeholder="https://hooks.slack.com/services/..." />
+            </Field>
+            <Field label="Channel">
+              <Input value={slackChannel} onChange={e => setSlackChannel(e.target.value)} placeholder="#alerts" />
+            </Field>
+          </div>
+          <div className="flex gap-2">
+            <Button onClick={handleSaveAlerts} disabled={updateConfig.isPending} className="gap-2">
+              <Save className="w-4 h-4" /> Save
+            </Button>
+            <Button variant="outline" onClick={handleTestSlack} disabled={testSlack.isPending} className="gap-2">
+              <Zap className="w-4 h-4" /> Test Slack
+            </Button>
+          </div>
+        </div>
+      </SectionCard>
+
+      {/* WhatsApp */}
+      <SectionCard icon={Phone} title="WhatsApp Notifications" description="Send alerts via WhatsApp Business API">
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <label className="text-sm font-medium">Enable WhatsApp</label>
+            <Switch checked={whatsappEnabled} onCheckedChange={setWhatsappEnabled} />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Field label="API Token">
+              <PasswordInput value={whatsappApiToken} onChange={setWhatsappApiToken} placeholder="WhatsApp Business API token" />
+            </Field>
+            <Field label="Phone Number ID">
+              <Input value={whatsappPhoneNumberId} onChange={e => setWhatsappPhoneNumberId(e.target.value)} placeholder="Phone number ID" />
+            </Field>
+            <Field label="Recipients">
+              <Input value={whatsappRecipients} onChange={e => setWhatsappRecipients(e.target.value)} placeholder="comma separated phone numbers" />
+            </Field>
+          </div>
+          <div className="flex gap-2">
+            <Button onClick={handleSaveAlerts} disabled={updateConfig.isPending} className="gap-2">
+              <Save className="w-4 h-4" /> Save
+            </Button>
+            <Button variant="outline" onClick={handleTestWhatsApp} disabled={testWhatsApp.isPending} className="gap-2">
+              <Zap className="w-4 h-4" /> Test WhatsApp
+            </Button>
+          </div>
+        </div>
+      </SectionCard>
+
+      {/* Site Thresholds */}
+      <SectionCard icon={AlertTriangle} title="Site Slow Thresholds" description="Configure response time thresholds per site (ms)">
+        <div className="space-y-4">
+          {sites?.map(site => (
+            <div key={site.id} className="flex items-center gap-4">
+              <label className="text-sm font-medium min-w-[180px]">{site.name}</label>
+              <Input
+                type="number"
+                className="w-32"
+                value={thresholds[site.id] || ""}
+                onChange={e => setThresholds(prev => ({ ...prev, [site.id]: e.target.value }))}
+              />
+              <span className="text-xs text-muted-foreground">ms</span>
+            </div>
+          ))}
+          <Button onClick={handleSaveAlerts} disabled={updateConfig.isPending} className="gap-2">
+            <Save className="w-4 h-4" /> Save Thresholds
+          </Button>
+        </div>
+      </SectionCard>
+
+      {/* Server Alert Thresholds */}
+      <SectionCard icon={Gauge} title="Server Alert Thresholds" description="Configure alert thresholds for server vitals">
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <label className="text-sm font-medium">Enable Server Alerts</label>
+            <Switch checked={serverAlertsEnabled} onCheckedChange={setServerAlertsEnabled} />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Field label="CPU Threshold (%)">
+              <Input type="number" value={cpuThreshold} onChange={e => setCpuThreshold(e.target.value)} />
+            </Field>
+            <Field label="RAM Threshold (%)">
+              <Input type="number" value={ramThreshold} onChange={e => setRamThreshold(e.target.value)} />
+            </Field>
+            <Field label="Disk Threshold (%)">
+              <Input type="number" value={diskThreshold} onChange={e => setDiskThreshold(e.target.value)} />
+            </Field>
+            <Field label="Offline Timeout (minutes)">
+              <Input type="number" value={offlineTimeout} onChange={e => setOfflineTimeout(e.target.value)} />
+            </Field>
+          </div>
+          <Button onClick={handleSaveServerAlerts} disabled={updateServerAlertConfig.isPending} className="gap-2">
+            <Save className="w-4 h-4" /> Save Server Thresholds
+          </Button>
+        </div>
+      </SectionCard>
+
+      {/* Magento */}
+      <SectionCard icon={ShoppingBag} title="Magento Integration" description="Connect to your Magento store for order and cart tracking">
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <label className="text-sm font-medium">Enable Sync</label>
+            <Switch checked={magEnabled} onCheckedChange={setMagEnabled} />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Field label="Store API URL">
+              <Input value={magApiUrl} onChange={e => setMagApiUrl(e.target.value)} placeholder="https://your-store.com" />
+            </Field>
+            <Field label="Admin Username">
+              <Input value={magAdminUser} onChange={e => setMagAdminUser(e.target.value)} placeholder="admin" />
+            </Field>
+            <Field label="Admin Password">
+              <PasswordInput value={magAdminPass} onChange={setMagAdminPass} placeholder="Admin password" />
+            </Field>
+            <Field label="API Token (optional)">
+              <PasswordInput value={magApiToken} onChange={setMagApiToken} placeholder="Integration token" />
+            </Field>
+          </div>
+          <div className="flex gap-2">
+            <Button onClick={handleSaveMagento} disabled={updateMagento.isPending} className="gap-2">
+              <Save className="w-4 h-4" /> Save Magento
+            </Button>
+            <Button variant="outline" onClick={handleTestMagento} disabled={testMagento.isPending} className="gap-2">
+              <Zap className="w-4 h-4" /> Test Connection
+            </Button>
+          </div>
+        </div>
+      </SectionCard>
+
+      {/* Team Management */}
+      {user?.role === "admin" && (
+        <SectionCard icon={Users} title="Team Management" description="Manage who has access to the dashboard">
+          <div className="space-y-4">
+            <Button variant="outline" onClick={() => setShowAddUser(true)} className="gap-2">
+              <UserPlus className="w-4 h-4" /> Add Team Member
+            </Button>
+
+            {showAddUser && (
+              <Card className="border-primary/20 bg-primary/5">
+                <CardContent className="p-4 space-y-4">
+                  <p className="font-semibold text-sm">New Team Member</p>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <Field label="Username">
+                      <Input value={newUsername} onChange={e => setNewUsername(e.target.value)} placeholder="username" />
+                    </Field>
+                    <Field label="Password">
+                      <Input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="Min 6 characters" />
+                    </Field>
+                    <Field label="Role">
+                      <div className="flex gap-1">
+                        {(["viewer", "editor", "admin"] as const).map(r => (
+                          <button
+                            key={r}
+                            onClick={() => setNewRole(r)}
+                            className={`px-3 py-2 rounded-lg text-xs font-semibold border transition-colors capitalize ${
+                              newRole === r ? "bg-primary text-white border-primary" : "bg-white border-border hover:bg-secondary"
+                            }`}
+                          >
+                            {r}
+                          </button>
+                        ))}
+                      </div>
+                    </Field>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button size="sm" onClick={handleCreateUser} disabled={createUser.isPending}>Create</Button>
+                    <Button size="sm" variant="outline" onClick={() => setShowAddUser(false)}>Cancel</Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            <div className="border rounded-xl overflow-hidden">
+              <table className="w-full text-sm text-left">
+                <thead className="bg-slate-50 text-muted-foreground border-b">
+                  <tr>
+                    <th className="px-4 py-3 font-medium">Username</th>
+                    <th className="px-4 py-3 font-medium">Role</th>
+                    <th className="px-4 py-3 font-medium text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y">
+                  {users?.map(u => (
+                    <tr key={u.id} className="hover:bg-slate-50/50">
+                      <td className="px-4 py-3 font-semibold">
+                        {u.username}
+                        {u.id === user?.id && <span className="text-xs text-muted-foreground ml-2">(you)</span>}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className={`px-2.5 py-1 rounded-full text-xs font-semibold border capitalize ${roleColors[u.role] || roleColors.viewer}`}>
+                          {u.role}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        {u.id !== user?.id && (
+                          <div className="flex gap-1 justify-end">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setEditingUser({ id: u.id, username: u.username, role: u.role });
+                                setEditRole(u.role as any);
+                                setResetPassword("");
+                              }}
+                              className="gap-1"
+                            >
+                              <Edit2 className="w-3 h-3" /> Edit
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleDeleteUser(u.id, u.username)}
+                              className="gap-1 text-destructive hover:text-destructive hover:bg-destructive/5"
+                            >
+                              <Trash2 className="w-3 h-3" /> Remove
+                            </Button>
+                          </div>
+                        )}
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody className="divide-y">
-                    {users?.map(u => (
-                      <tr key={u.id} className="hover:bg-slate-50/50">
-                        <td className="px-4 py-3 font-semibold">{u.username}</td>
-                        <td className="px-4 py-3 capitalize text-muted-foreground">{u.role}</td>
-                        <td className="px-4 py-3 text-right">
-                          <Button variant="outline" size="sm" className="bg-white">Edit</Button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-      </div>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {editingUser && (
+              <Card className="border-primary/20 bg-primary/5">
+                <CardContent className="p-4 space-y-4">
+                  <p className="font-semibold text-sm">Edit {editingUser.username}</p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <Field label="Role">
+                      <div className="flex gap-1">
+                        {(["viewer", "editor", "admin"] as const).map(r => (
+                          <button
+                            key={r}
+                            onClick={() => setEditRole(r)}
+                            className={`px-3 py-2 rounded-lg text-xs font-semibold border transition-colors capitalize ${
+                              editRole === r ? "bg-primary text-white border-primary" : "bg-white border-border hover:bg-secondary"
+                            }`}
+                          >
+                            {r}
+                          </button>
+                        ))}
+                      </div>
+                    </Field>
+                    <Field label="Reset Password (leave empty to keep)">
+                      <Input type="password" value={resetPassword} onChange={e => setResetPassword(e.target.value)} placeholder="New password (optional)" />
+                    </Field>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button size="sm" onClick={handleUpdateUser} disabled={updateUser.isPending}>Save Changes</Button>
+                    <Button size="sm" variant="outline" onClick={() => setEditingUser(null)}>Cancel</Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        </SectionCard>
+      )}
     </div>
   );
 }
