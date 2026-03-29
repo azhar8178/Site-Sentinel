@@ -1,0 +1,72 @@
+postgres-1  | 
+postgres-1  | PostgreSQL Database directory appears to contain a database; Skipping initialization
+postgres-1  | 
+postgres-1  | 2026-03-29 15:54:11.432 UTC [1] LOG:  starting PostgreSQL 16.13 on x86_64-pc-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit
+postgres-1  | 2026-03-29 15:54:11.432 UTC [1] LOG:  listening on IPv4 address "0.0.0.0", port 5432
+postgres-1  | 2026-03-29 15:54:11.432 UTC [1] LOG:  listening on IPv6 address "::", port 5432
+postgres-1  | 2026-03-29 15:54:11.438 UTC [1] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+postgres-1  | 2026-03-29 15:54:11.447 UTC [28] LOG:  database system was shut down at 2026-03-29 15:54:09 UTC
+postgres-1  | 2026-03-29 15:54:11.455 UTC [1] LOG:  database system is ready to accept connections
+api-1       | Connected to database
+postgres-1  | 2026-03-29 15:54:22.296 UTC [39] ERROR:  type "site_status" already exists
+postgres-1  | 2026-03-29 15:54:22.296 UTC [39] STATEMENT:  CREATE TYPE site_status AS ENUM ('up', 'down', 'slow', 'unknown')
+api-1       |   FAIL: site_status enum — type "site_status" already exists
+api-1       |   (already exists)
+postgres-1  | 2026-03-29 15:54:22.298 UTC [39] ERROR:  type "alert_type" already exists
+postgres-1  | 2026-03-29 15:54:22.298 UTC [39] STATEMENT:  CREATE TYPE alert_type AS ENUM ('downtime', 'slow_response', 'recovery')
+api-1       |   FAIL: alert_type enum — type "alert_type" already exists
+api-1       |   (already exists)
+postgres-1  | 2026-03-29 15:54:22.299 UTC [39] ERROR:  type "user_role" already exists
+postgres-1  | 2026-03-29 15:54:22.299 UTC [39] STATEMENT:  CREATE TYPE user_role AS ENUM ('admin', 'editor', 'viewer')
+api-1       |   FAIL: user_role enum — type "user_role" already exists
+api-1       |   (already exists)
+api-1       |   OK: alert_type += cpu_high
+api-1       |   OK: alert_type += ram_high
+api-1       |   OK: alert_type += disk_high
+api-1       |   OK: alert_type += server_offline
+api-1       |   OK: alert_type += server_recovery
+api-1       |   OK: users table
+api-1       |   OK: servers table
+api-1       |   OK: server_metrics table
+api-1       |   OK: sites table
+api-1       |   OK: check_results table
+api-1       |   OK: alerts table
+api-1       |   OK: alert_config table
+api-1       |   OK: server_alert_config table
+api-1       |   OK: magento_orders table
+api-1       |   OK: magento_carts table
+api-1       |   OK: magento_sync_log table
+api-1       |   OK: magento_config table
+api-1       |   OK: seed alert_config
+api-1       |   OK: seed server_alert_config
+api-1       |   OK: seed magento_config
+api-1       | Migration completed successfully
+api-1       | {"level":30,"time":1774799662590,"pid":19,"hostname":"12376c726d59","webDistPath":"/app/artifacts/web-dashboard/dist","msg":"Serving web dashboard"}
+api-1       | {"level":30,"time":1774799662592,"pid":19,"hostname":"12376c726d59","port":8080,"msg":"Server listening"}
+api-1       | {"level":30,"time":1774799662593,"pid":19,"hostname":"12376c726d59","intervalMs":60000,"msg":"Starting site monitoring"}
+api-1       | {"level":30,"time":1774799662594,"pid":19,"hostname":"12376c726d59","intervalMs":60000,"msg":"Starting server vitals monitoring"}
+api-1       | {"level":30,"time":1774799662638,"pid":19,"hostname":"12376c726d59","intervalMs":300000,"msg":"Starting Magento sync"}
+api-1       | {"level":30,"time":1774799662640,"pid":19,"hostname":"12376c726d59","count":2,"msg":"Running site checks"}
+api-1       | {"level":30,"time":1774799662708,"pid":19,"hostname":"12376c726d59","siteId":1,"siteName":"Love Furniture IE","isUp":true,"responseTimeMs":47,"msg":"Site check complete"}
+api-1       | {"level":30,"time":1774799662711,"pid":19,"hostname":"12376c726d59","siteId":2,"siteName":"Love Furniture UK","isUp":true,"responseTimeMs":32,"msg":"Site check complete"}
+api-1       | {"level":30,"time":1774799662854,"pid":19,"hostname":"12376c726d59","req":{"id":1,"method":"POST","url":"/api/servers/report"},"res":{"statusCode":401},"responseTime":9,"msg":"request completed"}
+api-1       | {"level":30,"time":1774799667244,"pid":19,"hostname":"12376c726d59","req":{"id":2,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":2,"msg":"request completed"}
+api-1       | {"level":30,"time":1774799667642,"pid":19,"hostname":"12376c726d59","tokenPrefix":"06tj5i6o...","msg":"Using static Magento API token"}
+api-1       | {"level":50,"time":1774799667938,"pid":19,"hostname":"12376c726d59","syncType":"orders","error":"Magento API 404: <!doctype html>\n<html lang=\"en\">\n    <head >\n        <script>\n    var LOCALE = 'en\\u002DIE';\n    var BASE_URL = 'https\\u003A\\u002F\\u002Fwww.lovefurniture.ie\\u002F';\n    var require = {\n        'baseUr","duration":297,"msg":"Magento sync failed"}
+api-1       | {"level":50,"time":1774799668231,"pid":19,"hostname":"12376c726d59","syncType":"carts","error":"Magento API 404: <!doctype html>\n<html lang=\"en\">\n    <head >\n        <script>\n    var LOCALE = 'en\\u002DIE';\n    var BASE_URL = 'https\\u003A\\u002F\\u002Fwww.lovefurniture.ie\\u002F';\n    var require = {\n        'baseUr","duration":290,"msg":"Magento sync failed"}
+api-1       | {"level":30,"time":1774799675641,"pid":19,"hostname":"12376c726d59","req":{"id":3,"method":"GET","url":"/settings"},"res":{"statusCode":200},"responseTime":4,"msg":"request completed"}
+api-1       | {"level":30,"time":1774799675830,"pid":19,"hostname":"12376c726d59","req":{"id":4,"method":"GET","url":"/assets/index-jD4BiH4F.css"},"res":{"statusCode":200},"responseTime":1,"msg":"request completed"}
+api-1       | {"level":30,"time":1774799675837,"pid":19,"hostname":"12376c726d59","req":{"id":5,"method":"GET","url":"/assets/index-C2LGn79q.js"},"res":{"statusCode":200},"responseTime":5,"msg":"request completed"}
+api-1       | {"level":30,"time":1774799677986,"pid":19,"hostname":"12376c726d59","req":{"id":6,"method":"GET","url":"/api/config"},"res":{"statusCode":200},"responseTime":10,"msg":"request completed"}
+api-1       | {"level":30,"time":1774799677996,"pid":19,"hostname":"12376c726d59","req":{"id":7,"method":"GET","url":"/api/sites"},"res":{"statusCode":200},"responseTime":16,"msg":"request completed"}
+api-1       | {"level":30,"time":1774799678147,"pid":19,"hostname":"12376c726d59","req":{"id":8,"method":"GET","url":"/api/config/magento"},"res":{"statusCode":200},"responseTime":3,"msg":"request completed"}
+api-1       | {"level":30,"time":1774799678165,"pid":19,"hostname":"12376c726d59","req":{"id":9,"method":"GET","url":"/api/users"},"res":{"statusCode":200},"responseTime":3,"msg":"request completed"}
+api-1       | {"level":30,"time":1774799678291,"pid":19,"hostname":"12376c726d59","req":{"id":10,"method":"GET","url":"/api/config/server-alerts"},"res":{"statusCode":200},"responseTime":3,"msg":"request completed"}
+api-1       | {"level":30,"time":1774799678415,"pid":19,"hostname":"12376c726d59","req":{"id":11,"method":"GET","url":"/favicon.svg"},"res":{"statusCode":200},"responseTime":1,"msg":"request completed"}
+api-1       | {"level":30,"time":1774799679689,"pid":19,"hostname":"12376c726d59","req":{"id":12,"method":"GET","url":"/api/magento/stats"},"res":{"statusCode":304},"responseTime":13,"msg":"request completed"}
+api-1       | {"level":30,"time":1774799679690,"pid":19,"hostname":"12376c726d59","req":{"id":13,"method":"GET","url":"/api/magento/sync"},"res":{"statusCode":200},"responseTime":9,"msg":"request completed"}
+api-1       | {"level":30,"time":1774799679699,"pid":19,"hostname":"12376c726d59","req":{"id":14,"method":"GET","url":"/api/magento/orders"},"res":{"statusCode":304},"responseTime":16,"msg":"request completed"}
+api-1       | {"level":30,"time":1774799682056,"pid":19,"hostname":"12376c726d59","req":{"id":15,"method":"POST","url":"/api/servers/report"},"res":{"statusCode":200},"responseTime":9,"msg":"request completed"}
+api-1       | {"level":30,"time":1774799683648,"pid":19,"hostname":"12376c726d59","req":{"id":16,"method":"GET","url":"/api/servers"},"res":{"statusCode":200},"responseTime":5,"msg":"request completed"}
+api-1       | {"level":30,"time":1774799692848,"pid":19,"hostname":"12376c726d59","req":{"id":17,"method":"POST","url":"/api/servers/report"},"res":{"statusCode":401},"responseTime":2,"msg":"request completed"}
+api-1       | {"level":30,"time":1774799697374,"pid":19,"hostname":"12376c726d59","req":{"id":18,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":1,"msg":"request completed"}

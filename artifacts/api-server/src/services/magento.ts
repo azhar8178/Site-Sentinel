@@ -25,6 +25,7 @@ async function getCredentials(): Promise<MagentoCredentials> {
   try {
     const configs = await db.select().from(magentoConfigTable).limit(1);
     if (configs.length > 0 && configs[0].isEnabled && configs[0].apiUrl) {
+      logger.info({ source: "database", apiUrl: configs[0].apiUrl }, "Magento credentials source");
       return {
         apiUrl: configs[0].apiUrl,
         adminUser: configs[0].adminUser,
@@ -34,6 +35,7 @@ async function getCredentials(): Promise<MagentoCredentials> {
     }
   } catch {}
 
+  logger.info({ source: "env", apiUrl: ENV_MAGENTO_API_URL || "(empty)" }, "Magento credentials source");
   return {
     apiUrl: ENV_MAGENTO_API_URL,
     adminUser: ENV_MAGENTO_ADMIN_USER,
@@ -111,6 +113,7 @@ async function magentoFetch(endpoint: string): Promise<any> {
   const apiUrl = await getMagentoApiUrl();
 
   const url = `${apiUrl}${endpoint}`;
+  logger.info({ url: url.substring(0, 120) }, "Magento API request");
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
