@@ -1,0 +1,58 @@
+=> [builder 14/19] RUN pnpm install --frozen-lockfile                                                                                                              498.7s
+ => [builder 15/19] COPY lib/ ./lib/                                                                                                                                 18.4s
+ => [builder 16/19] COPY artifacts/api-server/ ./artifacts/api-server/                                                                                                2.1s
+ => [builder 17/19] COPY artifacts/web-dashboard/ ./artifacts/web-dashboard/                                                                                          2.7s
+ => ERROR [builder 18/19] RUN pnpm --filter @workspace/web-dashboard run build                                                                                       13.9s
+------
+ > [builder 18/19] RUN pnpm --filter @workspace/web-dashboard run build:
+9.841 
+9.841 > @workspace/web-dashboard@0.0.0 build /app/artifacts/web-dashboard
+9.841 > vite build --config vite.config.ts
+9.841 
+10.04 ▲ [WARNING] Cannot find base config file "../../tsconfig.base.json" [tsconfig.json]
+10.04 
+10.04     tsconfig.json:2:13:
+10.04       2 │   "extends": "../../tsconfig.base.json",
+10.04         ╵              ~~~~~~~~~~~~~~~~~~~~~~~~~~
+10.04 
+10.59 vite v7.3.1 building client environment for production...
+10.68 ✓ 0 modules transformed.
+10.69 ✗ Build failed in 57ms
+10.69 error during build:
+10.69 [vite:build-html] failed to resolve "extends":"../../tsconfig.base.json" in /app/artifacts/web-dashboard/tsconfig.json
+10.69 file: /app/artifacts/web-dashboard/index.html
+10.69     at resolveExtends (file:///app/node_modules/.pnpm/vite@7.3.1_@types+node@25.3.5_jiti@2.6.1_lightningcss@1.31.1_terser@5.46.1_tsx@4.21.0_yaml@2.8.2/node_modules/vite/dist/node/chunks/config.js:5809:8)
+10.69     at parseExtends (file:///app/node_modules/.pnpm/vite@7.3.1_@types+node@25.3.5_jiti@2.6.1_lightningcss@1.31.1_terser@5.46.1_tsx@4.21.0_yaml@2.8.2/node_modules/vite/dist/node/chunks/config.js:5775:71)
+10.69     at parse$13 (file:///app/node_modules/.pnpm/vite@7.3.1_@types+node@25.3.5_jiti@2.6.1_lightningcss@1.31.1_terser@5.46.1_tsx@4.21.0_yaml@2.8.2/node_modules/vite/dist/node/chunks/config.js:5677:23)
+10.69     at async loadTsconfigJsonForFile (file:///app/node_modules/.pnpm/vite@7.3.1_@types+node@25.3.5_jiti@2.6.1_lightningcss@1.31.1_terser@5.46.1_tsx@4.21.0_yaml@2.8.2/node_modules/vite/dist/node/chunks/config.js:6286:37)
+10.69     at async transformWithEsbuild (file:///app/node_modules/.pnpm/vite@7.3.1_@types+node@25.3.5_jiti@2.6.1_lightningcss@1.31.1_terser@5.46.1_tsx@4.21.0_yaml@2.8.2/node_modules/vite/dist/node/chunks/config.js:6086:55)
+10.69     at async Object.transform (file:///app/node_modules/.pnpm/vite@7.3.1_@types+node@25.3.5_jiti@2.6.1_lightningcss@1.31.1_terser@5.46.1_tsx@4.21.0_yaml@2.8.2/node_modules/vite/dist/node/chunks/config.js:6172:20)
+10.69     at async transform (file:///app/node_modules/.pnpm/rollup@4.59.0/node_modules/rollup/dist/es/shared/node-entry.js:21269:16)
+10.69     at async ModuleLoader.addModuleSource (file:///app/node_modules/.pnpm/rollup@4.59.0/node_modules/rollup/dist/es/shared/node-entry.js:21497:36)
+10.72 /app/artifacts/web-dashboard:
+10.72  ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  @workspace/web-dashboard@0.0.0 build: `vite build --config vite.config.ts`
+10.72 Exit status 1
+------
+[+] build 0/1
+ ⠙ Image site-sentinel-api Building                                                                                                                                  671.4s
+Dockerfile:24
+
+--------------------
+
+  22 |     COPY artifacts/web-dashboard/ ./artifacts/web-dashboard/
+
+  23 |     
+
+  24 | >>> RUN pnpm --filter @workspace/web-dashboard run build
+
+  25 |     RUN pnpm --filter @workspace/api-server run build
+
+  26 |     
+
+--------------------
+
+failed to solve: process "/bin/sh -c pnpm --filter @workspace/web-dashboard run build" did not complete successfully: exit code: 1
+
+[+] up 2/2
+ ✔ Container site-sentinel-postgres-1         Healthy                                                                                                                  0.6s
+ ✔ Container dae480174ddd_site-sentinel-api-1 Running                                                                                                                  0.0s

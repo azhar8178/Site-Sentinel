@@ -17,6 +17,7 @@ COPY artifacts/mockup-sandbox/package.json ./artifacts/mockup-sandbox/package.js
 
 RUN pnpm install --frozen-lockfile
 
+COPY tsconfig.base.json ./
 COPY lib/ ./lib/
 COPY artifacts/api-server/ ./artifacts/api-server/
 COPY artifacts/web-dashboard/ ./artifacts/web-dashboard/
