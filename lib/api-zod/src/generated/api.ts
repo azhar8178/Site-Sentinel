@@ -191,7 +191,7 @@ export const GetAlertConfigResponse = zod.object({
   smtpPassword: zod.string(),
   smtpSecure: zod.boolean(),
   slackEnabled: zod.boolean(),
-  slackWebhookUrl: zod.string(),
+  slackBotToken: zod.string(),
   slackChannel: zod.string(),
   whatsappEnabled: zod.boolean(),
   whatsappApiToken: zod.string(),
@@ -213,7 +213,7 @@ export const UpdateAlertConfigBody = zod.object({
   smtpPassword: zod.string().optional(),
   smtpSecure: zod.boolean().optional(),
   slackEnabled: zod.boolean().optional(),
-  slackWebhookUrl: zod.string().optional(),
+  slackBotToken: zod.string().optional(),
   slackChannel: zod.string().optional(),
   whatsappEnabled: zod.boolean().optional(),
   whatsappApiToken: zod.string().optional(),
@@ -232,7 +232,7 @@ export const UpdateAlertConfigResponse = zod.object({
   smtpPassword: zod.string(),
   smtpSecure: zod.boolean(),
   slackEnabled: zod.boolean(),
-  slackWebhookUrl: zod.string(),
+  slackBotToken: zod.string(),
   slackChannel: zod.string(),
   whatsappEnabled: zod.boolean(),
   whatsappApiToken: zod.string(),
@@ -281,7 +281,8 @@ export const SendTestEmailResponse = zod.object({
  * @summary Test Slack webhook
  */
 export const TestSlackConnectionBody = zod.object({
-  slackWebhookUrl: zod.string().optional(),
+  slackBotToken: zod.string().optional(),
+  slackChannel: zod.string().optional(),
 });
 
 export const TestSlackConnectionResponse = zod.object({

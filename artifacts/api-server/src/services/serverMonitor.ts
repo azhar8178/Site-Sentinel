@@ -120,7 +120,7 @@ async function dispatchServerAlert(
     smtpPassword: config.smtpPassword,
     smtpSecure: config.smtpSecure,
   };
-  const slackActive = config.slackEnabled && !!config.slackWebhookUrl;
+  const slackActive = config.slackEnabled && !!config.slackBotToken && !!config.slackChannel;
   const whatsappRecipients = config.whatsappEnabled && config.whatsappRecipients
     ? config.whatsappRecipients.split(",").map((r: string) => r.trim()).filter(Boolean)
     : [];
@@ -131,7 +131,7 @@ async function dispatchServerAlert(
     : false;
 
   if (slackActive) {
-    await sendSlackAlert(config.slackWebhookUrl, formatServerSlackAlert(serverName, hostname, displayType, details, isRecovery));
+    await sendSlackAlert(config.slackBotToken, config.slackChannel, formatServerSlackAlert(serverName, hostname, displayType, details, isRecovery));
   }
   if (whatsappRecipients.length > 0) {
     await sendWhatsAppAlert(

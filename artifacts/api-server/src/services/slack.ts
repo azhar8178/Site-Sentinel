@@ -1,7 +1,8 @@
 import { logger } from "../lib/logger";
 
 export async function sendSlackAlert(
-  webhookUrl: string,
+  botToken: string,
+  channel: string,
   message: {
     title: string;
     text: string;
@@ -9,13 +10,14 @@ export async function sendSlackAlert(
     fields?: Array<{ title: string; value: string; short?: boolean }>;
   }
 ): Promise<boolean> {
-  if (!webhookUrl) {
-    logger.warn("Slack webhook URL not configured, skipping");
+  if (!botToken || !channel) {
+    logger.warn("Slack bot token or channel not configured, skipping");
     return false;
   }
 
   try {
     const payload = {
+      channel,
       attachments: [
         {
           color: message.color,
@@ -31,16 +33,20 @@ export async function sendSlackAlert(
       ],
     };
 
-    const resp = await fetch(webhookUrl, {
+    const resp = await fetch("https://slack.com/api/chat.postMessage", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${botToken}`,
+      },
       body: JSON.stringify(payload),
       signal: AbortSignal.timeout(10000),
     });
 
-    if (!resp.ok) {
-      const body = await resp.text();
-      logger.error({ status: resp.status, body }, "Slack webhook failed");
+    const data = await resp.json() as any;
+
+    if (!data.ok) {
+      logger.error({ error: data.error }, "Slack API error");
       return false;
     }
 
@@ -52,26 +58,37 @@ export async function sendSlackAlert(
   }
 }
 
-export async function testSlackWebhook(webhookUrl: string): Promise<{ success: boolean; error?: string }> {
-  if (!webhookUrl) {
-    return { success: false, error: "Webhook URL is required" };
+export async function testSlackConnection(
+  botToken: string,
+  channel: string
+): Promise<{ success: boolean; error?: string }> {
+  if (!botToken) {
+    return { success: false, error: "Bot token is required" };
+  }
+  if (!channel) {
+    return { success: false, error: "Channel is required" };
   }
 
   try {
     const payload = {
+      channel,
       text: "Site Monitor test message - Slack integration is working!",
     };
 
-    const resp = await fetch(webhookUrl, {
+    const resp = await fetch("https://slack.com/api/chat.postMessage", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${botToken}`,
+      },
       body: JSON.stringify(payload),
       signal: AbortSignal.timeout(10000),
     });
 
-    if (!resp.ok) {
-      const body = await resp.text();
-      return { success: false, error: `Slack returned ${resp.status}: ${body}` };
+    const data = await resp.json() as any;
+
+    if (!data.ok) {
+      return { success: false, error: `Slack API: ${data.error}` };
     }
 
     return { success: true };

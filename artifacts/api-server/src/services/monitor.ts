@@ -120,7 +120,7 @@ async function processCheckResult(
     smtpSecure: config.smtpSecure,
   };
 
-  const slackActive = config.slackEnabled && !!config.slackWebhookUrl;
+  const slackActive = config.slackEnabled && !!config.slackBotToken && !!config.slackChannel;
   const whatsappRecipients = config.whatsappEnabled && config.whatsappRecipients
     ? config.whatsappRecipients.split(",").map((r: string) => r.trim()).filter(Boolean)
     : [];
@@ -135,7 +135,7 @@ async function processCheckResult(
       : false;
 
     if (slackActive) {
-      await sendSlackAlert(config.slackWebhookUrl, formatSlackDowntime(site.name, site.url, details));
+      await sendSlackAlert(config.slackBotToken, config.slackChannel, formatSlackDowntime(site.name, site.url, details));
     }
     if (whatsappRecipients.length > 0) {
       await sendWhatsAppAlert(config.whatsappApiToken, config.whatsappPhoneNumberId, whatsappRecipients, formatWhatsAppDowntime(site.name, site.url, details));
@@ -160,7 +160,7 @@ async function processCheckResult(
       : false;
 
     if (slackActive) {
-      await sendSlackAlert(config.slackWebhookUrl, formatSlackSlow(site.name, site.url, result.responseTimeMs!, site.slowThresholdMs));
+      await sendSlackAlert(config.slackBotToken, config.slackChannel, formatSlackSlow(site.name, site.url, result.responseTimeMs!, site.slowThresholdMs));
     }
     if (whatsappRecipients.length > 0) {
       await sendWhatsAppAlert(config.whatsappApiToken, config.whatsappPhoneNumberId, whatsappRecipients, formatWhatsAppSlow(site.name, site.url, result.responseTimeMs!, site.slowThresholdMs));
@@ -185,7 +185,7 @@ async function processCheckResult(
       : false;
 
     if (slackActive) {
-      await sendSlackAlert(config.slackWebhookUrl, formatSlackRecovery(site.name, site.url, result.responseTimeMs!));
+      await sendSlackAlert(config.slackBotToken, config.slackChannel, formatSlackRecovery(site.name, site.url, result.responseTimeMs!));
     }
     if (whatsappRecipients.length > 0) {
       await sendWhatsAppAlert(config.whatsappApiToken, config.whatsappPhoneNumberId, whatsappRecipients, formatWhatsAppRecovery(site.name, site.url, result.responseTimeMs!));

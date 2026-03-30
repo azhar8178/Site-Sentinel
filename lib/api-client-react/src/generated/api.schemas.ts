@@ -101,7 +101,7 @@ export interface AlertConfigResponse {
   smtpPassword: string;
   smtpSecure: boolean;
   slackEnabled: boolean;
-  slackWebhookUrl: string;
+  slackBotToken: string;
   slackChannel: string;
   whatsappEnabled: boolean;
   whatsappApiToken: string;
@@ -120,7 +120,7 @@ export interface UpdateAlertConfigInput {
   smtpPassword?: string;
   smtpSecure?: boolean;
   slackEnabled?: boolean;
-  slackWebhookUrl?: string;
+  slackBotToken?: string;
   slackChannel?: string;
   whatsappEnabled?: boolean;
   whatsappApiToken?: string;
@@ -361,7 +361,8 @@ export type ListAlertsParams = {
 };
 
 export type TestSlackConnectionBody = {
-  slackWebhookUrl?: string;
+  slackBotToken?: string;
+  slackChannel?: string;
 };
 
 export type TestWhatsAppConnectionBody = {

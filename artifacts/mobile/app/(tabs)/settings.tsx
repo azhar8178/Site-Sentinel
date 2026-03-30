@@ -488,7 +488,7 @@ export default function SettingsScreen() {
   const [thresholds, setThresholds] = useState<Record<number, string>>({});
 
   const [slackEnabled, setSlackEnabled] = useState(false);
-  const [slackWebhookUrl, setSlackWebhookUrl] = useState("");
+  const [slackBotToken, setSlackBotToken] = useState("");
   const [slackChannel, setSlackChannel] = useState("");
 
   const [whatsappEnabled, setWhatsappEnabled] = useState(false);
@@ -523,7 +523,7 @@ export default function SettingsScreen() {
       setSmtpPassword(config.smtpPassword);
       setSmtpSecure(config.smtpSecure);
       setSlackEnabled(config.slackEnabled);
-      setSlackWebhookUrl(config.slackWebhookUrl);
+      setSlackBotToken(config.slackBotToken);
       setSlackChannel(config.slackChannel);
       setWhatsappEnabled(config.whatsappEnabled);
       setWhatsappApiToken(config.whatsappApiToken);
@@ -570,7 +570,7 @@ export default function SettingsScreen() {
         data: {
           recipientEmails, senderEmail, isEnabled,
           smtpHost, smtpPort: Number(smtpPort) || 587, smtpUsername, smtpPassword, smtpSecure,
-          slackEnabled, slackWebhookUrl, slackChannel,
+          slackEnabled, slackBotToken, slackChannel,
           whatsappEnabled, whatsappApiToken, whatsappPhoneNumberId, whatsappRecipients,
         },
       });
@@ -636,7 +636,7 @@ export default function SettingsScreen() {
 
   const handleTestSlack = async () => {
     try {
-      const result = await testSlack.mutateAsync({ data: { slackWebhookUrl } });
+      const result = await testSlack.mutateAsync({ data: { slackBotToken, slackChannel } });
       if (result.success) {
         showToast("Slack test message sent! Check your channel.", "success");
       } else {
@@ -933,35 +933,36 @@ export default function SettingsScreen() {
                 />
               </View>
 
-              <Field label="Webhook URL">
+              <Field label="Bot Token">
                 <TextInput
                   style={styles.textInput}
-                  value={slackWebhookUrl}
-                  onChangeText={(v) => { setSlackWebhookUrl(v); markChanged(); }}
-                  placeholder="https://hooks.slack.com/services/T.../B.../xxx"
+                  value={slackBotToken}
+                  onChangeText={(v) => { setSlackBotToken(v); markChanged(); }}
+                  placeholder="xoxb-your-bot-token"
                   placeholderTextColor={Colors.light.textSecondary}
                   autoCapitalize="none"
                   autoCorrect={false}
+                  secureTextEntry
                 />
               </Field>
 
-              <Field label="Channel (optional override)">
+              <Field label="Channel ID">
                 <TextInput
                   style={styles.textInput}
                   value={slackChannel}
                   onChangeText={(v) => { setSlackChannel(v); markChanged(); }}
-                  placeholder="#monitoring-alerts"
+                  placeholder="C01ABCDEF23"
                   placeholderTextColor={Colors.light.textSecondary}
                   autoCapitalize="none"
                 />
               </Field>
 
-              <TestButton label="Send Test Message" onPress={handleTestSlack} isPending={testSlack.isPending} disabled={!slackWebhookUrl} icon="send" />
+              <TestButton label="Send Test Message" onPress={handleTestSlack} isPending={testSlack.isPending} disabled={!slackBotToken || !slackChannel} icon="send" />
 
               <View style={styles.helpBox}>
                 <Feather name="info" size={14} color={Colors.light.textSecondary} />
                 <Text style={styles.helpText}>
-                  Create an Incoming Webhook in your Slack workspace: Apps {">"} Incoming Webhooks {">"} Add New Webhook
+                  api.slack.com → Your App → OAuth & Permissions → Bot Token. Bot needs chat:write scope. Invite bot to channel with /invite @YourBot
                 </Text>
               </View>
             </View>
@@ -984,10 +985,10 @@ export default function SettingsScreen() {
               </View>
 
               <PasswordField
-                label="API Access Token"
+                label="Permanent Access Token"
                 value={whatsappApiToken}
                 onChangeText={(v) => { setWhatsappApiToken(v); markChanged(); }}
-                placeholder="Meta Business API token"
+                placeholder="EAAxxxxxxx..."
               />
 
               <Field label="Phone Number ID">
@@ -995,13 +996,13 @@ export default function SettingsScreen() {
                   style={styles.textInput}
                   value={whatsappPhoneNumberId}
                   onChangeText={(v) => { setWhatsappPhoneNumberId(v); markChanged(); }}
-                  placeholder="1234567890"
+                  placeholder="123456789012345"
                   placeholderTextColor={Colors.light.textSecondary}
                   autoCapitalize="none"
                 />
               </Field>
 
-              <Field label="Recipient Numbers (comma separated, with country code)">
+              <Field label="Recipient Numbers (international format, comma separated)">
                 <TextInput
                   style={[styles.textInput, styles.textInputMultiline]}
                   value={whatsappRecipients}
@@ -1018,7 +1019,7 @@ export default function SettingsScreen() {
               <View style={styles.helpBox}>
                 <Feather name="info" size={14} color={Colors.light.textSecondary} />
                 <Text style={styles.helpText}>
-                  Requires a Meta Business account with WhatsApp Business API. Get your Phone Number ID and Access Token from developers.facebook.com
+                  developers.facebook.com → Create App → Business → Add WhatsApp. Get Phone Number ID from API Setup. For permanent token: Business Settings → System Users → generate token with whatsapp_business_messaging permission.
                 </Text>
               </View>
             </View>

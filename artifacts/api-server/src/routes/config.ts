@@ -3,13 +3,13 @@ import { db } from "@workspace/db";
 import { alertConfigTable, magentoConfigTable, serverAlertConfigTable } from "@workspace/db/schema";
 import { eq } from "drizzle-orm";
 import { testSmtpConnection, sendAlertEmail } from "../services/email";
-import { testSlackWebhook } from "../services/slack";
+import { testSlackConnection } from "../services/slack";
 import { testWhatsAppConnection } from "../services/whatsapp";
 import { clearMagentoTokenCache } from "../services/magento";
 
 const router: IRouter = Router();
 
-const SENSITIVE_FIELDS = ["smtpPassword", "whatsappApiToken"] as const;
+const SENSITIVE_FIELDS = ["smtpPassword", "slackBotToken", "whatsappApiToken"] as const;
 const MASK = "\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022";
 
 function sanitizeConfig(config: typeof alertConfigTable.$inferSelect) {
@@ -57,7 +57,7 @@ router.put("/config", async (req, res, next) => {
     const updates: Record<string, unknown> = { updatedAt: new Date() };
     const allowedStrings = [
       "recipientEmails", "senderEmail", "smtpHost", "smtpUsername", "smtpPassword",
-      "slackWebhookUrl", "slackChannel",
+      "slackBotToken", "slackChannel",
       "whatsappApiToken", "whatsappPhoneNumberId", "whatsappRecipients",
     ];
     const allowedBooleans = ["isEnabled", "smtpSecure", "slackEnabled", "whatsappEnabled"];
@@ -69,6 +69,7 @@ router.put("/config", async (req, res, next) => {
           res.status(400).json({ error: `${key} must be a string` }); return;
         }
         if (key === "smtpPassword" && req.body[key] === MASK) continue;
+        if (key === "slackBotToken" && req.body[key] === MASK) continue;
         if (key === "whatsappApiToken" && req.body[key] === MASK) continue;
         updates[key] = req.body[key];
       }
@@ -185,13 +186,16 @@ router.post("/config/test-email", async (req, res, next) => {
 
 router.post("/config/test-slack", async (req, res, next) => {
   try {
-    let webhookUrl = req.body.slackWebhookUrl;
-    if (!webhookUrl) {
+    let botToken = req.body.slackBotToken;
+    let channel = req.body.slackChannel;
+
+    if (!botToken || botToken === MASK || !channel) {
       const config = await getOrCreateConfig();
-      webhookUrl = config.slackWebhookUrl;
+      if (!botToken || botToken === MASK) botToken = config.slackBotToken;
+      if (!channel) channel = config.slackChannel;
     }
 
-    const result = await testSlackWebhook(webhookUrl);
+    const result = await testSlackConnection(botToken, channel);
     res.json(result);
   } catch (err) { next(err); }
 });

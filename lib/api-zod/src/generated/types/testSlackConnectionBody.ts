@@ -7,5 +7,6 @@
  */
 
 export type TestSlackConnectionBody = {
-  slackWebhookUrl?: string;
+  slackBotToken?: string;
+  slackChannel?: string;
 };

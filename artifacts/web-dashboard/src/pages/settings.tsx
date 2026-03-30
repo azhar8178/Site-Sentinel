@@ -104,7 +104,7 @@ export default function Settings() {
   const [smtpSecure, setSmtpSecure] = useState(false);
 
   const [slackEnabled, setSlackEnabled] = useState(false);
-  const [slackWebhookUrl, setSlackWebhookUrl] = useState("");
+  const [slackBotToken, setSlackBotToken] = useState("");
   const [slackChannel, setSlackChannel] = useState("");
 
   const [whatsappEnabled, setWhatsappEnabled] = useState(false);
@@ -145,7 +145,7 @@ export default function Settings() {
       setSmtpPassword(config.smtpPassword);
       setSmtpSecure(config.smtpSecure);
       setSlackEnabled(config.slackEnabled);
-      setSlackWebhookUrl(config.slackWebhookUrl);
+      setSlackBotToken(config.slackBotToken);
       setSlackChannel(config.slackChannel);
       setWhatsappEnabled(config.whatsappEnabled);
       setWhatsappApiToken(config.whatsappApiToken);
@@ -188,7 +188,7 @@ export default function Settings() {
         data: {
           isEnabled, senderEmail, recipientEmails,
           smtpHost, smtpPort: Number(smtpPort) || 587, smtpUsername, smtpPassword, smtpSecure,
-          slackEnabled, slackWebhookUrl, slackChannel,
+          slackEnabled, slackBotToken, slackChannel,
           whatsappEnabled, whatsappApiToken, whatsappPhoneNumberId, whatsappRecipients,
         },
       });
@@ -228,7 +228,7 @@ export default function Settings() {
 
   const handleTestSlack = async () => {
     try {
-      const result = await testSlack.mutateAsync({ data: { webhookUrl: slackWebhookUrl, channel: slackChannel } });
+      const result = await testSlack.mutateAsync({ data: { slackBotToken, slackChannel } });
       toast({ title: result.success ? "Connected" : "Failed", description: result.message || "Slack test complete" });
     } catch (e: any) {
       toast({ variant: "destructive", title: "Error", description: e.message });
@@ -237,7 +237,7 @@ export default function Settings() {
 
   const handleTestWhatsApp = async () => {
     try {
-      const result = await testWhatsApp.mutateAsync({ data: { apiToken: whatsappApiToken, phoneNumberId: whatsappPhoneNumberId, recipients: whatsappRecipients } });
+      const result = await testWhatsApp.mutateAsync({ data: { whatsappApiToken, whatsappPhoneNumberId, testRecipient: whatsappRecipients.split(",")[0]?.trim() } });
       toast({ title: result.success ? "Connected" : "Failed", description: result.message || "WhatsApp test complete" });
     } catch (e: any) {
       toast({ variant: "destructive", title: "Error", description: e.message });
@@ -417,18 +417,20 @@ export default function Settings() {
       </SectionCard>
 
       {/* Slack */}
-      <SectionCard icon={MessageSquare} title="Slack Notifications" description="Send alerts to a Slack channel via webhook">
+      <SectionCard icon={MessageSquare} title="Slack Notifications" description="Send alerts using your Slack bot">
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <label className="text-sm font-medium">Enable Slack</label>
             <Switch checked={slackEnabled} onCheckedChange={setSlackEnabled} />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Field label="Webhook URL">
-              <Input value={slackWebhookUrl} onChange={e => setSlackWebhookUrl(e.target.value)} placeholder="https://hooks.slack.com/services/..." />
+            <Field label="Bot Token">
+              <PasswordInput value={slackBotToken} onChange={setSlackBotToken} placeholder="xoxb-your-bot-token" />
+              <p className="text-xs text-muted-foreground mt-1">From api.slack.com → Your App → OAuth & Permissions → Bot User OAuth Token</p>
             </Field>
-            <Field label="Channel">
-              <Input value={slackChannel} onChange={e => setSlackChannel(e.target.value)} placeholder="#alerts" />
+            <Field label="Channel ID">
+              <Input value={slackChannel} onChange={e => setSlackChannel(e.target.value)} placeholder="C01ABCDEF23" />
+              <p className="text-xs text-muted-foreground mt-1">Right-click channel → View channel details → copy the Channel ID at bottom</p>
             </Field>
           </div>
           <div className="flex gap-2">
@@ -439,25 +441,29 @@ export default function Settings() {
               <Zap className="w-4 h-4" /> Test Slack
             </Button>
           </div>
+          <p className="text-xs text-muted-foreground">Bot needs <code className="bg-slate-100 px-1 rounded">chat:write</code> scope. Invite the bot to the channel with <code className="bg-slate-100 px-1 rounded">/invite @YourBot</code></p>
         </div>
       </SectionCard>
 
       {/* WhatsApp */}
-      <SectionCard icon={Phone} title="WhatsApp Notifications" description="Send alerts via WhatsApp Business API">
+      <SectionCard icon={Phone} title="WhatsApp Notifications" description="Send alerts via WhatsApp Business Cloud API">
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <label className="text-sm font-medium">Enable WhatsApp</label>
             <Switch checked={whatsappEnabled} onCheckedChange={setWhatsappEnabled} />
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Field label="API Token">
-              <PasswordInput value={whatsappApiToken} onChange={setWhatsappApiToken} placeholder="WhatsApp Business API token" />
+          <div className="grid grid-cols-1 gap-4">
+            <Field label="Permanent Access Token">
+              <PasswordInput value={whatsappApiToken} onChange={setWhatsappApiToken} placeholder="EAAxxxxxxx..." />
+              <p className="text-xs text-muted-foreground mt-1">From developers.facebook.com → Your App → WhatsApp → API Setup → generate a permanent token via System Users</p>
             </Field>
             <Field label="Phone Number ID">
-              <Input value={whatsappPhoneNumberId} onChange={e => setWhatsappPhoneNumberId(e.target.value)} placeholder="Phone number ID" />
+              <Input value={whatsappPhoneNumberId} onChange={e => setWhatsappPhoneNumberId(e.target.value)} placeholder="123456789012345" />
+              <p className="text-xs text-muted-foreground mt-1">From WhatsApp → API Setup → Phone Number ID (not the phone number itself)</p>
             </Field>
-            <Field label="Recipients">
-              <Input value={whatsappRecipients} onChange={e => setWhatsappRecipients(e.target.value)} placeholder="comma separated phone numbers" />
+            <Field label="Recipient Phone Numbers">
+              <Input value={whatsappRecipients} onChange={e => setWhatsappRecipients(e.target.value)} placeholder="+353851234567, +447700123456" />
+              <p className="text-xs text-muted-foreground mt-1">International format with country code. Separate multiple numbers with commas</p>
             </Field>
           </div>
           <div className="flex gap-2">
@@ -467,6 +473,13 @@ export default function Settings() {
             <Button variant="outline" onClick={handleTestWhatsApp} disabled={testWhatsApp.isPending} className="gap-2">
               <Zap className="w-4 h-4" /> Test WhatsApp
             </Button>
+          </div>
+          <div className="text-xs text-muted-foreground space-y-1">
+            <p><strong>Quick setup:</strong></p>
+            <p>1. Go to <a href="https://developers.facebook.com" target="_blank" className="text-primary underline">developers.facebook.com</a> → Create App → Business type → Add WhatsApp product</p>
+            <p>2. In API Setup, you get a temporary token and test phone number. Use these to verify it works</p>
+            <p>3. For permanent use: Business Settings → System Users → create one → generate a permanent token with <code className="bg-slate-100 px-1 rounded">whatsapp_business_messaging</code> permission</p>
+            <p>4. Add recipient numbers in WhatsApp → API Setup → "To" field to whitelist them (only needed for test numbers)</p>
           </div>
         </div>
       </SectionCard>

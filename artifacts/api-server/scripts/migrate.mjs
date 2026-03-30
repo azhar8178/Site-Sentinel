@@ -117,7 +117,7 @@ try {
     smtp_password text NOT NULL DEFAULT '',
     smtp_secure boolean NOT NULL DEFAULT false,
     slack_enabled boolean NOT NULL DEFAULT false,
-    slack_webhook_url text NOT NULL DEFAULT '',
+    slack_bot_token text NOT NULL DEFAULT '',
     slack_channel text NOT NULL DEFAULT '',
     whatsapp_enabled boolean NOT NULL DEFAULT false,
     whatsapp_api_token text NOT NULL DEFAULT '',
@@ -256,6 +256,15 @@ try {
   if (isAdminCol.length > 0) {
     await run("migrate is_admin to role", `UPDATE users SET role = 'admin' WHERE is_admin = true AND role = 'viewer'`);
     await run("drop is_admin", `ALTER TABLE users DROP COLUMN is_admin`);
+  }
+
+  const { rows: slackWebhookCol } = await client.query(`SELECT 1 FROM information_schema.columns WHERE table_name = 'alert_config' AND column_name = 'slack_webhook_url'`);
+  if (slackWebhookCol.length > 0) {
+    await run("rename slack_webhook_url to slack_bot_token", `ALTER TABLE alert_config RENAME COLUMN slack_webhook_url TO slack_bot_token`);
+  }
+  const { rows: slackBotCol } = await client.query(`SELECT 1 FROM information_schema.columns WHERE table_name = 'alert_config' AND column_name = 'slack_bot_token'`);
+  if (slackBotCol.length === 0) {
+    await run("add slack_bot_token", `ALTER TABLE alert_config ADD COLUMN slack_bot_token text NOT NULL DEFAULT ''`);
   }
 
   const { rows: existingSites } = await client.query(`SELECT 1 FROM sites LIMIT 1`);

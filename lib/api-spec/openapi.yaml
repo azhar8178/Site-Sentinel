@@ -269,7 +269,9 @@ paths:
             schema:
               type: object
               properties:
-                slackWebhookUrl:
+                slackBotToken:
+                  type: string
+                slackChannel:
                   type: string
       responses:
         "200":
@@ -880,7 +882,7 @@ components:
           type: boolean
         slackEnabled:
           type: boolean
-        slackWebhookUrl:
+        slackBotToken:
           type: string
         slackChannel:
           type: string
@@ -906,7 +908,7 @@ components:
         - smtpPassword
         - smtpSecure
         - slackEnabled
-        - slackWebhookUrl
+        - slackBotToken
         - slackChannel
         - whatsappEnabled
         - whatsappApiToken
@@ -935,7 +937,7 @@ components:
           type: boolean
         slackEnabled:
           type: boolean
-        slackWebhookUrl:
+        slackBotToken:
           type: string
         slackChannel:
           type: string

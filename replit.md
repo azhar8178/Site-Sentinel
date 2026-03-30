@@ -7,7 +7,7 @@ This project is a comprehensive site monitoring and alerting system designed for
 Key capabilities include:
 - Real-time site availability and performance monitoring (60s checks).
 - Server vitals monitoring (CPU/memory/disk/network) via lightweight agent.
-- Multi-channel alerts: Email (SMTP), Slack (webhook), WhatsApp (Meta API).
+- Multi-channel alerts: Email (SMTP), Slack (Bot Token + chat.postMessage API), WhatsApp (Meta Business Cloud API).
 - Magento integration: order/cart sync every 5 minutes, abandonment tracking.
 - Team management with role-based access (admin/editor/viewer).
 - Web dashboard (React + Vite) and mobile app (Expo/React Native).
