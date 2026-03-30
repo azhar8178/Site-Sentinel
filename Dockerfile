@@ -3,34 +3,51 @@ ENV CI=true
 RUN npm install -g pnpm@10
 
 WORKDIR /app
-COPY . .
+
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY artifacts/api-server/package.json ./artifacts/api-server/package.json
+COPY artifacts/web-dashboard/package.json ./artifacts/web-dashboard/package.json
+COPY lib/db/package.json ./lib/db/package.json
+COPY lib/api-spec/package.json ./lib/api-spec/package.json
+COPY lib/api-zod/package.json ./lib/api-zod/package.json
+COPY lib/api-client-react/package.json ./lib/api-client-react/package.json
+COPY scripts/package.json ./scripts/package.json
+COPY artifacts/mobile/package.json ./artifacts/mobile/package.json
+COPY artifacts/mockup-sandbox/package.json ./artifacts/mockup-sandbox/package.json
+
 RUN pnpm install --frozen-lockfile
-RUN pnpm --filter @workspace/api-server run build
+
+COPY lib/ ./lib/
+COPY artifacts/api-server/ ./artifacts/api-server/
+COPY artifacts/web-dashboard/ ./artifacts/web-dashboard/
+
 RUN pnpm --filter @workspace/web-dashboard run build
+RUN pnpm --filter @workspace/api-server run build
 
 FROM node:24-slim
-ENV CI=true
+ENV CI=true NODE_ENV=production
 RUN npm install -g pnpm@10
 
 WORKDIR /app
 
-COPY --from=builder /app/package.json /app/pnpm-lock.yaml /app/pnpm-workspace.yaml ./
-COPY --from=builder /app/artifacts/api-server/package.json ./artifacts/api-server/package.json
-COPY --from=builder /app/artifacts/mobile/package.json ./artifacts/mobile/package.json
-COPY --from=builder /app/artifacts/web-dashboard/package.json ./artifacts/web-dashboard/package.json
-COPY --from=builder /app/lib/db/package.json ./lib/db/package.json
-COPY --from=builder /app/lib/api-spec/package.json ./lib/api-spec/package.json
-COPY --from=builder /app/lib/api-zod/package.json ./lib/api-zod/package.json
-COPY --from=builder /app/lib/api-client-react/package.json ./lib/api-client-react/package.json
-COPY --from=builder /app/scripts/package.json ./scripts/package.json
-COPY --from=builder /app/artifacts/mockup-sandbox/package.json ./artifacts/mockup-sandbox/package.json
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY artifacts/api-server/package.json ./artifacts/api-server/package.json
+COPY artifacts/web-dashboard/package.json ./artifacts/web-dashboard/package.json
+COPY lib/db/package.json ./lib/db/package.json
+COPY lib/api-spec/package.json ./lib/api-spec/package.json
+COPY lib/api-zod/package.json ./lib/api-zod/package.json
+COPY lib/api-client-react/package.json ./lib/api-client-react/package.json
+COPY scripts/package.json ./scripts/package.json
+COPY artifacts/mobile/package.json ./artifacts/mobile/package.json
+COPY artifacts/mockup-sandbox/package.json ./artifacts/mockup-sandbox/package.json
 
 RUN pnpm install --frozen-lockfile --prod
 
 COPY --from=builder /app/artifacts/api-server/dist ./artifacts/api-server/dist
 COPY --from=builder /app/artifacts/api-server/scripts ./artifacts/api-server/scripts
 COPY --from=builder /app/artifacts/web-dashboard/dist ./artifacts/web-dashboard/dist
-COPY --from=builder /app/agent ./agent
+COPY --from=builder /app/lib/db ./lib/db
+COPY agent ./agent
 
 EXPOSE 8080
 
