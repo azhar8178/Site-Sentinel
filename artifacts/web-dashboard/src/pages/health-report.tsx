@@ -1,3 +1,4 @@
+import React from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { CheckCircle2, AlertTriangle, RefreshCw, Printer, Server, Globe, CreditCard } from "lucide-react";
@@ -179,37 +180,73 @@ export default function HealthReport() {
             </span>
           </div>
 
-          {/* Infrastructure (Servers) */}
-          {report.servers.length > 0 && (
-            <section>
-              <div className="flex items-center gap-2 mb-4">
-                <Server className="w-4 h-4 text-gray-400" />
+          {/* Infrastructure (Servers) — split by store */}
+          {report.servers.length > 0 && (() => {
+            const storeOf = (s: HealthReport["servers"][number]) => {
+              const txt = (s.name + " " + s.hostname).toLowerCase();
+              if (/\bie\b|\.ie\b|ireland/.test(txt)) return "ie";
+              if (/\buk\b|\.uk\b|england|britain/.test(txt)) return "uk";
+              return "shared";
+            };
+            const ieServers = report.servers.filter(s => storeOf(s) === "ie");
+            const ukServers = report.servers.filter(s => storeOf(s) === "uk");
+            const sharedServers = report.servers.filter(s => storeOf(s) === "shared");
+
+            const ServerTable = ({ servers, label, badge }: { servers: HealthReport["servers"]; label: string; badge?: React.ReactNode }) => (
+              servers.length === 0 ? null : (
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <Server className="w-4 h-4 text-gray-400" />
+                    <span className="text-sm font-semibold text-gray-800">{label}</span>
+                    {badge}
+                  </div>
+                  <div className="border rounded-xl overflow-hidden">
+                    <table className="w-full text-sm">
+                      <thead className="bg-gray-50 border-b">
+                        <tr>
+                          <th className="text-left px-5 py-3 font-medium text-gray-500 w-1/3">Component</th>
+                          <th className="text-left px-5 py-3 font-medium text-gray-500 w-1/4">Status</th>
+                          <th className="text-left px-5 py-3 font-medium text-gray-500">Detail</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100">
+                        {servers.map(server => (
+                          <tr key={server.id} className="hover:bg-gray-50/50 transition-colors">
+                            <td className="px-5 py-3.5 font-medium text-gray-900">{server.name}</td>
+                            <td className="px-5 py-3.5">
+                              <StatusDot ok={server.isOnline} text={server.isOnline ? "Healthy" : "Offline"} />
+                            </td>
+                            <td className="px-5 py-3.5 text-gray-500">{ServerHealthDetail(server)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )
+            );
+
+            return (
+              <section className="space-y-5">
                 <h3 className="text-base font-semibold text-gray-900">Infrastructure</h3>
-              </div>
-              <div className="border rounded-xl overflow-hidden">
-                <table className="w-full text-sm">
-                  <thead className="bg-gray-50 border-b">
-                    <tr>
-                      <th className="text-left px-5 py-3 font-medium text-gray-500 w-1/3">Component</th>
-                      <th className="text-left px-5 py-3 font-medium text-gray-500 w-1/4">Status</th>
-                      <th className="text-left px-5 py-3 font-medium text-gray-500">Detail</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100">
-                    {report.servers.map((server) => (
-                      <tr key={server.id} className="hover:bg-gray-50/50 transition-colors">
-                        <td className="px-5 py-3.5 font-medium text-gray-900">{server.name}</td>
-                        <td className="px-5 py-3.5">
-                          <StatusDot ok={server.isOnline} text={server.isOnline ? "Healthy" : "Offline"} />
-                        </td>
-                        <td className="px-5 py-3.5 text-gray-500">{ServerHealthDetail(server)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </section>
-          )}
+                <ServerTable
+                  servers={ieServers}
+                  label="Love Furniture IE"
+                  badge={<span className="text-xs bg-green-50 text-green-700 border border-green-200 px-2 py-0.5 rounded-full font-medium">EUR</span>}
+                />
+                <ServerTable
+                  servers={ukServers}
+                  label="Love Furniture UK"
+                  badge={<span className="text-xs bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 rounded-full font-medium">GBP</span>}
+                />
+                <ServerTable
+                  servers={sharedServers}
+                  label="Shared Infrastructure"
+                  badge={<span className="text-xs bg-gray-100 text-gray-600 border border-gray-200 px-2 py-0.5 rounded-full font-medium">Both Stores</span>}
+                />
+              </section>
+            );
+          })()}
 
           {/* Stores — IE */}
           <section>
