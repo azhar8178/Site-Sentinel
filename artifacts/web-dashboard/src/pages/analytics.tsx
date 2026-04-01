@@ -371,21 +371,23 @@ function NotConfiguredCard() {
         <div>
           <h3 className="text-lg font-semibold font-display">Google OAuth not configured</h3>
           <p className="text-muted-foreground text-sm mt-2 max-w-md mx-auto">
-            Add your <code className="bg-gray-100 px-1.5 py-0.5 rounded text-xs">GOOGLE_CLIENT_ID</code> and{" "}
-            <code className="bg-gray-100 px-1.5 py-0.5 rounded text-xs">GOOGLE_CLIENT_SECRET</code> secrets to enable
-            Google Analytics integration. See the setup instructions below.
+            Add your Google OAuth credentials in <strong>Settings → Google Analytics</strong> to enable this integration.
+            The credentials are stored in the database — no environment variables required.
           </p>
         </div>
         <div className="bg-gray-50 border rounded-xl p-5 text-left text-sm max-w-lg mx-auto space-y-2">
-          <p className="font-semibold text-gray-800">Setup steps:</p>
+          <p className="font-semibold text-gray-800">Quick setup:</p>
           <ol className="list-decimal list-inside space-y-1.5 text-gray-600">
-            <li>Go to <a href="https://console.cloud.google.com" target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">Google Cloud Console</a></li>
-            <li>Create a project and enable <strong>Google Analytics Data API</strong> &amp; <strong>Google Analytics Admin API</strong></li>
-            <li>Go to Credentials → Create OAuth 2.0 Client ID (Web application type)</li>
-            <li>Add your app URL + <code className="bg-white border px-1 rounded text-xs">/api/analytics/google/callback</code> as an Authorized Redirect URI</li>
-            <li>Copy the Client ID and Client Secret into the project Secrets panel</li>
+            <li>Go to <a href="https://console.cloud.google.com" target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">Google Cloud Console</a> → enable <strong>Google Analytics Data API</strong> &amp; <strong>Admin API</strong></li>
+            <li>Credentials → Create OAuth 2.0 Client ID (Web application type)</li>
+            <li>Copy the Redirect URI from Settings → Google Analytics and add it as an Authorized Redirect URI</li>
+            <li>Paste the Client ID and Client Secret into <strong>Settings → Google Analytics</strong> and save</li>
+            <li>Return here and click "Sign in with Google"</li>
           </ol>
         </div>
+        <a href="/settings" className="inline-block mt-2 px-5 py-2 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors">
+          Go to Settings
+        </a>
       </CardContent>
     </Card>
   );

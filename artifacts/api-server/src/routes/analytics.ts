@@ -16,8 +16,25 @@ const GA_SCOPES = [
   "email",
 ].join(" ");
 
-function getClientId() { return process.env["GOOGLE_CLIENT_ID"] ?? ""; }
-function getClientSecret() { return process.env["GOOGLE_CLIENT_SECRET"] ?? ""; }
+async function getGoogleCredentials(): Promise<{ clientId: string; clientSecret: string }> {
+  try {
+    const rows = await db.execute(
+      "SELECT client_id, client_secret FROM google_oauth_config ORDER BY id DESC LIMIT 1"
+    );
+    const row = (rows as any).rows?.[0] ?? (rows as any)[0] ?? null;
+    if (row?.client_id) {
+      return {
+        clientId: row.client_id as string,
+        clientSecret: row.client_secret as string,
+      };
+    }
+  } catch {
+  }
+  return {
+    clientId: process.env["GOOGLE_CLIENT_ID"] ?? "",
+    clientSecret: process.env["GOOGLE_CLIENT_SECRET"] ?? "",
+  };
+}
 
 function getCallbackUrl(req: any) {
   const proto = req.headers["x-forwarded-proto"] ?? req.protocol;
@@ -26,14 +43,15 @@ function getCallbackUrl(req: any) {
 }
 
 async function refreshAccessToken(refreshToken: string) {
+  const { clientId, clientSecret } = await getGoogleCredentials();
   const resp = await fetch(GOOGLE_TOKEN_URL, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({
       grant_type: "refresh_token",
       refresh_token: refreshToken,
-      client_id: getClientId(),
-      client_secret: getClientSecret(),
+      client_id: clientId,
+      client_secret: clientSecret,
     }),
   });
   if (!resp.ok) {
@@ -63,10 +81,10 @@ async function getValidToken(): Promise<string | null> {
   return refreshed.access_token;
 }
 
-router.get("/analytics/google/auth-url", requireAuth, (req, res) => {
-  const clientId = getClientId();
+router.get("/analytics/google/auth-url", requireAuth, async (req, res) => {
+  const { clientId } = await getGoogleCredentials();
   if (!clientId) {
-    res.status(503).json({ error: "Google OAuth is not configured. Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET secrets." });
+    res.status(503).json({ error: "Google OAuth is not configured. Add credentials in Settings → Google Analytics." });
     return;
   }
   const callbackUrl = getCallbackUrl(req);
@@ -95,6 +113,7 @@ router.get("/analytics/google/callback", async (req, res, next) => {
       return;
     }
 
+    const { clientId, clientSecret } = await getGoogleCredentials();
     const callbackUrl = getCallbackUrl(req);
     const tokenResp = await fetch(GOOGLE_TOKEN_URL, {
       method: "POST",
@@ -103,8 +122,8 @@ router.get("/analytics/google/callback", async (req, res, next) => {
         grant_type: "authorization_code",
         code,
         redirect_uri: callbackUrl,
-        client_id: getClientId(),
-        client_secret: getClientSecret(),
+        client_id: clientId,
+        client_secret: clientSecret,
       }),
     });
 
@@ -139,11 +158,11 @@ router.get("/analytics/google/status", requireAuth, async (_req, res, next) => {
       "SELECT id, expires_at, ga_property_id, email FROM google_analytics_tokens ORDER BY id DESC LIMIT 1"
     );
     const row = (rows as any).rows?.[0] ?? (rows as any)[0] ?? null;
+    const { clientId } = await getGoogleCredentials();
     if (!row) {
-      res.json({ connected: false });
+      res.json({ connected: false, configured: !!clientId });
       return;
     }
-    const clientId = getClientId();
     res.json({
       connected: true,
       email: row.email ?? null,

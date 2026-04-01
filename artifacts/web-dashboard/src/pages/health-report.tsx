@@ -1,9 +1,8 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { CheckCircle2, AlertTriangle, RefreshCw, Printer, Server, Globe, CreditCard, Edit2, Check, X } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { CheckCircle2, AlertTriangle, RefreshCw, Printer, Server, Globe, CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { Badge } from "@/components/ui/badge";
 
 async function apiFetch<T>(url: string, options?: RequestInit): Promise<T> {
   const base = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
@@ -15,10 +14,9 @@ async function apiFetch<T>(url: string, options?: RequestInit): Promise<T> {
   return res.json();
 }
 
-interface PaymentGateway {
+interface Gateway {
   id: string;
   name: string;
-  store: string;
   status: "active" | "inactive" | "maintenance";
   detail: string;
 }
@@ -26,6 +24,7 @@ interface PaymentGateway {
 interface HealthReport {
   generatedAt: string;
   overallStatus: "operational" | "degraded" | "outage";
+  companyName: string;
   sites: {
     id: number;
     name: string;
@@ -47,7 +46,8 @@ interface HealthReport {
       loadAvg1m: number;
     } | null;
   }[];
-  paymentGateways: PaymentGateway[];
+  iePaymentGateways: Gateway[];
+  ukPaymentGateways: Gateway[];
 }
 
 function StatusDot({ ok, text }: { ok: boolean; text?: string }) {
@@ -61,13 +61,13 @@ function StatusDot({ ok, text }: { ok: boolean; text?: string }) {
   );
 }
 
-function GatewayStatus({ status }: { status: PaymentGateway["status"] }) {
+function GatewayStatusDot({ status }: { status: Gateway["status"] }) {
   const map = {
     active: { label: "Active", ok: true },
     inactive: { label: "Inactive", ok: false },
     maintenance: { label: "Maintenance", ok: false },
   };
-  const { label, ok } = map[status];
+  const { label, ok } = map[status] ?? { label: status, ok: false };
   return <StatusDot ok={ok} text={label} />;
 }
 
@@ -83,6 +83,38 @@ function ServerHealthDetail(server: HealthReport["servers"][number]) {
   return `CPU ${cpuPercent}%, RAM ${memPercent ?? "?"}%, Disk ${diskPercent ?? "?"}%`;
 }
 
+function GatewayTable({ gateways }: { gateways: Gateway[] }) {
+  if (gateways.length === 0) {
+    return (
+      <div className="border rounded-xl px-5 py-6 text-sm text-gray-400 text-center">
+        No payment gateways configured. Add them in Settings → Health Report.
+      </div>
+    );
+  }
+  return (
+    <div className="border rounded-xl overflow-hidden">
+      <table className="w-full text-sm">
+        <thead className="bg-gray-50 border-b">
+          <tr>
+            <th className="text-left px-5 py-3 font-medium text-gray-500 w-1/3">Gateway</th>
+            <th className="text-left px-5 py-3 font-medium text-gray-500 w-1/4">Status</th>
+            <th className="text-left px-5 py-3 font-medium text-gray-500">Detail</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-gray-100">
+          {gateways.map((gw) => (
+            <tr key={gw.id} className="hover:bg-gray-50/50 transition-colors">
+              <td className="px-5 py-3.5 font-medium text-gray-900">{gw.name}</td>
+              <td className="px-5 py-3.5"><GatewayStatusDot status={gw.status} /></td>
+              <td className="px-5 py-3.5 text-gray-500">{gw.detail}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 export default function HealthReport() {
   const queryClient = useQueryClient();
   const { data, isLoading, refetch, isFetching } = useQuery<HealthReport>({
@@ -90,26 +122,6 @@ export default function HealthReport() {
     queryFn: () => apiFetch<HealthReport>("/api/health-report"),
     refetchInterval: 60000,
   });
-
-  const [editingGateways, setEditingGateways] = useState(false);
-  const [gatewayDraft, setGatewayDraft] = useState<PaymentGateway[]>([]);
-
-  const saveMutation = useMutation({
-    mutationFn: (gateways: PaymentGateway[]) =>
-      apiFetch("/api/health-report/payment-gateways", {
-        method: "PUT",
-        body: JSON.stringify({ paymentGateways: gateways }),
-      }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/health-report"] });
-      setEditingGateways(false);
-    },
-  });
-
-  const startEditing = () => {
-    setGatewayDraft(data?.paymentGateways ?? []);
-    setEditingGateways(true);
-  };
 
   if (isLoading) {
     return (
@@ -122,13 +134,17 @@ export default function HealthReport() {
   const report = data!;
   const isOperational = report.overallStatus === "operational";
   const generatedDate = format(new Date(report.generatedAt), "MMMM d, yyyy");
+  const companyName = report.companyName || "Love Furniture";
+
+  const ieSite = report.sites.find(s => s.url.includes(".ie") || s.name.toLowerCase().includes(" ie"));
+  const ukSite = report.sites.find(s => s.url.includes(".co.uk") || s.name.toLowerCase().includes(" uk"));
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-display font-bold">Health Report</h1>
-          <p className="text-muted-foreground mt-1">System-wide status summary</p>
+          <p className="text-muted-foreground mt-1">System-wide status summary for both stores</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => refetch()} disabled={isFetching} className="gap-2 bg-white">
@@ -146,7 +162,7 @@ export default function HealthReport() {
       <div className="bg-white rounded-2xl border shadow-sm print:shadow-none print:border-none" id="health-report-doc">
         {/* Document Header */}
         <div className="p-8 pb-6 border-b">
-          <h2 className="text-2xl font-display font-bold text-gray-900">Love Furniture — System Health Report</h2>
+          <h2 className="text-2xl font-display font-bold text-gray-900">{companyName} — System Health Report</h2>
           <p className="text-gray-500 mt-1 text-sm">{generatedDate} — Post-Investigation Summary</p>
         </div>
 
@@ -157,7 +173,9 @@ export default function HealthReport() {
               ? <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0" />
               : <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0" />}
             <span className={`font-semibold text-sm ${isOperational ? "text-emerald-800" : "text-red-800"}`}>
-              {isOperational ? "All Systems Operational" : `System Degraded — ${report.sites.filter(s => s.currentStatus !== "up").length} site(s) affected`}
+              {isOperational
+                ? "All Systems Operational"
+                : `System Degraded — ${report.sites.filter(s => s.currentStatus !== "up").length} site(s) affected`}
             </span>
           </div>
 
@@ -193,11 +211,12 @@ export default function HealthReport() {
             </section>
           )}
 
-          {/* Stores */}
+          {/* Stores — IE */}
           <section>
             <div className="flex items-center gap-2 mb-4">
               <Globe className="w-4 h-4 text-gray-400" />
-              <h3 className="text-base font-semibold text-gray-900">Stores</h3>
+              <h3 className="text-base font-semibold text-gray-900">Love Furniture IE</h3>
+              <span className="text-xs bg-green-50 text-green-700 border border-green-200 px-2 py-0.5 rounded-full font-medium">EUR</span>
             </div>
             <div className="border rounded-xl overflow-hidden">
               <table className="w-full text-sm">
@@ -209,7 +228,24 @@ export default function HealthReport() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {report.sites.map((site) => (
+                  {ieSite ? (
+                    <tr className="hover:bg-gray-50/50 transition-colors">
+                      <td className="px-5 py-3.5">
+                        <a href={ieSite.url} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">
+                          {ieSite.url.replace(/^https?:\/\//, "")}
+                        </a>
+                      </td>
+                      <td className="px-5 py-3.5">
+                        <StatusDot
+                          ok={ieSite.currentStatus === "up"}
+                          text={ieSite.currentStatus === "up" ? "Live" : ieSite.currentStatus === "slow" ? "Slow" : "Down"}
+                        />
+                      </td>
+                      <td className="px-5 py-3.5 text-gray-600 font-mono text-xs">
+                        {ieSite.lastResponseTimeMs != null ? `${(ieSite.lastResponseTimeMs / 1000).toFixed(2)}s` : "—"}
+                      </td>
+                    </tr>
+                  ) : report.sites.filter(s => !s.url.includes(".co.uk")).map(site => (
                     <tr key={site.id} className="hover:bg-gray-50/50 transition-colors">
                       <td className="px-5 py-3.5">
                         <a href={site.url} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">
@@ -223,9 +259,7 @@ export default function HealthReport() {
                         />
                       </td>
                       <td className="px-5 py-3.5 text-gray-600 font-mono text-xs">
-                        {site.lastResponseTimeMs != null
-                          ? `${(site.lastResponseTimeMs / 1000).toFixed(2)}s`
-                          : "—"}
+                        {site.lastResponseTimeMs != null ? `${(site.lastResponseTimeMs / 1000).toFixed(2)}s` : "—"}
                       </td>
                     </tr>
                   ))}
@@ -234,129 +268,81 @@ export default function HealthReport() {
             </div>
           </section>
 
-          {/* Payment Gateways */}
+          {/* Stores — UK */}
           <section>
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <CreditCard className="w-4 h-4 text-gray-400" />
-                <h3 className="text-base font-semibold text-gray-900">Payment Gateways</h3>
-              </div>
-              {!editingGateways ? (
-                <button
-                  onClick={startEditing}
-                  className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-700 transition-colors"
-                >
-                  <Edit2 className="w-3.5 h-3.5" /> Edit
-                </button>
-              ) : (
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => saveMutation.mutate(gatewayDraft)}
-                    className="flex items-center gap-1.5 text-xs text-emerald-600 hover:text-emerald-800"
-                  >
-                    <Check className="w-3.5 h-3.5" /> Save
-                  </button>
-                  <button
-                    onClick={() => setEditingGateways(false)}
-                    className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-700"
-                  >
-                    <X className="w-3.5 h-3.5" /> Cancel
-                  </button>
-                </div>
-              )}
+            <div className="flex items-center gap-2 mb-4">
+              <Globe className="w-4 h-4 text-gray-400" />
+              <h3 className="text-base font-semibold text-gray-900">Love Furniture UK</h3>
+              <span className="text-xs bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 rounded-full font-medium">GBP</span>
             </div>
             <div className="border rounded-xl overflow-hidden">
               <table className="w-full text-sm">
                 <thead className="bg-gray-50 border-b">
                   <tr>
-                    <th className="text-left px-5 py-3 font-medium text-gray-500 w-1/4">Gateway</th>
-                    <th className="text-left px-5 py-3 font-medium text-gray-500 w-1/4">Store</th>
+                    <th className="text-left px-5 py-3 font-medium text-gray-500 w-1/3">Store</th>
                     <th className="text-left px-5 py-3 font-medium text-gray-500 w-1/4">Status</th>
-                    <th className="text-left px-5 py-3 font-medium text-gray-500">Detail</th>
+                    <th className="text-left px-5 py-3 font-medium text-gray-500">Response Time</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {(editingGateways ? gatewayDraft : report.paymentGateways).map((gw, idx) => (
-                    <tr key={gw.id} className="hover:bg-gray-50/50 transition-colors">
-                      <td className="px-5 py-3.5 font-medium text-gray-900">
-                        {editingGateways ? (
-                          <input
-                            className="border rounded px-2 py-1 text-sm w-full"
-                            value={gw.name}
-                            onChange={(e) => {
-                              const updated = [...gatewayDraft];
-                              updated[idx] = { ...updated[idx], name: e.target.value };
-                              setGatewayDraft(updated);
-                            }}
-                          />
-                        ) : gw.name}
-                      </td>
-                      <td className="px-5 py-3.5 text-gray-600">
-                        {editingGateways ? (
-                          <input
-                            className="border rounded px-2 py-1 text-sm w-full"
-                            value={gw.store}
-                            onChange={(e) => {
-                              const updated = [...gatewayDraft];
-                              updated[idx] = { ...updated[idx], store: e.target.value };
-                              setGatewayDraft(updated);
-                            }}
-                          />
-                        ) : gw.store}
+                  {ukSite ? (
+                    <tr className="hover:bg-gray-50/50 transition-colors">
+                      <td className="px-5 py-3.5">
+                        <a href={ukSite.url} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">
+                          {ukSite.url.replace(/^https?:\/\//, "")}
+                        </a>
                       </td>
                       <td className="px-5 py-3.5">
-                        {editingGateways ? (
-                          <select
-                            className="border rounded px-2 py-1 text-sm w-full"
-                            value={gw.status}
-                            onChange={(e) => {
-                              const updated = [...gatewayDraft];
-                              updated[idx] = { ...updated[idx], status: e.target.value as PaymentGateway["status"] };
-                              setGatewayDraft(updated);
-                            }}
-                          >
-                            <option value="active">Active</option>
-                            <option value="inactive">Inactive</option>
-                            <option value="maintenance">Maintenance</option>
-                          </select>
-                        ) : (
-                          <GatewayStatus status={gw.status} />
-                        )}
+                        <StatusDot
+                          ok={ukSite.currentStatus === "up"}
+                          text={ukSite.currentStatus === "up" ? "Live" : ukSite.currentStatus === "slow" ? "Slow" : "Down"}
+                        />
                       </td>
-                      <td className="px-5 py-3.5 text-gray-500">
-                        {editingGateways ? (
-                          <input
-                            className="border rounded px-2 py-1 text-sm w-full"
-                            value={gw.detail}
-                            onChange={(e) => {
-                              const updated = [...gatewayDraft];
-                              updated[idx] = { ...updated[idx], detail: e.target.value };
-                              setGatewayDraft(updated);
-                            }}
-                          />
-                        ) : gw.detail}
+                      <td className="px-5 py-3.5 text-gray-600 font-mono text-xs">
+                        {ukSite.lastResponseTimeMs != null ? `${(ukSite.lastResponseTimeMs / 1000).toFixed(2)}s` : "—"}
+                      </td>
+                    </tr>
+                  ) : report.sites.filter(s => s.url.includes(".co.uk")).map(site => (
+                    <tr key={site.id} className="hover:bg-gray-50/50 transition-colors">
+                      <td className="px-5 py-3.5">
+                        <a href={site.url} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">
+                          {site.url.replace(/^https?:\/\//, "")}
+                        </a>
+                      </td>
+                      <td className="px-5 py-3.5">
+                        <StatusDot
+                          ok={site.currentStatus === "up"}
+                          text={site.currentStatus === "up" ? "Live" : site.currentStatus === "slow" ? "Slow" : "Down"}
+                        />
+                      </td>
+                      <td className="px-5 py-3.5 text-gray-600 font-mono text-xs">
+                        {site.lastResponseTimeMs != null ? `${(site.lastResponseTimeMs / 1000).toFixed(2)}s` : "—"}
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
-            {editingGateways && (
-              <button
-                onClick={() => {
-                  setGatewayDraft([...gatewayDraft, {
-                    id: String(Date.now()),
-                    name: "New Gateway",
-                    store: "Both",
-                    status: "active",
-                    detail: "Active",
-                  }]);
-                }}
-                className="mt-2 text-xs text-primary hover:underline"
-              >
-                + Add gateway
-              </button>
-            )}
+          </section>
+
+          {/* Payment Gateways — IE */}
+          <section>
+            <div className="flex items-center gap-2 mb-4">
+              <CreditCard className="w-4 h-4 text-gray-400" />
+              <h3 className="text-base font-semibold text-gray-900">Payment Gateways — Love Furniture IE</h3>
+              <span className="text-xs bg-green-50 text-green-700 border border-green-200 px-2 py-0.5 rounded-full font-medium">EUR</span>
+            </div>
+            <GatewayTable gateways={report.iePaymentGateways} />
+          </section>
+
+          {/* Payment Gateways — UK */}
+          <section>
+            <div className="flex items-center gap-2 mb-4">
+              <CreditCard className="w-4 h-4 text-gray-400" />
+              <h3 className="text-base font-semibold text-gray-900">Payment Gateways — Love Furniture UK</h3>
+              <span className="text-xs bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 rounded-full font-medium">GBP</span>
+            </div>
+            <GatewayTable gateways={report.ukPaymentGateways} />
           </section>
         </div>
 

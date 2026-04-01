@@ -14,12 +14,29 @@ import {
   useListSites, useUpdateSite,
   useGetServerAlertConfig, useUpdateServerAlertConfig,
 } from "@workspace/api-client-react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Mail, MessageSquare, Phone, ShoppingBag, Users, Shield,
   Server, Eye, EyeOff, UserPlus, Trash2, Edit2, Save,
-  Zap, Send, LogOut, AlertTriangle, Gauge,
+  Zap, Send, LogOut, AlertTriangle, Gauge, BarChart2, FileText, Plus, Copy, Check,
 } from "lucide-react";
+
+async function apiFetch<T>(url: string, options?: RequestInit): Promise<T> {
+  const base = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
+  const token = localStorage.getItem("sentinel_token");
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+  const res = await fetch(`${base}${url}`, { ...options, headers: { ...headers, ...(options?.headers ?? {}) } });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
+interface Gateway {
+  id: string;
+  name: string;
+  status: "active" | "inactive" | "maintenance";
+  detail: string;
+}
 
 const MASK = "••••••••";
 
@@ -134,6 +151,31 @@ export default function Settings() {
   const [editRole, setEditRole] = useState<"viewer" | "editor" | "admin">("viewer");
   const [resetPassword, setResetPassword] = useState("");
 
+  const [gaClientId, setGaClientId] = useState("");
+  const [gaClientSecret, setGaClientSecret] = useState("");
+  const [gaSaving, setGaSaving] = useState(false);
+  const [copiedCallback, setCopiedCallback] = useState(false);
+
+  const [hrCompanyName, setHrCompanyName] = useState("Love Furniture");
+  const [hrIeGateways, setHrIeGateways] = useState<Gateway[]>([]);
+  const [hrUkGateways, setHrUkGateways] = useState<Gateway[]>([]);
+  const [hrSaving, setHrSaving] = useState(false);
+
+  const { data: gaConfig } = useQuery({
+    queryKey: ["/api/config/google-analytics"],
+    queryFn: () => apiFetch<{ clientId: string; clientSecret: string; hasCredentials: boolean }>("/api/config/google-analytics"),
+  });
+
+  const { data: hrConfig } = useQuery({
+    queryKey: ["/api/config/health-report"],
+    queryFn: () => apiFetch<{ companyName: string; iePaymentGateways: Gateway[]; ukPaymentGateways: Gateway[] }>("/api/config/health-report"),
+  });
+
+  const callbackUrl = (() => {
+    const base = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
+    return `${window.location.origin}${base}/api/analytics/google/callback`;
+  })();
+
   useEffect(() => {
     if (config) {
       setIsEnabled(config.isEnabled);
@@ -181,6 +223,84 @@ export default function Settings() {
       setOfflineTimeout(String(serverAlertConfig.offlineTimeoutMinutes));
     }
   }, [serverAlertConfig?.id]);
+
+  useEffect(() => {
+    if (gaConfig) {
+      setGaClientId(gaConfig.clientId);
+      setGaClientSecret(gaConfig.clientSecret);
+    }
+  }, [gaConfig?.clientId]);
+
+  useEffect(() => {
+    if (hrConfig) {
+      setHrCompanyName(hrConfig.companyName);
+      setHrIeGateways(hrConfig.iePaymentGateways ?? []);
+      setHrUkGateways(hrConfig.ukPaymentGateways ?? []);
+    }
+  }, [hrConfig?.companyName]);
+
+  const handleSaveGoogleAnalytics = async () => {
+    setGaSaving(true);
+    try {
+      await apiFetch("/api/config/google-analytics", {
+        method: "PUT",
+        body: JSON.stringify({ clientId: gaClientId, clientSecret: gaClientSecret }),
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/config/google-analytics"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/analytics/google/status"] });
+      toast({ title: "Saved", description: "Google Analytics credentials updated." });
+    } catch (e: any) {
+      toast({ variant: "destructive", title: "Error", description: e.message });
+    } finally {
+      setGaSaving(false);
+    }
+  };
+
+  const handleSaveHealthReport = async () => {
+    setHrSaving(true);
+    try {
+      await apiFetch("/api/config/health-report", {
+        method: "PUT",
+        body: JSON.stringify({
+          companyName: hrCompanyName,
+          iePaymentGateways: hrIeGateways,
+          ukPaymentGateways: hrUkGateways,
+        }),
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/config/health-report"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/health-report"] });
+      toast({ title: "Saved", description: "Health Report configuration updated." });
+    } catch (e: any) {
+      toast({ variant: "destructive", title: "Error", description: e.message });
+    } finally {
+      setHrSaving(false);
+    }
+  };
+
+  const handleCopyCallback = () => {
+    navigator.clipboard.writeText(callbackUrl).then(() => {
+      setCopiedCallback(true);
+      setTimeout(() => setCopiedCallback(false), 2000);
+    });
+  };
+
+  const addGateway = (store: "ie" | "uk") => {
+    const newGw: Gateway = { id: String(Date.now()), name: "New Gateway", status: "active", detail: "" };
+    if (store === "ie") setHrIeGateways(prev => [...prev, newGw]);
+    else setHrUkGateways(prev => [...prev, newGw]);
+  };
+
+  const updateGateway = (store: "ie" | "uk", id: string, field: keyof Gateway, value: string) => {
+    const updater = (prev: Gateway[]) => prev.map(gw => gw.id === id ? { ...gw, [field]: value } : gw);
+    if (store === "ie") setHrIeGateways(updater);
+    else setHrUkGateways(updater);
+  };
+
+  const removeGateway = (store: "ie" | "uk", id: string) => {
+    const updater = (prev: Gateway[]) => prev.filter(gw => gw.id !== id);
+    if (store === "ie") setHrIeGateways(updater);
+    else setHrUkGateways(updater);
+  };
 
   const handleSaveAlerts = async () => {
     try {
@@ -559,6 +679,161 @@ export default function Settings() {
             </Button>
             <Button variant="outline" onClick={handleTestMagento} disabled={testMagento.isPending} className="gap-2">
               <Zap className="w-4 h-4" /> Test Connection
+            </Button>
+          </div>
+        </div>
+      </SectionCard>
+
+      {/* Google Analytics */}
+      <SectionCard icon={BarChart2} title="Google Analytics" description="OAuth credentials for the Analytics integration — stored securely in the database">
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Field label="Client ID">
+              <Input value={gaClientId} onChange={e => setGaClientId(e.target.value)} placeholder="1234567890-abc...apps.googleusercontent.com" />
+              <p className="text-xs text-muted-foreground mt-1">From Google Cloud Console → Credentials → OAuth 2.0 Client ID</p>
+            </Field>
+            <Field label="Client Secret">
+              <PasswordInput value={gaClientSecret} onChange={setGaClientSecret} placeholder="GOCSPX-..." />
+              <p className="text-xs text-muted-foreground mt-1">From the same OAuth 2.0 Client — keep this private</p>
+            </Field>
+          </div>
+          <Field label="Authorized Redirect URI (copy into Google Cloud Console)">
+            <div className="flex gap-2">
+              <Input value={callbackUrl} readOnly className="bg-muted font-mono text-xs" />
+              <Button variant="outline" size="icon" onClick={handleCopyCallback} className="flex-shrink-0">
+                {copiedCallback ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">Add this URL under Authorized Redirect URIs in your Google Cloud OAuth app before connecting</p>
+          </Field>
+          <div className="border-t pt-4">
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-800 space-y-1 mb-4">
+              <p className="font-semibold">Setup steps:</p>
+              <ol className="list-decimal list-inside space-y-0.5">
+                <li>Go to <a href="https://console.cloud.google.com" target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">console.cloud.google.com</a> → Enable Google Analytics Data API &amp; Admin API</li>
+                <li>Credentials → Create OAuth 2.0 Client ID (Web application type)</li>
+                <li>Add the Redirect URI above, then paste the Client ID and Secret here</li>
+                <li>Go to Analytics → Sign in with Google to connect your GA4 account</li>
+              </ol>
+            </div>
+            <Button onClick={handleSaveGoogleAnalytics} disabled={gaSaving} className="gap-2">
+              <Save className="w-4 h-4" /> Save Credentials
+            </Button>
+          </div>
+        </div>
+      </SectionCard>
+
+      {/* Health Report */}
+      <SectionCard icon={FileText} title="Health Report" description="Configure report branding and payment gateways for each store">
+        <div className="space-y-6">
+          <Field label="Company / Report Name">
+            <Input value={hrCompanyName} onChange={e => setHrCompanyName(e.target.value)} placeholder="Love Furniture" />
+            <p className="text-xs text-muted-foreground mt-1">Displayed in the Health Report document header</p>
+          </Field>
+
+          {/* IE Payment Gateways */}
+          <div className="border-t pt-4">
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <p className="text-sm font-semibold">Love Furniture IE — Payment Gateways</p>
+                <p className="text-xs text-muted-foreground">lovefurniture.ie · EUR</p>
+              </div>
+              <Button variant="outline" size="sm" onClick={() => addGateway("ie")} className="gap-1.5">
+                <Plus className="w-3.5 h-3.5" /> Add
+              </Button>
+            </div>
+            {hrIeGateways.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-4 text-center border rounded-lg">No gateways configured</p>
+            ) : (
+              <div className="space-y-2">
+                {hrIeGateways.map(gw => (
+                  <div key={gw.id} className="grid grid-cols-12 gap-2 items-center">
+                    <Input
+                      className="col-span-3"
+                      value={gw.name}
+                      onChange={e => updateGateway("ie", gw.id, "name", e.target.value)}
+                      placeholder="Gateway name"
+                    />
+                    <select
+                      className="col-span-3 border rounded-md px-3 py-2 text-sm bg-background"
+                      value={gw.status}
+                      onChange={e => updateGateway("ie", gw.id, "status", e.target.value)}
+                    >
+                      <option value="active">Active</option>
+                      <option value="inactive">Inactive</option>
+                      <option value="maintenance">Maintenance</option>
+                    </select>
+                    <Input
+                      className="col-span-5"
+                      value={gw.detail}
+                      onChange={e => updateGateway("ie", gw.id, "detail", e.target.value)}
+                      placeholder="Detail / note"
+                    />
+                    <button
+                      onClick={() => removeGateway("ie", gw.id)}
+                      className="col-span-1 flex items-center justify-center text-muted-foreground hover:text-destructive transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* UK Payment Gateways */}
+          <div className="border-t pt-4">
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <p className="text-sm font-semibold">Love Furniture UK — Payment Gateways</p>
+                <p className="text-xs text-muted-foreground">lovefurniture.co.uk · GBP</p>
+              </div>
+              <Button variant="outline" size="sm" onClick={() => addGateway("uk")} className="gap-1.5">
+                <Plus className="w-3.5 h-3.5" /> Add
+              </Button>
+            </div>
+            {hrUkGateways.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-4 text-center border rounded-lg">No gateways configured</p>
+            ) : (
+              <div className="space-y-2">
+                {hrUkGateways.map(gw => (
+                  <div key={gw.id} className="grid grid-cols-12 gap-2 items-center">
+                    <Input
+                      className="col-span-3"
+                      value={gw.name}
+                      onChange={e => updateGateway("uk", gw.id, "name", e.target.value)}
+                      placeholder="Gateway name"
+                    />
+                    <select
+                      className="col-span-3 border rounded-md px-3 py-2 text-sm bg-background"
+                      value={gw.status}
+                      onChange={e => updateGateway("uk", gw.id, "status", e.target.value)}
+                    >
+                      <option value="active">Active</option>
+                      <option value="inactive">Inactive</option>
+                      <option value="maintenance">Maintenance</option>
+                    </select>
+                    <Input
+                      className="col-span-5"
+                      value={gw.detail}
+                      onChange={e => updateGateway("uk", gw.id, "detail", e.target.value)}
+                      placeholder="Detail / note"
+                    />
+                    <button
+                      onClick={() => removeGateway("uk", gw.id)}
+                      className="col-span-1 flex items-center justify-center text-muted-foreground hover:text-destructive transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="border-t pt-4">
+            <Button onClick={handleSaveHealthReport} disabled={hrSaving} className="gap-2">
+              <Save className="w-4 h-4" /> Save Health Report Settings
             </Button>
           </div>
         </div>

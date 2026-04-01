@@ -5,22 +5,38 @@ import { eq, desc } from "drizzle-orm";
 
 const router: IRouter = Router();
 
-const DEFAULT_PAYMENT_GATEWAYS = [
-  { id: "1", name: "Stripe", store: "lovefurniture.ie", status: "active", detail: "Live mode, processing" },
-  { id: "2", name: "Revolut", store: "lovefurniture.co.uk", status: "active", detail: "Processing successfully" },
-  { id: "3", name: "Klarna", store: "Both", status: "active", detail: "Active" },
+const DEFAULT_IE_GATEWAYS = [
+  { id: "ie-1", name: "Stripe", status: "active", detail: "Live mode, processing" },
+  { id: "ie-2", name: "Klarna", status: "active", detail: "Active" },
 ];
 
-async function getPaymentGateways() {
+const DEFAULT_UK_GATEWAYS = [
+  { id: "uk-1", name: "Revolut", status: "active", detail: "Processing successfully" },
+  { id: "uk-2", name: "Klarna", status: "active", detail: "Active" },
+];
+
+async function getHealthReportConfig() {
   try {
     const result = await db.execute(
-      "SELECT payment_gateways FROM health_report_config LIMIT 1"
+      "SELECT id, company_name, ie_payment_gateways, uk_payment_gateways FROM health_report_config LIMIT 1"
     );
     const row = (result as any).rows?.[0] ?? (result as any)[0] ?? null;
-    if (row?.payment_gateways) return row.payment_gateways;
+    if (row) {
+      return {
+        id: row.id as number,
+        companyName: (row.company_name as string) || "Love Furniture",
+        iePaymentGateways: (row.ie_payment_gateways as any[]) || DEFAULT_IE_GATEWAYS,
+        ukPaymentGateways: (row.uk_payment_gateways as any[]) || DEFAULT_UK_GATEWAYS,
+      };
+    }
   } catch {
   }
-  return DEFAULT_PAYMENT_GATEWAYS;
+  return {
+    id: null,
+    companyName: "Love Furniture",
+    iePaymentGateways: DEFAULT_IE_GATEWAYS,
+    ukPaymentGateways: DEFAULT_UK_GATEWAYS,
+  };
 }
 
 router.get("/health-report", async (_req, res, next) => {
@@ -41,7 +57,7 @@ router.get("/health-report", async (_req, res, next) => {
       }
     }
 
-    const paymentGateways = await getPaymentGateways();
+    const config = await getHealthReportConfig();
 
     const now = Date.now();
     const OFFLINE_THRESHOLD_MS = 5 * 60 * 1000;
@@ -71,6 +87,7 @@ router.get("/health-report", async (_req, res, next) => {
     res.json({
       generatedAt: new Date().toISOString(),
       overallStatus,
+      companyName: config.companyName,
       sites: sites.map((s) => ({
         id: s.id,
         name: s.name,
@@ -80,29 +97,9 @@ router.get("/health-report", async (_req, res, next) => {
         lastCheckedAt: s.lastCheckedAt,
       })),
       servers: serversWithStatus,
-      paymentGateways,
+      iePaymentGateways: config.iePaymentGateways,
+      ukPaymentGateways: config.ukPaymentGateways,
     });
-  } catch (err) {
-    next(err);
-  }
-});
-
-router.put("/health-report/payment-gateways", async (req, res, next) => {
-  try {
-    const { paymentGateways } = req.body;
-    if (!Array.isArray(paymentGateways)) {
-      res.status(400).json({ error: "paymentGateways must be an array" });
-      return;
-    }
-    const json = JSON.stringify(paymentGateways).replace(/'/g, "''");
-    const existing = await db.execute("SELECT id FROM health_report_config LIMIT 1");
-    const row = (existing as any).rows?.[0] ?? (existing as any)[0] ?? null;
-    if (row) {
-      await db.execute(`UPDATE health_report_config SET payment_gateways = '${json}'::jsonb WHERE id = ${row.id}`);
-    } else {
-      await db.execute(`INSERT INTO health_report_config (payment_gateways) VALUES ('${json}'::jsonb)`);
-    }
-    res.json({ paymentGateways });
   } catch (err) {
     next(err);
   }

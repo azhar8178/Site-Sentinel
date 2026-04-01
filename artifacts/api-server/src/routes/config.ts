@@ -325,6 +325,111 @@ router.post("/config/test-magento", async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+const GOOGLE_MASK = "\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022";
+
+async function getOrCreateGoogleOAuthConfig() {
+  const rows = await db.execute(
+    "SELECT id, client_id, client_secret FROM google_oauth_config ORDER BY id DESC LIMIT 1"
+  );
+  const row = (rows as any).rows?.[0] ?? (rows as any)[0] ?? null;
+  if (row) return row as { id: number; client_id: string; client_secret: string };
+  await db.execute("INSERT INTO google_oauth_config DEFAULT VALUES");
+  const rows2 = await db.execute(
+    "SELECT id, client_id, client_secret FROM google_oauth_config ORDER BY id DESC LIMIT 1"
+  );
+  const row2 = (rows2 as any).rows?.[0] ?? (rows2 as any)[0] ?? null;
+  return row2 as { id: number; client_id: string; client_secret: string };
+}
+
+router.get("/config/google-analytics", async (_req, res, next) => {
+  try {
+    const cfg = await getOrCreateGoogleOAuthConfig();
+    res.json({
+      clientId: cfg.client_id || "",
+      clientSecret: cfg.client_secret ? GOOGLE_MASK : "",
+      hasCredentials: !!(cfg.client_id && cfg.client_secret),
+    });
+  } catch (err) { next(err); }
+});
+
+router.put("/config/google-analytics", async (req, res, next) => {
+  try {
+    const cfg = await getOrCreateGoogleOAuthConfig();
+    const { clientId, clientSecret } = req.body;
+    const updates: string[] = [];
+    if (clientId !== undefined && typeof clientId === "string") {
+      updates.push(`client_id = '${clientId.replace(/'/g, "''")}'`);
+    }
+    if (clientSecret !== undefined && typeof clientSecret === "string" && clientSecret !== GOOGLE_MASK) {
+      updates.push(`client_secret = '${clientSecret.replace(/'/g, "''")}'`);
+    }
+    if (updates.length > 0) {
+      updates.push(`updated_at = now()`);
+      await db.execute(`UPDATE google_oauth_config SET ${updates.join(", ")} WHERE id = ${cfg.id}`);
+    }
+    const updated = await getOrCreateGoogleOAuthConfig();
+    res.json({
+      clientId: updated.client_id || "",
+      clientSecret: updated.client_secret ? GOOGLE_MASK : "",
+      hasCredentials: !!(updated.client_id && updated.client_secret),
+    });
+  } catch (err) { next(err); }
+});
+
+async function getOrCreateHealthReportConfig() {
+  const rows = await db.execute(
+    "SELECT id, company_name, ie_payment_gateways, uk_payment_gateways FROM health_report_config ORDER BY id DESC LIMIT 1"
+  );
+  const row = (rows as any).rows?.[0] ?? (rows as any)[0] ?? null;
+  if (row) return row as { id: number; company_name: string; ie_payment_gateways: any[]; uk_payment_gateways: any[] };
+  await db.execute("INSERT INTO health_report_config DEFAULT VALUES");
+  const rows2 = await db.execute(
+    "SELECT id, company_name, ie_payment_gateways, uk_payment_gateways FROM health_report_config ORDER BY id DESC LIMIT 1"
+  );
+  const row2 = (rows2 as any).rows?.[0] ?? (rows2 as any)[0] ?? null;
+  return row2 as { id: number; company_name: string; ie_payment_gateways: any[]; uk_payment_gateways: any[] };
+}
+
+router.get("/config/health-report", async (_req, res, next) => {
+  try {
+    const cfg = await getOrCreateHealthReportConfig();
+    res.json({
+      companyName: cfg.company_name || "Love Furniture",
+      iePaymentGateways: cfg.ie_payment_gateways || [],
+      ukPaymentGateways: cfg.uk_payment_gateways || [],
+    });
+  } catch (err) { next(err); }
+});
+
+router.put("/config/health-report", async (req, res, next) => {
+  try {
+    const cfg = await getOrCreateHealthReportConfig();
+    const { companyName, iePaymentGateways, ukPaymentGateways } = req.body;
+    const updates: string[] = [];
+    if (companyName !== undefined && typeof companyName === "string") {
+      updates.push(`company_name = '${companyName.replace(/'/g, "''")}'`);
+    }
+    if (iePaymentGateways !== undefined && Array.isArray(iePaymentGateways)) {
+      const json = JSON.stringify(iePaymentGateways).replace(/'/g, "''");
+      updates.push(`ie_payment_gateways = '${json}'::jsonb`);
+    }
+    if (ukPaymentGateways !== undefined && Array.isArray(ukPaymentGateways)) {
+      const json = JSON.stringify(ukPaymentGateways).replace(/'/g, "''");
+      updates.push(`uk_payment_gateways = '${json}'::jsonb`);
+    }
+    if (updates.length > 0) {
+      updates.push(`updated_at = now()`);
+      await db.execute(`UPDATE health_report_config SET ${updates.join(", ")} WHERE id = ${cfg.id}`);
+    }
+    const updated = await getOrCreateHealthReportConfig();
+    res.json({
+      companyName: updated.company_name || "Love Furniture",
+      iePaymentGateways: updated.ie_payment_gateways || [],
+      ukPaymentGateways: updated.uk_payment_gateways || [],
+    });
+  } catch (err) { next(err); }
+});
+
 async function getOrCreateServerAlertConfig() {
   let configs = await db.select().from(serverAlertConfigTable).limit(1);
   if (configs.length === 0) {
