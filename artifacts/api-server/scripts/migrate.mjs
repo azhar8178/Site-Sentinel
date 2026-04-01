@@ -190,6 +190,36 @@ try {
     updated_at timestamp NOT NULL DEFAULT now()
   )`);
 
+  await run("google_oauth_config table", `CREATE TABLE IF NOT EXISTS google_oauth_config (
+    id serial PRIMARY KEY,
+    client_id text NOT NULL DEFAULT '',
+    client_secret text NOT NULL DEFAULT '',
+    updated_at timestamp NOT NULL DEFAULT now()
+  )`);
+
+  await run("health_report_config table", `CREATE TABLE IF NOT EXISTS health_report_config (
+    id serial PRIMARY KEY,
+    payment_gateways jsonb NOT NULL DEFAULT '[]'::jsonb,
+    updated_at timestamp NOT NULL DEFAULT now()
+  )`);
+
+  for (const col of [
+    { name: "company_name", type: "text NOT NULL DEFAULT 'Love Furniture'" },
+    { name: "ie_payment_gateways", type: "jsonb NOT NULL DEFAULT '[]'::jsonb" },
+    { name: "uk_payment_gateways", type: "jsonb NOT NULL DEFAULT '[]'::jsonb" },
+  ]) {
+    const { rows: exists } = await client.query(
+      `SELECT 1 FROM information_schema.columns WHERE table_name = 'health_report_config' AND column_name = $1`,
+      [col.name]
+    );
+    if (exists.length === 0) {
+      await run(`health_report_config.${col.name}`, `ALTER TABLE health_report_config ADD COLUMN ${col.name} ${col.type}`);
+    }
+  }
+
+  await run("seed google_oauth_config", `INSERT INTO google_oauth_config (client_id, client_secret) SELECT '', '' WHERE NOT EXISTS (SELECT 1 FROM google_oauth_config LIMIT 1)`);
+  await run("seed health_report_config", `INSERT INTO health_report_config (payment_gateways) SELECT '[]'::jsonb WHERE NOT EXISTS (SELECT 1 FROM health_report_config LIMIT 1)`);
+
   await run("seed alert_config", `INSERT INTO alert_config (is_enabled) SELECT true WHERE NOT EXISTS (SELECT 1 FROM alert_config LIMIT 1)`);
   await run("seed server_alert_config", `INSERT INTO server_alert_config (is_enabled, cpu_threshold, ram_threshold, disk_threshold, offline_timeout_minutes) SELECT true, 90, 90, 95, 5 WHERE NOT EXISTS (SELECT 1 FROM server_alert_config LIMIT 1)`);
   await run("seed magento_config", `INSERT INTO magento_config (is_enabled) SELECT false WHERE NOT EXISTS (SELECT 1 FROM magento_config LIMIT 1)`);
