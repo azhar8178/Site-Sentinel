@@ -17,6 +17,43 @@ env = { "CI" = "true" }
 [workflows]
 runButton = "Project"
 
+[[workflows.workflow]]
+name = "Project"
+mode = "parallel"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "API Server"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Start application"
+
+[[workflows.workflow]]
+name = "API Server"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "PORT=8080 node --enable-source-maps artifacts/api-server/dist/index.mjs"
+waitForPort = 8080
+
+[workflows.workflow.metadata]
+outputType = "console"
+
+[[workflows.workflow]]
+name = "Start application"
+author = "agent"
+
+[workflows.workflow.metadata]
+outputType = "webview"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pnpm --filter @workspace/web-dashboard run dev"
+waitForPort = 19814
+
 [agent]
 stack = "PNPM_WORKSPACE"
 expertMode = true
@@ -29,6 +66,7 @@ timeoutMs = 20000
 
 [userenv.shared]
 MAGENTO_API_URL = "https://www.lovefurniture.ie/rest/V1"
+API_PORT = "8080"
 
 [nix]
 channel = "stable-25_05"
