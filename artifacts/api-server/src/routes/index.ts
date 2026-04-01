@@ -8,6 +8,8 @@ import { serversRouter, reportRouter } from "./servers";
 import agentUpdateRouter from "./agent-update";
 import magentoRouter from "./magento";
 import usersRouter from "./users";
+import healthReportRouter from "./health-report";
+import analyticsRouter from "./analytics";
 import { requireAuth, requireRole } from "../middleware/auth";
 
 const router: IRouter = Router();
@@ -23,6 +25,8 @@ router.use(sitesRouter);
 router.use(alertsRouter);
 router.use(magentoRouter);
 router.use(serversRouter);
+router.use(healthReportRouter);
+router.use(analyticsRouter);
 
 router.use("/", requireRole("editor", "admin"), configRouter);
 

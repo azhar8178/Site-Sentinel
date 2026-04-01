@@ -10,7 +10,9 @@ import {
   LogOut,
   ShieldCheck,
   Menu,
-  X
+  X,
+  ClipboardList,
+  BarChart2,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -21,6 +23,8 @@ const NAV_ITEMS = [
   { href: "/store", label: "Store", icon: ShoppingCart },
   { href: "/servers", label: "Servers", icon: Server },
   { href: "/alerts", label: "Alerts", icon: Bell },
+  { href: "/health-report", label: "Health Report", icon: ClipboardList },
+  { href: "/analytics", label: "Analytics", icon: BarChart2 },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 
