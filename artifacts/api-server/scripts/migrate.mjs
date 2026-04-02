@@ -265,6 +265,10 @@ try {
     { name: "top_processes", type: "jsonb" },
     { name: "php_fpm", type: "jsonb" },
     { name: "mysql_stats", type: "jsonb" },
+    { name: "nginx", type: "jsonb" },
+    { name: "varnish", type: "jsonb" },
+    { name: "elasticsearch", type: "jsonb" },
+    { name: "ssl_expiry", type: "jsonb" },
   ];
   for (const col of newMetricCols) {
     const { rows: colExists } = await client.query(

@@ -291,6 +291,10 @@ reportRouter.post("/servers/report", async (req, res, next) => {
     const processCount = b.processCount ? clampNum(b.processCount, 0, 100000, 0) : null;
     const connectionCount = b.connectionCount ? clampNum(b.connectionCount, 0, 100000, 0) : null;
     const httpConnectionCount = b.httpConnectionCount ? clampNum(b.httpConnectionCount, 0, 100000, 0) : null;
+    const nginx = b.nginx && typeof b.nginx === "object" ? b.nginx : null;
+    const varnish = b.varnish && typeof b.varnish === "object" ? b.varnish : null;
+    const elasticsearch = b.elasticsearch && typeof b.elasticsearch === "object" ? b.elasticsearch : null;
+    const sslExpiry = Array.isArray(b.sslExpiry) ? b.sslExpiry : null;
 
     await db.insert(serverMetricsTable).values({
       serverId: server.id,
@@ -310,6 +314,10 @@ reportRouter.post("/servers/report", async (req, res, next) => {
       topProcesses,
       phpFpm,
       mysql,
+      nginx,
+      varnish,
+      elasticsearch,
+      sslExpiry,
     });
 
     await db

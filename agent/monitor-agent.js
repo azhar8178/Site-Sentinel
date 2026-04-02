@@ -198,6 +198,135 @@ function getMySqlStats() {
   };
 }
 
+function getNginxStatus() {
+  const isRunning = !!(
+    exec("systemctl is-active --quiet nginx 2>/dev/null && echo yes") ||
+    exec("pidof nginx 2>/dev/null | head -c1")
+  );
+
+  const statusOutput =
+    exec("curl -sf --max-time 3 http://127.0.0.1/nginx_status 2>/dev/null") ||
+    exec("curl -sf --max-time 3 http://127.0.0.1:8080/nginx_status 2>/dev/null");
+
+  if (!statusOutput) return { isRunning };
+
+  const activeConn = statusOutput.match(/Active connections:\s*(\d+)/);
+  const serverLine = statusOutput.match(/^\s*(\d+)\s+(\d+)\s+(\d+)\s*$/m);
+  const rwLine = statusOutput.match(/Reading:\s*(\d+)\s+Writing:\s*(\d+)\s+Waiting:\s*(\d+)/);
+
+  return {
+    isRunning: true,
+    activeConnections: activeConn ? parseInt(activeConn[1], 10) : null,
+    accepts: serverLine ? parseInt(serverLine[1], 10) : null,
+    handled: serverLine ? parseInt(serverLine[2], 10) : null,
+    requests: serverLine ? parseInt(serverLine[3], 10) : null,
+    reading: rwLine ? parseInt(rwLine[1], 10) : null,
+    writing: rwLine ? parseInt(rwLine[2], 10) : null,
+    waiting: rwLine ? parseInt(rwLine[3], 10) : null,
+  };
+}
+
+function getVarnishStats() {
+  const isRunning = !!(
+    exec("systemctl is-active --quiet varnish 2>/dev/null && echo yes") ||
+    exec("pidof varnishd 2>/dev/null | head -c1")
+  );
+
+  const statsOutput = exec(
+    "varnishstat -1 -f MAIN.cache_hit,MAIN.cache_miss,MAIN.client_req 2>/dev/null || varnishstat -1 2>/dev/null | grep -E 'cache_hit|cache_miss|client_req' 2>/dev/null"
+  );
+
+  if (!statsOutput) return { isRunning };
+
+  const hitMatch = statsOutput.match(/MAIN\.cache_hit\s+(\d+)/);
+  const missMatch = statsOutput.match(/MAIN\.cache_miss\s+(\d+)/);
+  const reqMatch = statsOutput.match(/MAIN\.client_req\s+(\d+)/);
+
+  const hits = hitMatch ? parseInt(hitMatch[1], 10) : null;
+  const misses = missMatch ? parseInt(missMatch[1], 10) : null;
+  const clientReqs = reqMatch ? parseInt(reqMatch[1], 10) : null;
+
+  let hitRate = null;
+  if (hits !== null && misses !== null && hits + misses > 0) {
+    hitRate = Math.round((hits / (hits + misses)) * 100);
+  }
+
+  return {
+    isRunning: isRunning || hits !== null,
+    cacheHits: hits,
+    cacheMisses: misses,
+    clientRequests: clientReqs,
+    hitRate,
+  };
+}
+
+function getElasticsearchStatus() {
+  const isRunning = !!(
+    exec("systemctl is-active --quiet elasticsearch 2>/dev/null && echo yes") ||
+    exec("curl -sf --max-time 2 http://127.0.0.1:9200/ 2>/dev/null | head -c1")
+  );
+
+  const healthOutput = exec(
+    "curl -sf --max-time 5 http://127.0.0.1:9200/_cluster/health 2>/dev/null"
+  );
+
+  if (!healthOutput) return { isRunning };
+
+  try {
+    const health = JSON.parse(healthOutput);
+    return {
+      isRunning: true,
+      status: health.status,
+      numberOfNodes: health.number_of_nodes,
+      numberOfDataNodes: health.number_of_data_nodes,
+      activeShards: health.active_shards,
+      relocatingShards: health.relocating_shards,
+      unassignedShards: health.unassigned_shards,
+    };
+  } catch {
+    return { isRunning };
+  }
+}
+
+function getSslExpiry() {
+  const domainsEnv = process.env.MONITOR_SSL_DOMAINS || "";
+  const domains = domainsEnv
+    .split(",")
+    .map((d) => d.trim())
+    .filter(Boolean);
+
+  if (domains.length === 0) return null;
+
+  const results = [];
+  for (const domain of domains) {
+    const endDate = exec(
+      `echo | openssl s_client -connect ${domain}:443 -servername ${domain} 2>/dev/null | openssl x509 -noout -enddate 2>/dev/null`
+    );
+    if (!endDate) {
+      results.push({ domain, error: "Could not fetch certificate" });
+      continue;
+    }
+    const match = endDate.match(/notAfter=(.*)/);
+    if (!match) {
+      results.push({ domain, error: "Could not parse expiry" });
+      continue;
+    }
+    const expiresAt = new Date(match[1]);
+    const daysRemaining = Math.floor(
+      (expiresAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+    );
+    results.push({
+      domain,
+      expiresAt: expiresAt.toISOString(),
+      daysRemaining,
+      isExpired: daysRemaining < 0,
+      isExpiringSoon: daysRemaining >= 0 && daysRemaining <= 30,
+    });
+  }
+
+  return results.length > 0 ? results : null;
+}
+
 function getConnectionCount() {
   const output = exec("ss -tun state established 2>/dev/null | wc -l");
   if (!output) return 0;
@@ -279,6 +408,10 @@ async function collect() {
   const connCount = getConnectionCount();
   const procCount = getProcessCount();
   const httpConns = getHttpConnections();
+  const nginx = getNginxStatus();
+  const varnish = getVarnishStats();
+  const elasticsearch = getElasticsearchStatus();
+  const sslExpiry = getSslExpiry();
 
   const data = {
     cpuPercent: cpu,
@@ -297,6 +430,10 @@ async function collect() {
     connectionCount: connCount,
     processCount: procCount,
     httpConnectionCount: httpConns,
+    nginx,
+    varnish,
+    elasticsearch,
+    sslExpiry,
   };
 
   const ok = await postMetrics(data);
@@ -305,13 +442,15 @@ async function collect() {
       mem.total > 0 ? ((mem.used / mem.total) * 100).toFixed(1) : "0";
     const diskPct =
       disk.total > 0 ? ((disk.used / disk.total) * 100).toFixed(1) : "0";
+    const nginxStr = nginx.isRunning ? `Nginx:up(${nginx.activeConnections ?? "?"}conn)` : "Nginx:down";
+    const varnishStr = varnish.isRunning ? `Varnish:up(${varnish.hitRate ?? "?"}%hit)` : "Varnish:not-running";
     console.log(
-      `[${new Date().toISOString()}] CPU: ${cpu}% | Mem: ${memPct}% | Disk: ${diskPct}% | Load: ${load.m1} | PHP: ${phpFpm.active}/${phpFpm.total} | Conns: ${connCount} | Procs: ${procCount}`
+      `[${new Date().toISOString()}] CPU: ${cpu}% | Mem: ${memPct}% | Disk: ${diskPct}% | Load: ${load.m1} | PHP: ${phpFpm.active}/${phpFpm.total} | ${nginxStr} | ${varnishStr}`
     );
   }
 }
 
-const AGENT_VERSION = "2.0.0";
+const AGENT_VERSION = "3.0.0";
 const UPDATE_CHECK_INTERVAL = 3600000;
 let lastUpdateCheck = 0;
 
@@ -348,8 +487,13 @@ console.log(`Site Sentinel Monitor Agent v${AGENT_VERSION}`);
 console.log(`  API: ${API_URL}`);
 console.log(`  Interval: ${INTERVAL / 1000}s`);
 console.log(
-  `  Features: CPU, Memory, Disk, Network, Load, Top Processes, PHP-FPM, MySQL, Connections`
+  `  Features: CPU, Memory, Disk, Network, Load, PHP-FPM, MySQL, Nginx, Varnish, Elasticsearch, SSL`
 );
+if (process.env.MONITOR_SSL_DOMAINS) {
+  console.log(`  SSL domains: ${process.env.MONITOR_SSL_DOMAINS}`);
+} else {
+  console.log(`  SSL: set MONITOR_SSL_DOMAINS=domain1.com,domain2.com to enable SSL expiry checks`);
+}
 
 getCpuUsage();
 

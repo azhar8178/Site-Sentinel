@@ -45,6 +45,18 @@ interface HealthReport {
       memPercent: number | null;
       diskPercent: number | null;
       loadAvg1m: number;
+      loadAvg5m: number;
+      loadAvg15m: number;
+      connectionCount: number | null;
+      httpConnectionCount: number | null;
+    } | null;
+    services: {
+      phpFpm: { active: number; idle: number; total: number; maxChildren: number } | null;
+      mysql: { threads: number; questions: number; slowQueries: number } | null;
+      nginx: { isRunning: boolean; activeConnections: number | null; requests: number | null; waiting: number | null } | null;
+      varnish: { isRunning: boolean; hitRate: number | null; cacheHits: number | null; cacheMisses: number | null; clientRequests: number | null } | null;
+      elasticsearch: { isRunning: boolean; status: string | null; numberOfNodes: number | null; activeShards: number | null } | null;
+      sslExpiry: { domain: string; expiresAt: string; daysRemaining: number; isExpired: boolean; isExpiringSoon: boolean }[] | null;
     } | null;
   }[];
   iePaymentGateways: Gateway[];
@@ -82,6 +94,94 @@ function ServerHealthDetail(server: HealthReport["servers"][number]) {
   if (diskPercent !== null && diskPercent > 90) issues.push(`Disk ${diskPercent}%`);
   if (issues.length) return `High usage: ${issues.join(", ")}`;
   return `CPU ${cpuPercent}%, RAM ${memPercent ?? "?"}%, Disk ${diskPercent ?? "?"}%`;
+}
+
+function ServiceCard({
+  label,
+  icon,
+  ok,
+  okLabel,
+  badLabel,
+  detail,
+  subDetail,
+  notDetected,
+}: {
+  label: string;
+  icon: React.ReactNode;
+  ok: boolean | null;
+  okLabel?: string;
+  badLabel?: string;
+  detail?: string | null;
+  subDetail?: string | null;
+  notDetected?: boolean;
+}) {
+  if (notDetected) {
+    return (
+      <div className="border rounded-xl p-4 bg-gray-50">
+        <div className="flex items-center gap-2 mb-1">
+          <span className="text-gray-400">{icon}</span>
+          <span className="text-sm font-semibold text-gray-500">{label}</span>
+        </div>
+        <p className="text-xs text-gray-400 mt-1">Not detected</p>
+      </div>
+    );
+  }
+  const color = ok === null ? "gray" : ok ? "emerald" : "red";
+  const statusText = ok === null ? "Unknown" : ok ? (okLabel ?? "Running") : (badLabel ?? "Down");
+  const dotColor = color === "emerald" ? "bg-emerald-500" : color === "red" ? "bg-red-500" : "bg-gray-400";
+  const textColor = color === "emerald" ? "text-emerald-700" : color === "red" ? "text-red-700" : "text-gray-500";
+  return (
+    <div className={`border rounded-xl p-4 ${ok === false ? "bg-red-50 border-red-200" : ok === null ? "bg-gray-50" : "bg-white"}`}>
+      <div className="flex items-center gap-2 mb-2">
+        <span className="text-gray-500">{icon}</span>
+        <span className="text-sm font-semibold text-gray-800">{label}</span>
+      </div>
+      <div className="flex items-center gap-1.5">
+        <span className={`inline-block w-2 h-2 rounded-full ${dotColor}`} />
+        <span className={`text-sm font-medium ${textColor}`}>{statusText}</span>
+      </div>
+      {detail && <p className="text-xs text-gray-500 mt-1">{detail}</p>}
+      {subDetail && <p className="text-xs text-gray-400">{subDetail}</p>}
+    </div>
+  );
+}
+
+function SslCard({ entries }: { entries: { domain: string; expiresAt: string; daysRemaining: number; isExpired: boolean; isExpiringSoon: boolean }[] }) {
+  if (entries.length === 0) return null;
+  return (
+    <div className="border rounded-xl overflow-hidden col-span-full">
+      <div className="px-5 py-3 bg-gray-50 border-b text-sm font-semibold text-gray-700">SSL Certificates</div>
+      <table className="w-full text-sm">
+        <thead className="bg-gray-50 border-b">
+          <tr>
+            <th className="text-left px-5 py-2.5 font-medium text-gray-500">Domain</th>
+            <th className="text-left px-5 py-2.5 font-medium text-gray-500">Status</th>
+            <th className="text-left px-5 py-2.5 font-medium text-gray-500">Expires</th>
+            <th className="text-left px-5 py-2.5 font-medium text-gray-500">Days Left</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-gray-100">
+          {entries.map(e => {
+            const ok = !e.isExpired && !e.isExpiringSoon;
+            const warn = !e.isExpired && e.isExpiringSoon;
+            return (
+              <tr key={e.domain} className="hover:bg-gray-50/50">
+                <td className="px-5 py-3 font-mono text-xs">{e.domain}</td>
+                <td className="px-5 py-3">
+                  <span className={`inline-flex items-center gap-1.5 text-sm font-medium ${ok ? "text-emerald-700" : warn ? "text-amber-700" : "text-red-700"}`}>
+                    <span className={`inline-block w-2 h-2 rounded-full ${ok ? "bg-emerald-500" : warn ? "bg-amber-500" : "bg-red-500"}`} />
+                    {e.isExpired ? "Expired" : e.isExpiringSoon ? "Expiring Soon" : "Valid"}
+                  </span>
+                </td>
+                <td className="px-5 py-3 text-gray-600 text-xs">{new Date(e.expiresAt).toLocaleDateString("en-IE", { day: "numeric", month: "short", year: "numeric" })}</td>
+                <td className={`px-5 py-3 font-mono text-xs font-medium ${ok ? "text-emerald-700" : warn ? "text-amber-700" : "text-red-700"}`}>{e.daysRemaining}d</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
 }
 
 function GatewayTable({ gateways }: { gateways: Gateway[] }) {
@@ -247,6 +347,85 @@ export default function HealthReport() {
               </section>
             );
           })()}
+
+          {/* Services — per-server service health */}
+          {report.servers.filter(s => s.services).map(server => {
+            const svc = server.services!;
+            const nginxOk = svc.nginx ? svc.nginx.isRunning : null;
+            const varnishOk = svc.varnish ? svc.varnish.isRunning : null;
+            const esStatus = svc.elasticsearch?.status ?? null;
+            const esOk = esStatus === "green" ? true : esStatus === "red" ? false : esStatus === "yellow" ? null : null;
+            const phpOk = svc.phpFpm ? svc.phpFpm.total > 0 : null;
+            const mysqlOk = svc.mysql ? true : null;
+            const sslEntries = Array.isArray(svc.sslExpiry) ? svc.sslExpiry : [];
+            const hasAnyService = svc.nginx || svc.varnish || svc.phpFpm || svc.mysql || svc.elasticsearch || sslEntries.length > 0;
+            if (!hasAnyService) return null;
+            return (
+              <section key={server.id}>
+                <div className="flex items-center gap-2 mb-4">
+                  <Server className="w-4 h-4 text-gray-400" />
+                  <h3 className="text-base font-semibold text-gray-900">Services — {server.name}</h3>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                  {svc.nginx !== null && (
+                    <ServiceCard
+                      label="Nginx"
+                      icon={<svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L2 7v10l10 5 10-5V7L12 2zm0 2.18L20 8.5v7L12 19.82 4 15.5v-7L12 4.18z"/></svg>}
+                      ok={nginxOk}
+                      okLabel="Running"
+                      detail={svc.nginx?.activeConnections != null ? `${svc.nginx.activeConnections} active connections` : null}
+                      subDetail={svc.nginx?.requests != null ? `${svc.nginx.requests.toLocaleString()} total requests` : null}
+                    />
+                  )}
+                  {svc.varnish !== null && (
+                    <ServiceCard
+                      label="Varnish"
+                      icon={<svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg>}
+                      ok={varnishOk}
+                      okLabel="Running"
+                      notDetected={!svc.varnish?.isRunning && svc.varnish?.cacheHits === null}
+                      detail={svc.varnish?.hitRate != null ? `${svc.varnish.hitRate}% cache hit rate` : null}
+                      subDetail={svc.varnish?.clientRequests != null ? `${svc.varnish.clientRequests.toLocaleString()} total requests` : null}
+                    />
+                  )}
+                  {svc.phpFpm !== null && (
+                    <ServiceCard
+                      label="PHP-FPM"
+                      icon={<svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M12 18.08c-6.63 0-12-2.72-12-6.08s5.37-6.08 12-6.08S24 8.64 24 12s-5.37 6.08-12 6.08zm0-10.16c-5.52 0-10 1.82-10 4.08s4.48 4.08 10 4.08 10-1.82 10-4.08-4.48-4.08-10-4.08z"/></svg>}
+                      ok={phpOk}
+                      okLabel="Active"
+                      badLabel="No workers"
+                      detail={svc.phpFpm ? `${svc.phpFpm.active} active / ${svc.phpFpm.total} total workers` : null}
+                      subDetail={svc.phpFpm?.maxChildren ? `Max children: ${svc.phpFpm.maxChildren}` : null}
+                    />
+                  )}
+                  {svc.mysql !== null && (
+                    <ServiceCard
+                      label="MySQL / RDS"
+                      icon={<svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 4.69 2 8v8c0 3.31 4.48 6 10 6s10-2.69 10-6V8c0-3.31-4.48-6-10-6zm0 2c4.42 0 8 1.79 8 4s-3.58 4-8 4-8-1.79-8-4 3.58-4 8-4z"/></svg>}
+                      ok={mysqlOk}
+                      okLabel="Connected"
+                      detail={svc.mysql ? `${svc.mysql.threads} threads active` : null}
+                      subDetail={svc.mysql?.slowQueries ? `${svc.mysql.slowQueries} slow queries` : null}
+                    />
+                  )}
+                  {svc.elasticsearch !== null && (
+                    <ServiceCard
+                      label="Elasticsearch"
+                      icon={<svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 100 20A10 10 0 0012 2zm0 18a8 8 0 110-16 8 8 0 010 16zm-1-9h2v6h-2V11zm0-4h2v2h-2V7z"/></svg>}
+                      ok={esOk}
+                      okLabel={esStatus === "green" ? "Green" : esStatus === "yellow" ? "Yellow" : undefined}
+                      badLabel="Red — critical"
+                      detail={svc.elasticsearch?.numberOfNodes != null ? `${svc.elasticsearch.numberOfNodes} node(s), ${svc.elasticsearch.activeShards} active shards` : null}
+                    />
+                  )}
+                  {sslEntries.length > 0 && (
+                    <SslCard entries={sslEntries} />
+                  )}
+                </div>
+              </section>
+            );
+          })}
 
           {/* Stores — IE */}
           <section>

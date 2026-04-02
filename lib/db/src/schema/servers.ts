@@ -41,6 +41,10 @@ export const serverMetricsTable = pgTable("server_metrics", {
   topProcesses: jsonb("top_processes"),
   phpFpm: jsonb("php_fpm"),
   mysql: jsonb("mysql_stats"),
+  nginx: jsonb("nginx"),
+  varnish: jsonb("varnish"),
+  elasticsearch: jsonb("elasticsearch"),
+  sslExpiry: jsonb("ssl_expiry"),
   recordedAt: timestamp("recorded_at").notNull().defaultNow(),
 });
 

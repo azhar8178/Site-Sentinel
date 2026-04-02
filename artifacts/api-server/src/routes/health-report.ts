@@ -75,7 +75,26 @@ router.get("/health-report", async (_req, res, next) => {
         isOnline,
         lastSeenAt: server.lastSeenAt,
         metrics: m
-          ? { cpuPercent: Math.round(m.cpuPercent), memPercent, diskPercent, loadAvg1m: m.loadAvg1m }
+          ? {
+              cpuPercent: Math.round(m.cpuPercent),
+              memPercent,
+              diskPercent,
+              loadAvg1m: m.loadAvg1m,
+              loadAvg5m: m.loadAvg5m,
+              loadAvg15m: m.loadAvg15m,
+              connectionCount: m.connectionCount,
+              httpConnectionCount: m.httpConnectionCount,
+            }
+          : null,
+        services: m
+          ? {
+              phpFpm: m.phpFpm ?? null,
+              mysql: m.mysql ?? null,
+              nginx: m.nginx ?? null,
+              varnish: m.varnish ?? null,
+              elasticsearch: m.elasticsearch ?? null,
+              sslExpiry: m.sslExpiry ?? null,
+            }
           : null,
       };
     });
