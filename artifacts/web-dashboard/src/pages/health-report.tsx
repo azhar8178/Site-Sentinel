@@ -459,22 +459,22 @@ export default function HealthReport() {
         </div>
       </div>
 
-      {/* Print CSS — hides everything except the report document */}
+      {/* Print CSS — visibility approach works across all browsers and React trees */}
       <style>{`
         @media print {
           @page { margin: 1.5cm; size: A4; }
-          body > * { display: none !important; }
-          #root > * { display: none !important; }
+          body * { visibility: hidden; }
+          #health-report-doc,
+          #health-report-doc * { visibility: visible; }
           #health-report-doc {
-            display: block !important;
-            position: static !important;
-            width: 100% !important;
-            box-shadow: none !important;
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
             border: none !important;
             border-radius: 0 !important;
+            box-shadow: none !important;
           }
-          #health-report-doc * { visibility: visible !important; }
-          .print\\:hidden { display: none !important; }
         }
       `}</style>
     </div>
