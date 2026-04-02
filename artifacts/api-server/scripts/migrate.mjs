@@ -220,6 +220,15 @@ try {
   await run("seed google_oauth_config", `INSERT INTO google_oauth_config (client_id, client_secret) SELECT '', '' WHERE NOT EXISTS (SELECT 1 FROM google_oauth_config LIMIT 1)`);
   await run("seed health_report_config", `INSERT INTO health_report_config (payment_gateways) SELECT '[]'::jsonb WHERE NOT EXISTS (SELECT 1 FROM health_report_config LIMIT 1)`);
 
+  await client.query(`
+    UPDATE health_report_config
+    SET ie_payment_gateways = payment_gateways
+    WHERE jsonb_array_length(payment_gateways) > 0
+      AND jsonb_array_length(ie_payment_gateways) = 0
+      AND jsonb_array_length(uk_payment_gateways) = 0
+  `);
+  console.log("  OK: backfill ie_payment_gateways from legacy payment_gateways if needed");
+
   await run("seed alert_config", `INSERT INTO alert_config (is_enabled) SELECT true WHERE NOT EXISTS (SELECT 1 FROM alert_config LIMIT 1)`);
   await run("seed server_alert_config", `INSERT INTO server_alert_config (is_enabled, cpu_threshold, ram_threshold, disk_threshold, offline_timeout_minutes) SELECT true, 90, 90, 95, 5 WHERE NOT EXISTS (SELECT 1 FROM server_alert_config LIMIT 1)`);
   await run("seed magento_config", `INSERT INTO magento_config (is_enabled) SELECT false WHERE NOT EXISTS (SELECT 1 FROM magento_config LIMIT 1)`);

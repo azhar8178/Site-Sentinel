@@ -137,8 +137,8 @@ export default function HealthReport() {
   const generatedDate = format(new Date(report.generatedAt), "MMMM d, yyyy");
   const companyName = report.companyName || "Love Furniture";
 
-  const ieSite = report.sites.find(s => s.url.includes(".ie") || s.name.toLowerCase().includes(" ie"));
-  const ukSite = report.sites.find(s => s.url.includes(".co.uk") || s.name.toLowerCase().includes(" uk"));
+  const ieSites = report.sites.filter(s => s.url.includes(".ie") || s.name.toLowerCase().includes(" ie"));
+  const ukSites = report.sites.filter(s => s.url.includes(".co.uk") || s.name.toLowerCase().includes(" uk"));
 
   return (
     <div className="space-y-6">
@@ -265,24 +265,7 @@ export default function HealthReport() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {ieSite ? (
-                    <tr className="hover:bg-gray-50/50 transition-colors">
-                      <td className="px-5 py-3.5">
-                        <a href={ieSite.url} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">
-                          {ieSite.url.replace(/^https?:\/\//, "")}
-                        </a>
-                      </td>
-                      <td className="px-5 py-3.5">
-                        <StatusDot
-                          ok={ieSite.currentStatus === "up"}
-                          text={ieSite.currentStatus === "up" ? "Live" : ieSite.currentStatus === "slow" ? "Slow" : "Down"}
-                        />
-                      </td>
-                      <td className="px-5 py-3.5 text-gray-600 font-mono text-xs">
-                        {ieSite.lastResponseTimeMs != null ? `${(ieSite.lastResponseTimeMs / 1000).toFixed(2)}s` : "—"}
-                      </td>
-                    </tr>
-                  ) : report.sites.filter(s => !s.url.includes(".co.uk")).map(site => (
+                  {(ieSites.length > 0 ? ieSites : report.sites.filter(s => !s.url.includes(".co.uk"))).map(site => (
                     <tr key={site.id} className="hover:bg-gray-50/50 transition-colors">
                       <td className="px-5 py-3.5">
                         <a href={site.url} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">
@@ -322,24 +305,7 @@ export default function HealthReport() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {ukSite ? (
-                    <tr className="hover:bg-gray-50/50 transition-colors">
-                      <td className="px-5 py-3.5">
-                        <a href={ukSite.url} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">
-                          {ukSite.url.replace(/^https?:\/\//, "")}
-                        </a>
-                      </td>
-                      <td className="px-5 py-3.5">
-                        <StatusDot
-                          ok={ukSite.currentStatus === "up"}
-                          text={ukSite.currentStatus === "up" ? "Live" : ukSite.currentStatus === "slow" ? "Slow" : "Down"}
-                        />
-                      </td>
-                      <td className="px-5 py-3.5 text-gray-600 font-mono text-xs">
-                        {ukSite.lastResponseTimeMs != null ? `${(ukSite.lastResponseTimeMs / 1000).toFixed(2)}s` : "—"}
-                      </td>
-                    </tr>
-                  ) : report.sites.filter(s => s.url.includes(".co.uk")).map(site => (
+                  {(ukSites.length > 0 ? ukSites : report.sites.filter(s => s.url.includes(".co.uk"))).map(site => (
                     <tr key={site.id} className="hover:bg-gray-50/50 transition-colors">
                       <td className="px-5 py-3.5">
                         <a href={site.url} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">
