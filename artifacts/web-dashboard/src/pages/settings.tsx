@@ -18,7 +18,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Mail, MessageSquare, Phone, ShoppingBag, Users, Shield,
   Server, Eye, EyeOff, UserPlus, Trash2, Edit2, Save,
-  Zap, Send, LogOut, AlertTriangle, Gauge, BarChart2, FileText, Plus, Copy, Check,
+  Zap, Send, LogOut, AlertTriangle, Gauge, BarChart2, FileText, Copy, Check,
 } from "lucide-react";
 
 async function apiFetch<T>(url: string, options?: RequestInit): Promise<T> {
@@ -29,13 +29,6 @@ async function apiFetch<T>(url: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${base}${url}`, { ...options, headers: { ...headers, ...(options?.headers ?? {}) } });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
-}
-
-interface Gateway {
-  id: string;
-  name: string;
-  status: "active" | "inactive" | "maintenance";
-  detail: string;
 }
 
 const MASK = "••••••••";
@@ -157,8 +150,6 @@ export default function Settings() {
   const [copiedCallback, setCopiedCallback] = useState(false);
 
   const [hrCompanyName, setHrCompanyName] = useState("Love Furniture");
-  const [hrIeGateways, setHrIeGateways] = useState<Gateway[]>([]);
-  const [hrUkGateways, setHrUkGateways] = useState<Gateway[]>([]);
   const [hrSaving, setHrSaving] = useState(false);
 
   const { data: gaConfig } = useQuery({
@@ -168,7 +159,7 @@ export default function Settings() {
 
   const { data: hrConfig } = useQuery({
     queryKey: ["/api/config/health-report"],
-    queryFn: () => apiFetch<{ companyName: string; iePaymentGateways: Gateway[]; ukPaymentGateways: Gateway[] }>("/api/config/health-report"),
+    queryFn: () => apiFetch<{ companyName: string }>("/api/config/health-report"),
   });
 
   const callbackUrl = (() => {
@@ -234,8 +225,6 @@ export default function Settings() {
   useEffect(() => {
     if (hrConfig) {
       setHrCompanyName(hrConfig.companyName);
-      setHrIeGateways(hrConfig.iePaymentGateways ?? []);
-      setHrUkGateways(hrConfig.ukPaymentGateways ?? []);
     }
   }, [hrConfig?.companyName]);
 
@@ -261,11 +250,7 @@ export default function Settings() {
     try {
       await apiFetch("/api/config/health-report", {
         method: "PUT",
-        body: JSON.stringify({
-          companyName: hrCompanyName,
-          iePaymentGateways: hrIeGateways,
-          ukPaymentGateways: hrUkGateways,
-        }),
+        body: JSON.stringify({ companyName: hrCompanyName }),
       });
       queryClient.invalidateQueries({ queryKey: ["/api/config/health-report"] });
       queryClient.invalidateQueries({ queryKey: ["/api/health-report"] });
@@ -282,24 +267,6 @@ export default function Settings() {
       setCopiedCallback(true);
       setTimeout(() => setCopiedCallback(false), 2000);
     });
-  };
-
-  const addGateway = (store: "ie" | "uk") => {
-    const newGw: Gateway = { id: String(Date.now()), name: "New Gateway", status: "active", detail: "" };
-    if (store === "ie") setHrIeGateways(prev => [...prev, newGw]);
-    else setHrUkGateways(prev => [...prev, newGw]);
-  };
-
-  const updateGateway = (store: "ie" | "uk", id: string, field: keyof Gateway, value: string) => {
-    const updater = (prev: Gateway[]) => prev.map(gw => gw.id === id ? { ...gw, [field]: value } : gw);
-    if (store === "ie") setHrIeGateways(updater);
-    else setHrUkGateways(updater);
-  };
-
-  const removeGateway = (store: "ie" | "uk", id: string) => {
-    const updater = (prev: Gateway[]) => prev.filter(gw => gw.id !== id);
-    if (store === "ie") setHrIeGateways(updater);
-    else setHrUkGateways(updater);
   };
 
   const handleSaveAlerts = async () => {
@@ -724,112 +691,12 @@ export default function Settings() {
       </SectionCard>
 
       {/* Health Report */}
-      <SectionCard icon={FileText} title="Health Report" description="Configure report branding and payment gateways for each store">
+      <SectionCard icon={FileText} title="Health Report" description="Configure report branding">
         <div className="space-y-6">
           <Field label="Company / Report Name">
             <Input value={hrCompanyName} onChange={e => setHrCompanyName(e.target.value)} placeholder="Love Furniture" />
             <p className="text-xs text-muted-foreground mt-1">Displayed in the Health Report document header</p>
           </Field>
-
-          {/* IE Payment Gateways */}
-          <div className="border-t pt-4">
-            <div className="flex items-center justify-between mb-3">
-              <div>
-                <p className="text-sm font-semibold">Love Furniture IE — Payment Gateways</p>
-                <p className="text-xs text-muted-foreground">lovefurniture.ie · EUR</p>
-              </div>
-              <Button variant="outline" size="sm" onClick={() => addGateway("ie")} className="gap-1.5">
-                <Plus className="w-3.5 h-3.5" /> Add
-              </Button>
-            </div>
-            {hrIeGateways.length === 0 ? (
-              <p className="text-sm text-muted-foreground py-4 text-center border rounded-lg">No gateways configured</p>
-            ) : (
-              <div className="space-y-2">
-                {hrIeGateways.map(gw => (
-                  <div key={gw.id} className="grid grid-cols-12 gap-2 items-center">
-                    <Input
-                      className="col-span-3"
-                      value={gw.name}
-                      onChange={e => updateGateway("ie", gw.id, "name", e.target.value)}
-                      placeholder="Gateway name"
-                    />
-                    <select
-                      className="col-span-3 border rounded-md px-3 py-2 text-sm bg-background"
-                      value={gw.status}
-                      onChange={e => updateGateway("ie", gw.id, "status", e.target.value)}
-                    >
-                      <option value="active">Active</option>
-                      <option value="inactive">Inactive</option>
-                      <option value="maintenance">Maintenance</option>
-                    </select>
-                    <Input
-                      className="col-span-5"
-                      value={gw.detail}
-                      onChange={e => updateGateway("ie", gw.id, "detail", e.target.value)}
-                      placeholder="Detail / note"
-                    />
-                    <button
-                      onClick={() => removeGateway("ie", gw.id)}
-                      className="col-span-1 flex items-center justify-center text-muted-foreground hover:text-destructive transition-colors"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* UK Payment Gateways */}
-          <div className="border-t pt-4">
-            <div className="flex items-center justify-between mb-3">
-              <div>
-                <p className="text-sm font-semibold">Love Furniture UK — Payment Gateways</p>
-                <p className="text-xs text-muted-foreground">lovefurniture.co.uk · GBP</p>
-              </div>
-              <Button variant="outline" size="sm" onClick={() => addGateway("uk")} className="gap-1.5">
-                <Plus className="w-3.5 h-3.5" /> Add
-              </Button>
-            </div>
-            {hrUkGateways.length === 0 ? (
-              <p className="text-sm text-muted-foreground py-4 text-center border rounded-lg">No gateways configured</p>
-            ) : (
-              <div className="space-y-2">
-                {hrUkGateways.map(gw => (
-                  <div key={gw.id} className="grid grid-cols-12 gap-2 items-center">
-                    <Input
-                      className="col-span-3"
-                      value={gw.name}
-                      onChange={e => updateGateway("uk", gw.id, "name", e.target.value)}
-                      placeholder="Gateway name"
-                    />
-                    <select
-                      className="col-span-3 border rounded-md px-3 py-2 text-sm bg-background"
-                      value={gw.status}
-                      onChange={e => updateGateway("uk", gw.id, "status", e.target.value)}
-                    >
-                      <option value="active">Active</option>
-                      <option value="inactive">Inactive</option>
-                      <option value="maintenance">Maintenance</option>
-                    </select>
-                    <Input
-                      className="col-span-5"
-                      value={gw.detail}
-                      onChange={e => updateGateway("uk", gw.id, "detail", e.target.value)}
-                      placeholder="Detail / note"
-                    />
-                    <button
-                      onClick={() => removeGateway("uk", gw.id)}
-                      className="col-span-1 flex items-center justify-center text-muted-foreground hover:text-destructive transition-colors"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
 
           <div className="border-t pt-4">
             <Button onClick={handleSaveHealthReport} disabled={hrSaving} className="gap-2">
