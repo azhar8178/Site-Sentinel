@@ -1,9 +1,8 @@
 import React from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { CheckCircle2, AlertTriangle, RefreshCw, Printer, Server, Globe, CreditCard } from "lucide-react";
+import { CheckCircle2, AlertTriangle, RefreshCw, Printer, Server } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 
 async function apiFetch<T>(url: string, options?: RequestInit): Promise<T> {
   const base = import.meta.env.BASE_URL?.replace(/\/$/, "") || "";
@@ -13,13 +12,6 @@ async function apiFetch<T>(url: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${base}${url}`, { ...options, headers: { ...headers, ...(options?.headers ?? {}) } });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
-}
-
-interface Gateway {
-  id: string;
-  name: string;
-  status: "active" | "inactive" | "maintenance";
-  detail: string;
 }
 
 interface HealthReport {
@@ -59,14 +51,12 @@ interface HealthReport {
       sslExpiry: { domain: string; expiresAt: string; daysRemaining: number; isExpired: boolean; isExpiringSoon: boolean }[] | null;
     } | null;
   }[];
-  iePaymentGateways: Gateway[];
-  ukPaymentGateways: Gateway[];
 }
 
 function StatusDot({ ok, text }: { ok: boolean; text?: string }) {
   return (
     <span className="inline-flex items-center gap-1.5">
-      <span className={`inline-block w-2.5 h-2.5 rounded-full ${ok ? "bg-emerald-500" : "bg-red-500"}`} />
+      <span className={`inline-block w-2.5 h-2.5 rounded-full flex-shrink-0 ${ok ? "bg-emerald-500" : "bg-red-500"}`} />
       <span className={`text-sm font-medium ${ok ? "text-emerald-700" : "text-red-700"}`}>
         {text ?? (ok ? "Healthy" : "Unhealthy")}
       </span>
@@ -74,14 +64,13 @@ function StatusDot({ ok, text }: { ok: boolean; text?: string }) {
   );
 }
 
-function GatewayStatusDot({ status }: { status: Gateway["status"] }) {
-  const map = {
-    active: { label: "Active", ok: true },
-    inactive: { label: "Inactive", ok: false },
-    maintenance: { label: "Maintenance", ok: false },
-  };
-  const { label, ok } = map[status] ?? { label: status, ok: false };
-  return <StatusDot ok={ok} text={label} />;
+function SectionHeader({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="flex items-center gap-3 mb-4">
+      <h3 className="text-xs font-bold uppercase tracking-widest text-gray-400">{children}</h3>
+      <div className="flex-1 border-t border-gray-100" />
+    </div>
+  );
 }
 
 function ServerHealthDetail(server: HealthReport["servers"][number]) {
@@ -96,128 +85,34 @@ function ServerHealthDetail(server: HealthReport["servers"][number]) {
   return `CPU ${cpuPercent}%, RAM ${memPercent ?? "?"}%, Disk ${diskPercent ?? "?"}%`;
 }
 
-function ServiceCard({
+function ServiceRow({
   label,
-  icon,
   ok,
-  okLabel,
-  badLabel,
+  statusLabel,
   detail,
-  subDetail,
-  notDetected,
 }: {
   label: string;
-  icon: React.ReactNode;
   ok: boolean | null;
-  okLabel?: string;
-  badLabel?: string;
+  statusLabel: string;
   detail?: string | null;
-  subDetail?: string | null;
-  notDetected?: boolean;
 }) {
-  if (notDetected) {
-    return (
-      <div className="border rounded-xl p-4 bg-gray-50">
-        <div className="flex items-center gap-2 mb-1">
-          <span className="text-gray-400">{icon}</span>
-          <span className="text-sm font-semibold text-gray-500">{label}</span>
-        </div>
-        <p className="text-xs text-gray-400 mt-1">Not detected</p>
-      </div>
-    );
-  }
-  const color = ok === null ? "gray" : ok ? "emerald" : "red";
-  const statusText = ok === null ? "Unknown" : ok ? (okLabel ?? "Running") : (badLabel ?? "Down");
-  const dotColor = color === "emerald" ? "bg-emerald-500" : color === "red" ? "bg-red-500" : "bg-gray-400";
-  const textColor = color === "emerald" ? "text-emerald-700" : color === "red" ? "text-red-700" : "text-gray-500";
+  const dot = ok === null ? "bg-gray-300" : ok ? "bg-emerald-500" : "bg-red-500";
+  const text = ok === null ? "text-gray-500" : ok ? "text-emerald-700" : "text-red-700";
   return (
-    <div className={`border rounded-xl p-4 ${ok === false ? "bg-red-50 border-red-200" : ok === null ? "bg-gray-50" : "bg-white"}`}>
-      <div className="flex items-center gap-2 mb-2">
-        <span className="text-gray-500">{icon}</span>
-        <span className="text-sm font-semibold text-gray-800">{label}</span>
-      </div>
-      <div className="flex items-center gap-1.5">
-        <span className={`inline-block w-2 h-2 rounded-full ${dotColor}`} />
-        <span className={`text-sm font-medium ${textColor}`}>{statusText}</span>
-      </div>
-      {detail && <p className="text-xs text-gray-500 mt-1">{detail}</p>}
-      {subDetail && <p className="text-xs text-gray-400">{subDetail}</p>}
-    </div>
-  );
-}
-
-function SslCard({ entries }: { entries: { domain: string; expiresAt: string; daysRemaining: number; isExpired: boolean; isExpiringSoon: boolean }[] }) {
-  if (entries.length === 0) return null;
-  return (
-    <div className="border rounded-xl overflow-hidden col-span-full">
-      <div className="px-5 py-3 bg-gray-50 border-b text-sm font-semibold text-gray-700">SSL Certificates</div>
-      <table className="w-full text-sm">
-        <thead className="bg-gray-50 border-b">
-          <tr>
-            <th className="text-left px-5 py-2.5 font-medium text-gray-500">Domain</th>
-            <th className="text-left px-5 py-2.5 font-medium text-gray-500">Status</th>
-            <th className="text-left px-5 py-2.5 font-medium text-gray-500">Expires</th>
-            <th className="text-left px-5 py-2.5 font-medium text-gray-500">Days Left</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-gray-100">
-          {entries.map(e => {
-            const ok = !e.isExpired && !e.isExpiringSoon;
-            const warn = !e.isExpired && e.isExpiringSoon;
-            return (
-              <tr key={e.domain} className="hover:bg-gray-50/50">
-                <td className="px-5 py-3 font-mono text-xs">{e.domain}</td>
-                <td className="px-5 py-3">
-                  <span className={`inline-flex items-center gap-1.5 text-sm font-medium ${ok ? "text-emerald-700" : warn ? "text-amber-700" : "text-red-700"}`}>
-                    <span className={`inline-block w-2 h-2 rounded-full ${ok ? "bg-emerald-500" : warn ? "bg-amber-500" : "bg-red-500"}`} />
-                    {e.isExpired ? "Expired" : e.isExpiringSoon ? "Expiring Soon" : "Valid"}
-                  </span>
-                </td>
-                <td className="px-5 py-3 text-gray-600 text-xs">{new Date(e.expiresAt).toLocaleDateString("en-IE", { day: "numeric", month: "short", year: "numeric" })}</td>
-                <td className={`px-5 py-3 font-mono text-xs font-medium ${ok ? "text-emerald-700" : warn ? "text-amber-700" : "text-red-700"}`}>{e.daysRemaining}d</td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
-function GatewayTable({ gateways }: { gateways: Gateway[] }) {
-  if (gateways.length === 0) {
-    return (
-      <div className="border rounded-xl px-5 py-6 text-sm text-gray-400 text-center">
-        No payment gateways configured. Add them in Settings → Health Report.
-      </div>
-    );
-  }
-  return (
-    <div className="border rounded-xl overflow-hidden">
-      <table className="w-full text-sm">
-        <thead className="bg-gray-50 border-b">
-          <tr>
-            <th className="text-left px-5 py-3 font-medium text-gray-500 w-1/3">Gateway</th>
-            <th className="text-left px-5 py-3 font-medium text-gray-500 w-1/4">Status</th>
-            <th className="text-left px-5 py-3 font-medium text-gray-500">Detail</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-gray-100">
-          {gateways.map((gw) => (
-            <tr key={gw.id} className="hover:bg-gray-50/50 transition-colors">
-              <td className="px-5 py-3.5 font-medium text-gray-900">{gw.name}</td>
-              <td className="px-5 py-3.5"><GatewayStatusDot status={gw.status} /></td>
-              <td className="px-5 py-3.5 text-gray-500">{gw.detail}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <tr className="border-b border-gray-50 last:border-0">
+      <td className="py-2.5 px-4 text-sm text-gray-800 font-medium w-1/4">{label}</td>
+      <td className="py-2.5 px-4 w-1/4">
+        <span className="inline-flex items-center gap-1.5">
+          <span className={`w-2 h-2 rounded-full flex-shrink-0 ${dot}`} />
+          <span className={`text-sm font-medium ${text}`}>{statusLabel}</span>
+        </span>
+      </td>
+      <td className="py-2.5 px-4 text-sm text-gray-500">{detail ?? "—"}</td>
+    </tr>
   );
 }
 
 export default function HealthReport() {
-  const queryClient = useQueryClient();
   const { data, isLoading, refetch, isFetching } = useQuery<HealthReport>({
     queryKey: ["/api/health-report"],
     queryFn: () => apiFetch<HealthReport>("/api/health-report"),
@@ -234,18 +129,34 @@ export default function HealthReport() {
 
   const report = data!;
   const isOperational = report.overallStatus === "operational";
-  const generatedDate = format(new Date(report.generatedAt), "MMMM d, yyyy");
+  const generatedAt = new Date(report.generatedAt);
   const companyName = report.companyName || "Love Furniture";
 
   const ieSites = report.sites.filter(s => s.url.includes(".ie") || s.name.toLowerCase().includes(" ie"));
   const ukSites = report.sites.filter(s => s.url.includes(".co.uk") || s.name.toLowerCase().includes(" uk"));
 
+  const storeOf = (s: HealthReport["servers"][number]) => {
+    const txt = (s.name + " " + s.hostname).toLowerCase();
+    if (/\bie\b|\.ie\b|ireland/.test(txt)) return "ie";
+    if (/\buk\b|\.uk\b|england|britain/.test(txt)) return "uk";
+    return "shared";
+  };
+  const ieServers = report.servers.filter(s => storeOf(s) === "ie");
+  const ukServers = report.servers.filter(s => storeOf(s) === "uk");
+  const sharedServers = report.servers.filter(s => storeOf(s) === "shared");
+
+  const sitesUp = report.sites.filter(s => s.currentStatus === "up").length;
+  const serversOnline = report.servers.filter(s => s.isOnline).length;
+  const allSsl = report.servers.flatMap(s => s.services?.sslExpiry ?? []);
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-4 print:space-y-0">
+
+      {/* Screen-only toolbar */}
+      <div className="flex items-center justify-between print:hidden">
         <div>
           <h1 className="text-3xl font-display font-bold">Health Report</h1>
-          <p className="text-muted-foreground mt-1">System-wide status summary for both stores</p>
+          <p className="text-muted-foreground mt-1 text-sm">System-wide status summary · {format(generatedAt, "d MMM yyyy, HH:mm")}</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => refetch()} disabled={isFetching} className="gap-2 bg-white">
@@ -254,101 +165,98 @@ export default function HealthReport() {
           </Button>
           <Button variant="outline" onClick={() => window.print()} className="gap-2 bg-white">
             <Printer className="w-4 h-4" />
-            Print
+            Print / PDF
           </Button>
         </div>
       </div>
 
-      {/* Report Document */}
-      <div className="bg-white rounded-2xl border shadow-sm print:shadow-none print:border-none" id="health-report-doc">
-        {/* Document Header */}
-        <div className="p-8 pb-6 border-b">
-          <h2 className="text-2xl font-display font-bold text-gray-900">{companyName} — System Health Report</h2>
-          <p className="text-gray-500 mt-1 text-sm">{generatedDate} — Post-Investigation Summary</p>
-        </div>
+      {/* Report document */}
+      <div className="bg-white rounded-2xl border shadow-sm print:shadow-none print:border-none print:rounded-none" id="health-report-doc">
 
-        <div className="p-8 space-y-8">
-          {/* Overall Status Banner */}
-          <div className={`flex items-center gap-3 px-4 py-3 rounded-xl border ${isOperational ? "bg-emerald-50 border-emerald-200" : "bg-red-50 border-red-200"}`}>
-            {isOperational
-              ? <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0" />
-              : <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0" />}
-            <span className={`font-semibold text-sm ${isOperational ? "text-emerald-800" : "text-red-800"}`}>
+        {/* ── Document header ── */}
+        <div className="px-10 pt-10 pb-8 border-b border-gray-100 print:px-12 print:pt-12">
+          <div className="flex items-start justify-between">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-1">System Health Report</p>
+              <h1 className="text-3xl font-display font-bold text-gray-900 leading-tight">{companyName}</h1>
+              <p className="text-sm text-gray-500 mt-2">
+                {format(generatedAt, "EEEE, d MMMM yyyy")} &nbsp;·&nbsp; {format(generatedAt, "HH:mm")} UTC
+              </p>
+            </div>
+            <div className={`mt-1 flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-semibold ${isOperational ? "bg-emerald-50 border-emerald-200 text-emerald-800" : "bg-red-50 border-red-200 text-red-800"}`}>
               {isOperational
-                ? "All Systems Operational"
-                : `System Degraded — ${report.sites.filter(s => s.currentStatus !== "up").length} site(s) affected`}
-            </span>
+                ? <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+                : <AlertTriangle className="w-4 h-4 flex-shrink-0" />}
+              {isOperational ? "All Systems Operational" : "System Degraded"}
+            </div>
           </div>
 
-          {/* Infrastructure (Servers) — split by store */}
-          {report.servers.length > 0 && (() => {
-            const storeOf = (s: HealthReport["servers"][number]) => {
-              const txt = (s.name + " " + s.hostname).toLowerCase();
-              if (/\bie\b|\.ie\b|ireland/.test(txt)) return "ie";
-              if (/\buk\b|\.uk\b|england|britain/.test(txt)) return "uk";
-              return "shared";
-            };
-            const ieServers = report.servers.filter(s => storeOf(s) === "ie");
-            const ukServers = report.servers.filter(s => storeOf(s) === "uk");
-            const sharedServers = report.servers.filter(s => storeOf(s) === "shared");
+          {/* Summary row */}
+          <div className="grid grid-cols-3 gap-px bg-gray-100 rounded-xl overflow-hidden mt-8 border border-gray-100">
+            {[
+              { label: "Sites Monitored", value: `${sitesUp} / ${report.sites.length} online` },
+              { label: "Servers Online", value: `${serversOnline} / ${report.servers.length} online` },
+              { label: "SSL Domains", value: allSsl.length > 0 ? `${allSsl.filter(e => !e.isExpired && !e.isExpiringSoon).length} / ${allSsl.length} valid` : "Not tracked" },
+            ].map(item => (
+              <div key={item.label} className="bg-gray-50 px-5 py-4">
+                <p className="text-xs text-gray-400 uppercase tracking-wide font-medium">{item.label}</p>
+                <p className="text-base font-bold text-gray-800 mt-0.5">{item.value}</p>
+              </div>
+            ))}
+          </div>
+        </div>
 
-            const ServerTable = ({ servers, label, badge }: { servers: HealthReport["servers"]; label: string; badge?: React.ReactNode }) => (
-              servers.length === 0 ? null : (
-                <div>
-                  <div className="flex items-center gap-2 mb-3">
-                    <Server className="w-4 h-4 text-gray-400" />
-                    <span className="text-sm font-semibold text-gray-800">{label}</span>
-                    {badge}
-                  </div>
-                  <div className="border rounded-xl overflow-hidden">
-                    <table className="w-full text-sm">
-                      <thead className="bg-gray-50 border-b">
-                        <tr>
-                          <th className="text-left px-5 py-3 font-medium text-gray-500 w-1/3">Component</th>
-                          <th className="text-left px-5 py-3 font-medium text-gray-500 w-1/4">Status</th>
-                          <th className="text-left px-5 py-3 font-medium text-gray-500">Detail</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-100">
-                        {servers.map(server => (
-                          <tr key={server.id} className="hover:bg-gray-50/50 transition-colors">
-                            <td className="px-5 py-3.5 font-medium text-gray-900">{server.name}</td>
-                            <td className="px-5 py-3.5">
-                              <StatusDot ok={server.isOnline} text={server.isOnline ? "Healthy" : "Offline"} />
-                            </td>
-                            <td className="px-5 py-3.5 text-gray-500">{ServerHealthDetail(server)}</td>
+        {/* ── Document body ── */}
+        <div className="px-10 py-8 space-y-10 print:px-12">
+
+          {/* Infrastructure — Servers */}
+          {report.servers.length > 0 && (
+            <section>
+              <SectionHeader>Infrastructure</SectionHeader>
+              <div className="space-y-6">
+                {[
+                  { servers: ieServers, label: "Love Furniture IE", badge: "EUR", badgeColor: "bg-green-50 text-green-700 border-green-200" },
+                  { servers: ukServers, label: "Love Furniture UK", badge: "GBP", badgeColor: "bg-blue-50 text-blue-700 border-blue-200" },
+                  { servers: sharedServers, label: "Shared Infrastructure", badge: "Both", badgeColor: "bg-gray-100 text-gray-600 border-gray-200" },
+                ].filter(g => g.servers.length > 0).map(group => (
+                  <div key={group.label}>
+                    <div className="flex items-center gap-2 mb-3">
+                      <Server className="w-4 h-4 text-gray-400" />
+                      <span className="text-sm font-semibold text-gray-800">{group.label}</span>
+                      <span className={`text-xs border px-2 py-0.5 rounded-full font-medium ${group.badgeColor}`}>{group.badge}</span>
+                    </div>
+                    <div className="border border-gray-100 rounded-xl overflow-hidden">
+                      <table className="w-full text-sm">
+                        <thead className="bg-gray-50 border-b border-gray-100">
+                          <tr>
+                            <th className="text-left px-5 py-3 font-medium text-gray-400 text-xs uppercase tracking-wide w-1/3">Server</th>
+                            <th className="text-left px-5 py-3 font-medium text-gray-400 text-xs uppercase tracking-wide w-1/4">Status</th>
+                            <th className="text-left px-5 py-3 font-medium text-gray-400 text-xs uppercase tracking-wide">Vitals</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                        </thead>
+                        <tbody className="divide-y divide-gray-50">
+                          {group.servers.map(server => (
+                            <tr key={server.id} className="hover:bg-gray-50/50 transition-colors">
+                              <td className="px-5 py-4">
+                                <p className="font-semibold text-gray-900">{server.name}</p>
+                                <p className="text-xs font-mono text-gray-400">{server.hostname}</p>
+                              </td>
+                              <td className="px-5 py-4">
+                                <StatusDot ok={server.isOnline} text={server.isOnline ? "Online" : "Offline"} />
+                              </td>
+                              <td className="px-5 py-4 text-gray-500 text-xs">{ServerHealthDetail(server)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
-                </div>
-              )
-            );
+                ))}
+              </div>
+            </section>
+          )}
 
-            return (
-              <section className="space-y-5">
-                <h3 className="text-base font-semibold text-gray-900">Infrastructure</h3>
-                <ServerTable
-                  servers={ieServers}
-                  label="Love Furniture IE"
-                  badge={<span className="text-xs bg-green-50 text-green-700 border border-green-200 px-2 py-0.5 rounded-full font-medium">EUR</span>}
-                />
-                <ServerTable
-                  servers={ukServers}
-                  label="Love Furniture UK"
-                  badge={<span className="text-xs bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 rounded-full font-medium">GBP</span>}
-                />
-                <ServerTable
-                  servers={sharedServers}
-                  label="Shared Infrastructure"
-                  badge={<span className="text-xs bg-gray-100 text-gray-600 border border-gray-200 px-2 py-0.5 rounded-full font-medium">Both Stores</span>}
-                />
-              </section>
-            );
-          })()}
-
-          {/* Services — per-server service health */}
+          {/* Services — per server */}
           {report.servers.filter(s => s.services).map(server => {
             const svc = server.services!;
             const nginxOk = svc.nginx ? svc.nginx.isRunning : null;
@@ -358,107 +266,142 @@ export default function HealthReport() {
             const phpOk = svc.phpFpm ? svc.phpFpm.total > 0 : null;
             const mysqlOk = svc.mysql ? true : null;
             const sslEntries = Array.isArray(svc.sslExpiry) ? svc.sslExpiry : [];
-            const hasAnyService = svc.nginx || svc.varnish || svc.phpFpm || svc.mysql || svc.elasticsearch || sslEntries.length > 0;
-            if (!hasAnyService) return null;
+            const hasAnyService = svc.nginx !== null || svc.varnish !== null || svc.phpFpm !== null || svc.mysql !== null || svc.elasticsearch !== null;
+            if (!hasAnyService && sslEntries.length === 0) return null;
             return (
               <section key={server.id}>
-                <div className="flex items-center gap-2 mb-4">
-                  <Server className="w-4 h-4 text-gray-400" />
-                  <h3 className="text-base font-semibold text-gray-900">Services — {server.name}</h3>
-                </div>
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-                  {svc.nginx !== null && (
-                    <ServiceCard
-                      label="Nginx"
-                      icon={<svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L2 7v10l10 5 10-5V7L12 2zm0 2.18L20 8.5v7L12 19.82 4 15.5v-7L12 4.18z"/></svg>}
-                      ok={nginxOk}
-                      okLabel="Running"
-                      detail={svc.nginx?.activeConnections != null ? `${svc.nginx.activeConnections} active connections` : null}
-                      subDetail={svc.nginx?.requests != null ? `${svc.nginx.requests.toLocaleString()} total requests` : null}
-                    />
-                  )}
-                  {svc.varnish !== null && (
-                    <ServiceCard
-                      label="Varnish"
-                      icon={<svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg>}
-                      ok={varnishOk}
-                      okLabel="Running"
-                      notDetected={!svc.varnish?.isRunning && svc.varnish?.cacheHits === null}
-                      detail={svc.varnish?.hitRate != null ? `${svc.varnish.hitRate}% cache hit rate` : null}
-                      subDetail={svc.varnish?.clientRequests != null ? `${svc.varnish.clientRequests.toLocaleString()} total requests` : null}
-                    />
-                  )}
-                  {svc.phpFpm !== null && (
-                    <ServiceCard
-                      label="PHP-FPM"
-                      icon={<svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M12 18.08c-6.63 0-12-2.72-12-6.08s5.37-6.08 12-6.08S24 8.64 24 12s-5.37 6.08-12 6.08zm0-10.16c-5.52 0-10 1.82-10 4.08s4.48 4.08 10 4.08 10-1.82 10-4.08-4.48-4.08-10-4.08z"/></svg>}
-                      ok={phpOk}
-                      okLabel="Active"
-                      badLabel="No workers"
-                      detail={svc.phpFpm ? `${svc.phpFpm.active} active / ${svc.phpFpm.total} total workers` : null}
-                      subDetail={svc.phpFpm?.maxChildren ? `Max children: ${svc.phpFpm.maxChildren}` : null}
-                    />
-                  )}
-                  {svc.mysql !== null && (
-                    <ServiceCard
-                      label="MySQL / RDS"
-                      icon={<svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 4.69 2 8v8c0 3.31 4.48 6 10 6s10-2.69 10-6V8c0-3.31-4.48-6-10-6zm0 2c4.42 0 8 1.79 8 4s-3.58 4-8 4-8-1.79-8-4 3.58-4 8-4z"/></svg>}
-                      ok={mysqlOk}
-                      okLabel="Connected"
-                      detail={svc.mysql ? `${svc.mysql.threads} threads active` : null}
-                      subDetail={svc.mysql?.slowQueries ? `${svc.mysql.slowQueries} slow queries` : null}
-                    />
-                  )}
-                  {svc.elasticsearch !== null && (
-                    <ServiceCard
-                      label="Elasticsearch"
-                      icon={<svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 100 20A10 10 0 0012 2zm0 18a8 8 0 110-16 8 8 0 010 16zm-1-9h2v6h-2V11zm0-4h2v2h-2V7z"/></svg>}
-                      ok={esOk}
-                      okLabel={esStatus === "green" ? "Green" : esStatus === "yellow" ? "Yellow" : undefined}
-                      badLabel="Red — critical"
-                      detail={svc.elasticsearch?.numberOfNodes != null ? `${svc.elasticsearch.numberOfNodes} node(s), ${svc.elasticsearch.activeShards} active shards` : null}
-                    />
-                  )}
-                  {sslEntries.length > 0 && (
-                    <SslCard entries={sslEntries} />
-                  )}
-                </div>
+                <SectionHeader>Services — {server.name}</SectionHeader>
+
+                {hasAnyService && (
+                  <div className="border border-gray-100 rounded-xl overflow-hidden mb-4">
+                    <table className="w-full">
+                      <thead className="bg-gray-50 border-b border-gray-100">
+                        <tr>
+                          <th className="text-left px-4 py-3 font-medium text-gray-400 text-xs uppercase tracking-wide w-1/4">Service</th>
+                          <th className="text-left px-4 py-3 font-medium text-gray-400 text-xs uppercase tracking-wide w-1/4">Status</th>
+                          <th className="text-left px-4 py-3 font-medium text-gray-400 text-xs uppercase tracking-wide">Details</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {svc.nginx !== null && (
+                          <ServiceRow
+                            label="Nginx"
+                            ok={nginxOk}
+                            statusLabel={nginxOk ? "Running" : nginxOk === false ? "Down" : "Unknown"}
+                            detail={[
+                              svc.nginx?.activeConnections != null && `${svc.nginx.activeConnections} active connections`,
+                              svc.nginx?.requests != null && `${svc.nginx.requests.toLocaleString()} total requests`,
+                            ].filter(Boolean).join(" · ") || null}
+                          />
+                        )}
+                        {svc.varnish !== null && (
+                          <ServiceRow
+                            label="Varnish"
+                            ok={varnishOk}
+                            statusLabel={varnishOk ? "Running" : varnishOk === false ? "Down" : "Not detected"}
+                            detail={svc.varnish?.hitRate != null ? `${svc.varnish.hitRate}% cache hit rate · ${svc.varnish.clientRequests?.toLocaleString() ?? "?"} requests` : null}
+                          />
+                        )}
+                        {svc.phpFpm !== null && (
+                          <ServiceRow
+                            label="PHP-FPM"
+                            ok={phpOk}
+                            statusLabel={phpOk ? "Active" : phpOk === false ? "No workers" : "Unknown"}
+                            detail={svc.phpFpm ? `${svc.phpFpm.active} active / ${svc.phpFpm.total} total workers` : null}
+                          />
+                        )}
+                        {svc.mysql !== null && (
+                          <ServiceRow
+                            label="MySQL / RDS"
+                            ok={mysqlOk}
+                            statusLabel="Connected"
+                            detail={svc.mysql ? `${svc.mysql.threads} threads · ${svc.mysql.slowQueries || 0} slow queries` : null}
+                          />
+                        )}
+                        {svc.elasticsearch !== null && (
+                          <ServiceRow
+                            label="Elasticsearch"
+                            ok={esOk}
+                            statusLabel={esStatus === "green" ? "Green" : esStatus === "yellow" ? "Yellow" : esStatus === "red" ? "Red — critical" : "Unknown"}
+                            detail={svc.elasticsearch?.numberOfNodes != null ? `${svc.elasticsearch.numberOfNodes} node(s) · ${svc.elasticsearch.activeShards} active shards` : null}
+                          />
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
+                {sslEntries.length > 0 && (
+                  <div className="border border-gray-100 rounded-xl overflow-hidden">
+                    <div className="px-4 py-2.5 bg-gray-50 border-b border-gray-100">
+                      <span className="text-xs font-bold uppercase tracking-wide text-gray-400">SSL Certificates</span>
+                    </div>
+                    <table className="w-full text-sm">
+                      <thead className="border-b border-gray-50">
+                        <tr>
+                          <th className="text-left px-4 py-2.5 font-medium text-gray-400 text-xs w-2/5">Domain</th>
+                          <th className="text-left px-4 py-2.5 font-medium text-gray-400 text-xs w-1/4">Status</th>
+                          <th className="text-left px-4 py-2.5 font-medium text-gray-400 text-xs">Expires</th>
+                          <th className="text-right px-4 py-2.5 font-medium text-gray-400 text-xs">Days Left</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-50">
+                        {sslEntries.map(e => {
+                          const ok = !e.isExpired && !e.isExpiringSoon;
+                          return (
+                            <tr key={e.domain}>
+                              <td className="px-4 py-3 font-mono text-xs text-gray-800">{e.domain}</td>
+                              <td className="px-4 py-3">
+                                <span className={`inline-flex items-center gap-1.5 text-xs font-medium ${ok ? "text-emerald-700" : e.isExpiringSoon ? "text-amber-700" : "text-red-700"}`}>
+                                  <span className={`w-2 h-2 rounded-full flex-shrink-0 ${ok ? "bg-emerald-500" : e.isExpiringSoon ? "bg-amber-400" : "bg-red-500"}`} />
+                                  {e.isExpired ? "Expired" : e.isExpiringSoon ? "Expiring soon" : "Valid"}
+                                </span>
+                              </td>
+                              <td className="px-4 py-3 text-xs text-gray-500">
+                                {new Date(e.expiresAt).toLocaleDateString("en-IE", { day: "numeric", month: "short", year: "numeric" })}
+                              </td>
+                              <td className={`px-4 py-3 text-right font-mono text-xs font-bold ${ok ? "text-emerald-700" : e.isExpiringSoon ? "text-amber-700" : "text-red-700"}`}>
+                                {e.isExpired ? "Expired" : `${e.daysRemaining}d`}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </section>
             );
           })}
 
           {/* Stores — IE */}
           <section>
-            <div className="flex items-center gap-2 mb-4">
-              <Globe className="w-4 h-4 text-gray-400" />
-              <h3 className="text-base font-semibold text-gray-900">Love Furniture IE</h3>
-              <span className="text-xs bg-green-50 text-green-700 border border-green-200 px-2 py-0.5 rounded-full font-medium">EUR</span>
-            </div>
-            <div className="border rounded-xl overflow-hidden">
+            <SectionHeader>Love Furniture IE — Store Availability</SectionHeader>
+            <div className="border border-gray-100 rounded-xl overflow-hidden">
               <table className="w-full text-sm">
-                <thead className="bg-gray-50 border-b">
+                <thead className="bg-gray-50 border-b border-gray-100">
                   <tr>
-                    <th className="text-left px-5 py-3 font-medium text-gray-500 w-1/3">Store</th>
-                    <th className="text-left px-5 py-3 font-medium text-gray-500 w-1/4">Status</th>
-                    <th className="text-left px-5 py-3 font-medium text-gray-500">Response Time</th>
+                    <th className="text-left px-5 py-3 font-medium text-gray-400 text-xs uppercase tracking-wide w-2/5">URL</th>
+                    <th className="text-left px-5 py-3 font-medium text-gray-400 text-xs uppercase tracking-wide w-1/4">Status</th>
+                    <th className="text-left px-5 py-3 font-medium text-gray-400 text-xs uppercase tracking-wide">Response Time</th>
+                    <th className="text-right px-5 py-3 font-medium text-gray-400 text-xs uppercase tracking-wide">Last Checked</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100">
+                <tbody className="divide-y divide-gray-50">
                   {(ieSites.length > 0 ? ieSites : report.sites.filter(s => !s.url.includes(".co.uk"))).map(site => (
                     <tr key={site.id} className="hover:bg-gray-50/50 transition-colors">
-                      <td className="px-5 py-3.5">
-                        <a href={site.url} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">
-                          {site.url.replace(/^https?:\/\//, "")}
-                        </a>
-                      </td>
-                      <td className="px-5 py-3.5">
+                      <td className="px-5 py-4 font-mono text-xs text-gray-800">{site.url.replace(/^https?:\/\//, "")}</td>
+                      <td className="px-5 py-4">
                         <StatusDot
                           ok={site.currentStatus === "up"}
                           text={site.currentStatus === "up" ? "Live" : site.currentStatus === "slow" ? "Slow" : "Down"}
                         />
                       </td>
-                      <td className="px-5 py-3.5 text-gray-600 font-mono text-xs">
+                      <td className="px-5 py-4 text-gray-600 font-mono text-xs">
                         {site.lastResponseTimeMs != null ? `${(site.lastResponseTimeMs / 1000).toFixed(2)}s` : "—"}
+                      </td>
+                      <td className="px-5 py-4 text-right text-gray-400 text-xs">
+                        {site.lastCheckedAt ? format(new Date(site.lastCheckedAt), "HH:mm:ss") : "—"}
                       </td>
                     </tr>
                   ))}
@@ -469,36 +412,32 @@ export default function HealthReport() {
 
           {/* Stores — UK */}
           <section>
-            <div className="flex items-center gap-2 mb-4">
-              <Globe className="w-4 h-4 text-gray-400" />
-              <h3 className="text-base font-semibold text-gray-900">Love Furniture UK</h3>
-              <span className="text-xs bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 rounded-full font-medium">GBP</span>
-            </div>
-            <div className="border rounded-xl overflow-hidden">
+            <SectionHeader>Love Furniture UK — Store Availability</SectionHeader>
+            <div className="border border-gray-100 rounded-xl overflow-hidden">
               <table className="w-full text-sm">
-                <thead className="bg-gray-50 border-b">
+                <thead className="bg-gray-50 border-b border-gray-100">
                   <tr>
-                    <th className="text-left px-5 py-3 font-medium text-gray-500 w-1/3">Store</th>
-                    <th className="text-left px-5 py-3 font-medium text-gray-500 w-1/4">Status</th>
-                    <th className="text-left px-5 py-3 font-medium text-gray-500">Response Time</th>
+                    <th className="text-left px-5 py-3 font-medium text-gray-400 text-xs uppercase tracking-wide w-2/5">URL</th>
+                    <th className="text-left px-5 py-3 font-medium text-gray-400 text-xs uppercase tracking-wide w-1/4">Status</th>
+                    <th className="text-left px-5 py-3 font-medium text-gray-400 text-xs uppercase tracking-wide">Response Time</th>
+                    <th className="text-right px-5 py-3 font-medium text-gray-400 text-xs uppercase tracking-wide">Last Checked</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100">
+                <tbody className="divide-y divide-gray-50">
                   {(ukSites.length > 0 ? ukSites : report.sites.filter(s => s.url.includes(".co.uk"))).map(site => (
                     <tr key={site.id} className="hover:bg-gray-50/50 transition-colors">
-                      <td className="px-5 py-3.5">
-                        <a href={site.url} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">
-                          {site.url.replace(/^https?:\/\//, "")}
-                        </a>
-                      </td>
-                      <td className="px-5 py-3.5">
+                      <td className="px-5 py-4 font-mono text-xs text-gray-800">{site.url.replace(/^https?:\/\//, "")}</td>
+                      <td className="px-5 py-4">
                         <StatusDot
                           ok={site.currentStatus === "up"}
                           text={site.currentStatus === "up" ? "Live" : site.currentStatus === "slow" ? "Slow" : "Down"}
                         />
                       </td>
-                      <td className="px-5 py-3.5 text-gray-600 font-mono text-xs">
+                      <td className="px-5 py-4 text-gray-600 font-mono text-xs">
                         {site.lastResponseTimeMs != null ? `${(site.lastResponseTimeMs / 1000).toFixed(2)}s` : "—"}
+                      </td>
+                      <td className="px-5 py-4 text-right text-gray-400 text-xs">
+                        {site.lastCheckedAt ? format(new Date(site.lastCheckedAt), "HH:mm:ss") : "—"}
                       </td>
                     </tr>
                   ))}
@@ -507,40 +446,35 @@ export default function HealthReport() {
             </div>
           </section>
 
-          {/* Payment Gateways — IE */}
-          <section>
-            <div className="flex items-center gap-2 mb-4">
-              <CreditCard className="w-4 h-4 text-gray-400" />
-              <h3 className="text-base font-semibold text-gray-900">Payment Gateways — Love Furniture IE</h3>
-              <span className="text-xs bg-green-50 text-green-700 border border-green-200 px-2 py-0.5 rounded-full font-medium">EUR</span>
-            </div>
-            <GatewayTable gateways={report.iePaymentGateways} />
-          </section>
-
-          {/* Payment Gateways — UK */}
-          <section>
-            <div className="flex items-center gap-2 mb-4">
-              <CreditCard className="w-4 h-4 text-gray-400" />
-              <h3 className="text-base font-semibold text-gray-900">Payment Gateways — Love Furniture UK</h3>
-              <span className="text-xs bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 rounded-full font-medium">GBP</span>
-            </div>
-            <GatewayTable gateways={report.ukPaymentGateways} />
-          </section>
         </div>
 
-        {/* Footer */}
-        <div className="px-8 py-4 border-t bg-gray-50/50 rounded-b-2xl">
+        {/* ── Document footer ── */}
+        <div className="px-10 py-5 border-t border-gray-100 bg-gray-50/60 rounded-b-2xl print:rounded-none flex items-center justify-between">
           <p className="text-xs text-gray-400">
-            Generated by Site Sentinel · {format(new Date(report.generatedAt), "PPpp")}
+            Generated by <span className="font-semibold text-gray-600">Site Sentinel</span>
+          </p>
+          <p className="text-xs text-gray-400">
+            {format(generatedAt, "PPpp")} · Confidential
           </p>
         </div>
       </div>
 
+      {/* Print CSS — hides everything except the report document */}
       <style>{`
         @media print {
-          body * { visibility: hidden; }
-          #health-report-doc, #health-report-doc * { visibility: visible; }
-          #health-report-doc { position: absolute; left: 0; top: 0; width: 100%; }
+          @page { margin: 1.5cm; size: A4; }
+          body > * { display: none !important; }
+          #root > * { display: none !important; }
+          #health-report-doc {
+            display: block !important;
+            position: static !important;
+            width: 100% !important;
+            box-shadow: none !important;
+            border: none !important;
+            border-radius: 0 !important;
+          }
+          #health-report-doc * { visibility: visible !important; }
+          .print\\:hidden { display: none !important; }
         }
       `}</style>
     </div>
