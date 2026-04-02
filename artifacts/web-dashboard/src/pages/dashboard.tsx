@@ -1,6 +1,6 @@
 import React from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -58,60 +58,28 @@ interface HealthReport {
   }[];
 }
 
-function VitalBar({ value, label, warn = 80, danger = 90 }: { value: number | null; label: string; warn?: number; danger?: number }) {
-  if (value === null) return null;
+function MiniBar({ value, warn = 80, danger = 90 }: { value: number | null; warn?: number; danger?: number }) {
+  if (value === null) return <span className="text-muted-foreground/50">—</span>;
   const color = value >= danger ? "bg-red-500" : value >= warn ? "bg-amber-400" : "bg-emerald-500";
-  const textColor = value >= danger ? "text-red-700" : value >= warn ? "text-amber-700" : "text-gray-600";
+  const text = value >= danger ? "text-red-600" : value >= warn ? "text-amber-600" : "text-gray-700";
   return (
-    <div>
-      <div className="flex justify-between items-center mb-1">
-        <span className="text-xs text-gray-500">{label}</span>
-        <span className={`text-xs font-semibold font-mono ${textColor}`}>{value}%</span>
+    <div className="flex items-center gap-2 min-w-[80px]">
+      <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+        <div className={`h-full rounded-full ${color}`} style={{ width: `${Math.min(value, 100)}%` }} />
       </div>
-      <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-        <div className={`h-full rounded-full transition-all duration-700 ${color}`} style={{ width: `${Math.min(value, 100)}%` }} />
-      </div>
+      <span className={`text-xs font-mono font-semibold w-8 text-right ${text}`}>{value}%</span>
     </div>
   );
 }
 
-function ServiceChip({ label, ok, detail }: { label: string; ok: boolean | null; detail?: string | null }) {
-  const bg = ok === null ? "bg-gray-100 text-gray-500 border-gray-200"
-    : ok ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-    : "bg-red-50 text-red-700 border-red-200";
-  const dot = ok === null ? "bg-gray-400" : ok ? "bg-emerald-500" : "bg-red-500";
+function ServiceDot({ ok, label }: { ok: boolean | null; label: string }) {
+  const dot = ok === null ? "bg-gray-300" : ok ? "bg-emerald-500" : "bg-red-500";
+  const text = ok === null ? "text-muted-foreground" : ok ? "text-foreground" : "text-red-700";
   return (
-    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-xs font-medium ${bg}`} title={detail ?? undefined}>
-      <span className={`w-1.5 h-1.5 rounded-full ${dot}`} />
+    <span className={`inline-flex items-center gap-1 text-xs ${text}`} title={label}>
+      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${dot}`} />
       {label}
     </span>
-  );
-}
-
-function SslDaysChip({ days, isExpired, isExpiringSoon }: { days: number; isExpired: boolean; isExpiringSoon: boolean }) {
-  const color = isExpired ? "bg-red-100 text-red-700 border-red-300"
-    : isExpiringSoon ? "bg-amber-100 text-amber-700 border-amber-300"
-    : "bg-emerald-50 text-emerald-700 border-emerald-200";
-  return (
-    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-xs font-mono font-semibold ${color}`}>
-      {isExpired ? "Expired" : `${days}d`}
-    </span>
-  );
-}
-
-function KpiCard({ icon, label, value, sub, ok }: { icon: React.ReactNode; label: string; value: string; sub?: string; ok?: boolean }) {
-  const iconBg = ok === false ? "bg-red-50 text-red-600" : ok === true ? "bg-emerald-50 text-emerald-600" : "bg-blue-50 text-blue-600";
-  return (
-    <Card className="shadow-sm">
-      <CardContent className="p-5 flex items-center gap-4">
-        <div className={`p-2.5 rounded-xl ${iconBg}`}>{icon}</div>
-        <div>
-          <p className="text-xs text-muted-foreground font-medium">{label}</p>
-          <p className="text-xl font-bold font-display text-foreground leading-tight">{value}</p>
-          {sub && <p className="text-xs text-muted-foreground mt-0.5">{sub}</p>}
-        </div>
-      </CardContent>
-    </Card>
   );
 }
 
@@ -135,11 +103,9 @@ export default function Dashboard() {
 
   const sitesUp = report.sites.filter(s => s.currentStatus === "up").length;
   const sitesTotal = report.sites.length;
-  const hasDownSite = sitesUp < sitesTotal;
 
   const serversOnline = report.servers.filter(s => s.isOnline).length;
   const serversTotal = report.servers.length;
-  const hasOfflineServer = serversOnline < serversTotal;
 
   const allSslEntries = report.servers.flatMap(s => s.services?.sslExpiry ?? []);
   const minSslDays = allSslEntries.length > 0 ? Math.min(...allSslEntries.map(e => e.daysRemaining)) : null;
@@ -155,171 +121,135 @@ export default function Dashboard() {
       phpFpm !== null ? phpFpm.total > 0 : null,
       mysql !== null ? true : null,
       elasticsearch !== null ? elasticsearch.isRunning : null,
-    ].filter(v => v !== null);
+    ].filter((v): v is boolean => v !== null);
   });
-  const servicesOk = allServices.filter(v => v === true).length;
+  const servicesOk = allServices.filter(Boolean).length;
   const servicesTotal = allServices.length;
-  const hasServiceDown = allServices.some(v => v === false);
 
   const lastUpdated = dataUpdatedAt ? format(new Date(dataUpdatedAt), "HH:mm:ss") : null;
 
-  const ieSites = report.sites.filter(s => s.url.includes(".ie") || s.name.toLowerCase().includes(" ie"));
-  const ukSites = report.sites.filter(s => s.url.includes(".co.uk") || s.name.toLowerCase().includes(" uk"));
-  const otherSites = report.sites.filter(s => !ieSites.includes(s) && !ukSites.includes(s));
+  const statusColor = isOperational ? "text-emerald-700 bg-emerald-50 border-emerald-200" : "text-red-700 bg-red-50 border-red-200";
+  const statusDot = isOperational ? "bg-emerald-500" : "bg-red-500";
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-5">
 
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-display font-bold">Dashboard</h1>
-          <p className="text-muted-foreground mt-1 text-sm">
-            Live operational status · {lastUpdated ? `Updated ${lastUpdated}` : "Loading…"}
+          <h1 className="text-2xl font-display font-bold">Dashboard</h1>
+          <p className="text-muted-foreground text-sm mt-0.5">
+            {lastUpdated ? `Last updated ${lastUpdated}` : "Loading…"}
           </p>
         </div>
-        <Button onClick={() => refetch()} variant="outline" className="gap-2 bg-white" disabled={isFetching}>
-          <RefreshCw className={`w-4 h-4 ${isFetching ? "animate-spin" : ""}`} /> Refresh
-        </Button>
-      </div>
-
-      {/* Overall Status Banner */}
-      <Card className={`border-l-4 shadow-sm overflow-hidden ${!isOperational ? "border-l-destructive bg-destructive/5" : "border-l-success bg-success/5"}`}>
-        <CardContent className="p-5 flex items-center gap-4">
-          <div className={`p-3 rounded-full ${!isOperational ? "bg-destructive/10 text-destructive" : "bg-success/10 text-success"}`}>
-            {!isOperational ? <AlertTriangle className="w-7 h-7" /> : <CheckCircle2 className="w-7 h-7" />}
-          </div>
-          <div className="flex-1">
-            <h2 className="text-lg font-bold font-display">
-              {isOperational ? "All Systems Operational" : "System Degraded"}
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              {isOperational
-                ? "Monitoring is active. All sites and services are responding normally."
-                : [
-                    hasDownSite && `${sitesTotal - sitesUp} site(s) down`,
-                    hasOfflineServer && `${serversTotal - serversOnline} server(s) offline`,
-                    hasServiceDown && "service(s) unhealthy",
-                  ].filter(Boolean).join(" · ")
-              }
-            </p>
-          </div>
-          <span className={`hidden sm:inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full border ${isOperational ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-red-50 text-red-700 border-red-200"}`}>
-            <span className={`w-2 h-2 rounded-full ${isOperational ? "bg-emerald-500 status-dot-up" : "bg-red-500 status-dot-down"}`} />
-            {isOperational ? "Operational" : "Degraded"}
+        <div className="flex items-center gap-3">
+          <span className={`hidden sm:inline-flex items-center gap-2 text-xs font-semibold px-3 py-1.5 rounded-full border ${statusColor}`}>
+            <span className={`w-2 h-2 rounded-full ${statusDot} ${isOperational ? "status-dot-up" : "status-dot-down"}`} />
+            {isOperational ? "All Systems Operational" : "System Degraded"}
           </span>
-        </CardContent>
-      </Card>
-
-      {/* KPI Row */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
-          <KpiCard
-            icon={<Globe className="w-5 h-5" />}
-            label="Sites"
-            value={`${sitesUp}/${sitesTotal}`}
-            sub={sitesUp === sitesTotal ? "All live" : `${sitesTotal - sitesUp} down`}
-            ok={!hasDownSite}
-          />
-        </motion.div>
-        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-          <KpiCard
-            icon={<Server className="w-5 h-5" />}
-            label="Servers"
-            value={serversTotal === 0 ? "—" : `${serversOnline}/${serversTotal}`}
-            sub={serversTotal === 0 ? "No servers added" : serversOnline === serversTotal ? "All online" : `${serversTotal - serversOnline} offline`}
-            ok={serversTotal === 0 ? undefined : !hasOfflineServer}
-          />
-        </motion.div>
-        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
-          <KpiCard
-            icon={<Activity className="w-5 h-5" />}
-            label="Services"
-            value={servicesTotal === 0 ? "—" : `${servicesOk}/${servicesTotal}`}
-            sub={servicesTotal === 0 ? "No data yet" : hasServiceDown ? "Issue detected" : "All healthy"}
-            ok={servicesTotal === 0 ? undefined : !hasServiceDown}
-          />
-        </motion.div>
-        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-          <KpiCard
-            icon={<Lock className="w-5 h-5" />}
-            label="SSL"
-            value={minSslDays !== null ? `${minSslDays}d` : "—"}
-            sub={minSslDays !== null ? (hasExpiredSsl ? "Certificate expired!" : hasWarningSsl ? "Expiring soon" : "All valid") : "No domains tracked"}
-            ok={minSslDays !== null ? (!hasExpiredSsl && !hasWarningSsl) : undefined}
-          />
-        </motion.div>
+          <Button onClick={() => refetch()} variant="outline" size="sm" className="gap-1.5" disabled={isFetching}>
+            <RefreshCw className={`w-3.5 h-3.5 ${isFetching ? "animate-spin" : ""}`} /> Refresh
+          </Button>
+        </div>
       </div>
 
-      {/* Sites Section */}
-      {report.sites.length > 0 && (
-        <section className="space-y-3">
-          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-2">
-            <Globe className="w-4 h-4" /> Store Availability
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-            {[...ieSites, ...ukSites, ...otherSites].map((site, index) => {
-              const isUp = site.currentStatus === "up";
-              const isSlow = site.currentStatus === "slow";
-              return (
-                <motion.div
-                  key={site.id}
-                  initial={{ opacity: 0, y: 16 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.25 + index * 0.08 }}
-                >
-                  <Card className={`hover:shadow-md transition-all duration-200 border-l-4 ${isUp ? "border-l-success" : isSlow ? "border-l-warning" : "border-l-destructive"}`}>
-                    <CardContent className="p-5">
-                      <div className="flex items-start justify-between mb-3">
-                        <div>
-                          <h3 className="font-bold text-base font-display">{site.name}</h3>
-                          <a
-                            href={site.url}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="text-xs text-primary hover:underline"
-                          >
-                            {site.url.replace(/^https?:\/\//, "")}
-                          </a>
-                        </div>
-                        <Badge variant={isUp ? "success" : isSlow ? "warning" : "destructive"} className="ml-2 shrink-0">
-                          <div className="flex items-center gap-1.5">
-                            <div className={`w-1.5 h-1.5 rounded-full ${isUp ? "bg-success status-dot-up" : isSlow ? "bg-warning" : "bg-destructive status-dot-down"}`} />
-                            {site.currentStatus.toUpperCase()}
-                          </div>
-                        </Badge>
-                      </div>
-                      <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          <Activity className="w-3 h-3" />
-                          {site.lastResponseTimeMs != null
-                            ? `${(site.lastResponseTimeMs / 1000).toFixed(2)}s`
-                            : "—"}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Clock className="w-3 h-3" />
-                          {site.lastCheckedAt
-                            ? formatDistanceToNow(new Date(site.lastCheckedAt), { addSuffix: true })
-                            : "Never"}
-                        </span>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              );
-            })}
-          </div>
-        </section>
-      )}
+      {/* Compact stat strip */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {[
+          {
+            icon: <Globe className="w-4 h-4" />,
+            label: "Sites",
+            value: sitesTotal === 0 ? "—" : `${sitesUp} / ${sitesTotal}`,
+            note: sitesUp === sitesTotal ? "All live" : `${sitesTotal - sitesUp} down`,
+            ok: sitesUp === sitesTotal,
+          },
+          {
+            icon: <Server className="w-4 h-4" />,
+            label: "Servers",
+            value: serversTotal === 0 ? "—" : `${serversOnline} / ${serversTotal}`,
+            note: serversTotal === 0 ? "None added" : serversOnline === serversTotal ? "All online" : `${serversTotal - serversOnline} offline`,
+            ok: serversTotal > 0 && serversOnline === serversTotal,
+          },
+          {
+            icon: <Activity className="w-4 h-4" />,
+            label: "Services",
+            value: servicesTotal === 0 ? "—" : `${servicesOk} / ${servicesTotal}`,
+            note: servicesTotal === 0 ? "No data yet" : servicesOk === servicesTotal ? "All healthy" : "Issue detected",
+            ok: servicesTotal > 0 && servicesOk === servicesTotal,
+          },
+          {
+            icon: <Lock className="w-4 h-4" />,
+            label: "SSL",
+            value: minSslDays !== null ? `${minSslDays}d` : "—",
+            note: minSslDays !== null ? (hasExpiredSsl ? "Expired!" : hasWarningSsl ? "Expiring soon" : "All valid") : "Not tracked",
+            ok: minSslDays !== null && !hasExpiredSsl && !hasWarningSsl,
+          },
+        ].map(stat => (
+          <Card key={stat.label} className="shadow-none border">
+            <CardContent className="p-4 flex items-center gap-3">
+              <div className={`p-2 rounded-lg shrink-0 ${stat.ok ? "bg-emerald-50 text-emerald-600" : "bg-muted text-muted-foreground"}`}>
+                {stat.icon}
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs text-muted-foreground">{stat.label}</p>
+                <p className="text-lg font-bold font-mono leading-tight">{stat.value}</p>
+                <p className={`text-xs truncate ${stat.ok ? "text-emerald-600" : "text-muted-foreground"}`}>{stat.note}</p>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
 
-      {/* Servers + Services Section */}
-      {report.servers.length > 0 && (
-        <section className="space-y-3">
-          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-2">
-            <Server className="w-4 h-4" /> Infrastructure
-          </h2>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {report.servers.map((server, index) => {
+      {/* Main grid: Sites (left) + Servers (right) */}
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
+
+        {/* Sites table */}
+        {report.sites.length > 0 && (
+          <Card className="lg:col-span-2 shadow-none border">
+            <CardHeader className="pb-3 pt-5 px-5">
+              <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                <Globe className="w-4 h-4 text-muted-foreground" /> Store Availability
+              </CardTitle>
+            </CardHeader>
+            <div className="divide-y divide-border">
+              {report.sites.map(site => {
+                const isUp = site.currentStatus === "up";
+                const isSlow = site.currentStatus === "slow";
+                const statusBadge = isUp ? "success" : isSlow ? "warning" : "destructive";
+                return (
+                  <div key={site.id} className="px-5 py-3.5 flex items-center gap-3">
+                    <div className={`w-2 h-2 rounded-full shrink-0 ${isUp ? "bg-emerald-500 status-dot-up" : isSlow ? "bg-amber-400" : "bg-red-500 status-dot-down"}`} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold truncate">{site.name}</p>
+                      <a href={site.url} target="_blank" rel="noreferrer" className="text-xs text-muted-foreground hover:text-primary truncate block">
+                        {site.url.replace(/^https?:\/\//, "")}
+                      </a>
+                    </div>
+                    <div className="text-right shrink-0 space-y-0.5">
+                      <Badge variant={statusBadge} className="text-xs">{site.currentStatus.toUpperCase()}</Badge>
+                      <p className="text-xs text-muted-foreground">
+                        {site.lastResponseTimeMs != null ? `${(site.lastResponseTimeMs / 1000).toFixed(2)}s` : "—"}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            {report.sites.some(s => s.lastCheckedAt) && (
+              <div className="px-5 py-2.5 border-t bg-muted/30 flex items-center gap-1.5 text-xs text-muted-foreground">
+                <Clock className="w-3 h-3" />
+                {report.sites[0].lastCheckedAt
+                  ? `Checked ${formatDistanceToNow(new Date(report.sites[0].lastCheckedAt), { addSuffix: true })}`
+                  : ""}
+              </div>
+            )}
+          </Card>
+        )}
+
+        {/* Servers */}
+        {report.servers.length > 0 ? (
+          <div className="lg:col-span-3 space-y-4">
+            {report.servers.map((server) => {
               const svc = server.services;
               const nginxOk = svc?.nginx != null ? svc.nginx.isRunning : null;
               const varnishOk = svc?.varnish != null ? svc.varnish.isRunning : null;
@@ -328,170 +258,148 @@ export default function Dashboard() {
               const esOk = svc?.elasticsearch != null
                 ? svc.elasticsearch.isRunning && svc.elasticsearch.status !== "red"
                 : null;
-              const hasServices = svc && (svc.nginx !== null || svc.varnish !== null || svc.phpFpm !== null || svc.mysql !== null || svc.elasticsearch !== null);
 
               return (
-                <motion.div
-                  key={server.id}
-                  initial={{ opacity: 0, y: 16 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.3 + index * 0.08 }}
-                >
-                  <Card className={`shadow-sm ${!server.isOnline ? "border-destructive/30 bg-destructive/5" : ""}`}>
-                    <CardContent className="p-5 space-y-4">
-                      {/* Server header */}
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className={`p-2 rounded-lg ${server.isOnline ? "bg-emerald-50 text-emerald-600" : "bg-red-50 text-red-600"}`}>
-                            <Server className="w-4 h-4" />
-                          </div>
-                          <div>
-                            <h3 className="font-bold text-sm font-display">{server.name}</h3>
-                            <p className="text-xs text-muted-foreground font-mono">{server.hostname}</p>
-                          </div>
+                <Card key={server.id} className="shadow-none border">
+                  <CardContent className="p-5 space-y-4">
+
+                    {/* Server name + status */}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2.5">
+                        <div className={`p-1.5 rounded-md ${server.isOnline ? "bg-emerald-50 text-emerald-600" : "bg-red-50 text-red-600"}`}>
+                          <Server className="w-4 h-4" />
                         </div>
+                        <div>
+                          <p className="font-semibold text-sm">{server.name}</p>
+                          <p className="text-xs text-muted-foreground font-mono">{server.hostname}</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
                         <Badge variant={server.isOnline ? "success" : "destructive"}>
-                          <span className={`w-1.5 h-1.5 rounded-full mr-1.5 ${server.isOnline ? "bg-success status-dot-up" : "bg-destructive status-dot-down"}`} />
                           {server.isOnline ? "Online" : "Offline"}
                         </Badge>
+                        {server.lastSeenAt && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {formatDistanceToNow(new Date(server.lastSeenAt), { addSuffix: true })}
+                          </p>
+                        )}
                       </div>
+                    </div>
 
-                      {/* Vitals bars */}
-                      {server.metrics ? (
-                        <div className="space-y-2.5 py-2 px-3 bg-secondary/40 rounded-xl">
-                          <VitalBar value={server.metrics.cpuPercent} label="CPU" />
-                          <VitalBar value={server.metrics.memPercent} label="Memory" />
-                          <VitalBar value={server.metrics.diskPercent} label="Disk" />
-                          <div className="pt-1 flex items-center gap-3 text-xs text-muted-foreground">
+                    {/* Vitals — compact inline grid */}
+                    {server.metrics ? (
+                      <div className="space-y-2">
+                        {[
+                          { label: "CPU", value: server.metrics.cpuPercent },
+                          { label: "Memory", value: server.metrics.memPercent },
+                          { label: "Disk", value: server.metrics.diskPercent },
+                        ].filter(v => v.value !== null).map(v => (
+                          <div key={v.label} className="flex items-center gap-3">
+                            <span className="text-xs text-muted-foreground w-14 shrink-0">{v.label}</span>
+                            <MiniBar value={v.value} />
+                          </div>
+                        ))}
+                        <div className="flex items-center gap-4 text-xs text-muted-foreground pt-1">
+                          <span className="flex items-center gap-1">
+                            <Cpu className="w-3 h-3" /> Load {server.metrics.loadAvg1m?.toFixed(2) ?? "—"}
+                          </span>
+                          {server.metrics.connectionCount != null && (
                             <span className="flex items-center gap-1">
-                              <Cpu className="w-3 h-3" />
-                              Load {server.metrics.loadAvg1m?.toFixed(2) ?? "—"}
+                              <Wifi className="w-3 h-3" /> {server.metrics.connectionCount} conns
                             </span>
-                            {server.metrics.connectionCount != null && (
-                              <span className="flex items-center gap-1">
-                                <Wifi className="w-3 h-3" />
-                                {server.metrics.connectionCount} conns
-                              </span>
-                            )}
-                            {server.lastSeenAt && (
-                              <span className="flex items-center gap-1 ml-auto">
-                                <Clock className="w-3 h-3" />
-                                {formatDistanceToNow(new Date(server.lastSeenAt), { addSuffix: true })}
-                              </span>
-                            )}
-                          </div>
+                          )}
                         </div>
-                      ) : (
-                        <div className="py-3 px-4 bg-secondary/40 rounded-xl text-xs text-muted-foreground">
-                          {server.isOnline ? "No metrics received yet" : "Server offline — no metrics available"}
-                        </div>
-                      )}
+                      </div>
+                    ) : (
+                      <p className="text-xs text-muted-foreground">
+                        {server.isOnline ? "Waiting for first metrics report…" : "No metrics — server offline"}
+                      </p>
+                    )}
 
-                      {/* Services */}
-                      {hasServices && (
-                        <div>
-                          <p className="text-xs text-muted-foreground mb-2 font-medium">Services</p>
-                          <div className="flex flex-wrap gap-1.5">
-                            {svc?.nginx !== null && (
-                              <ServiceChip
-                                label="Nginx"
-                                ok={nginxOk}
-                                detail={svc?.nginx?.activeConnections != null ? `${svc.nginx.activeConnections} active connections` : undefined}
-                              />
-                            )}
-                            {svc?.varnish !== null && (
-                              <ServiceChip
-                                label="Varnish"
-                                ok={varnishOk}
-                                detail={svc?.varnish?.hitRate != null ? `${svc.varnish.hitRate}% hit rate` : undefined}
-                              />
-                            )}
-                            {svc?.phpFpm !== null && (
-                              <ServiceChip
-                                label="PHP-FPM"
-                                ok={phpOk}
-                                detail={svc?.phpFpm ? `${svc.phpFpm.active}/${svc.phpFpm.total} workers` : undefined}
-                              />
-                            )}
-                            {svc?.mysql !== null && (
-                              <ServiceChip
-                                label="MySQL"
-                                ok={mysqlOk}
-                                detail={svc?.mysql ? `${svc.mysql.threads} threads` : undefined}
-                              />
-                            )}
-                            {svc?.elasticsearch !== null && (
-                              <ServiceChip
-                                label="Elasticsearch"
-                                ok={esOk}
-                                detail={svc?.elasticsearch?.status ? `Cluster: ${svc.elasticsearch.status}` : undefined}
-                              />
-                            )}
-                          </div>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                </motion.div>
+                    {/* Services row */}
+                    {svc && (
+                      <div className="flex flex-wrap gap-x-4 gap-y-1.5 pt-1 border-t">
+                        {svc.nginx !== null && <ServiceDot ok={nginxOk} label="Nginx" />}
+                        {svc.varnish !== null && <ServiceDot ok={varnishOk} label="Varnish" />}
+                        {svc.phpFpm !== null && <ServiceDot ok={phpOk} label="PHP-FPM" />}
+                        {svc.mysql !== null && <ServiceDot ok={mysqlOk} label="MySQL" />}
+                        {svc.elasticsearch !== null && <ServiceDot ok={esOk} label="Elasticsearch" />}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
               );
             })}
           </div>
-        </section>
-      )}
+        ) : report.sites.length === 0 ? null : (
+          <div className="lg:col-span-3">
+            <Card className="border-dashed shadow-none h-full flex items-center justify-center">
+              <CardContent className="p-10 text-center">
+                <Server className="w-8 h-8 text-muted-foreground/40 mx-auto mb-3" />
+                <p className="font-semibold text-sm">No servers registered</p>
+                <p className="text-xs text-muted-foreground mt-1">Add your EC2 instance in the Servers page.</p>
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
-      {/* SSL Certificates Section */}
+        {/* Empty state — no sites, no servers */}
+        {report.sites.length === 0 && report.servers.length === 0 && (
+          <div className="col-span-full">
+            <Card className="border-dashed shadow-none">
+              <CardContent className="p-12 text-center">
+                <Activity className="w-10 h-10 text-muted-foreground/40 mx-auto mb-3" />
+                <p className="font-semibold">Nothing to monitor yet</p>
+                <p className="text-sm text-muted-foreground mt-1">Add a site or server to start seeing data here.</p>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+      </div>
+
+      {/* SSL Certificates — only if data exists */}
       {allSslEntries.length > 0 && (
-        <section className="space-y-3">
-          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-2">
-            <Shield className="w-4 h-4" /> SSL Certificates
-          </h2>
-          <Card className="shadow-sm overflow-hidden">
+        <Card className="shadow-none border">
+          <CardHeader className="pb-3 pt-5 px-5">
+            <CardTitle className="text-sm font-semibold flex items-center gap-2">
+              <Shield className="w-4 h-4 text-muted-foreground" /> SSL Certificates
+            </CardTitle>
+          </CardHeader>
+          <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-secondary/60 border-b">
+              <thead className="border-t border-b bg-muted/30">
                 <tr>
-                  <th className="text-left px-5 py-3 font-medium text-muted-foreground text-xs uppercase tracking-wide">Domain</th>
-                  <th className="text-left px-5 py-3 font-medium text-muted-foreground text-xs uppercase tracking-wide">Status</th>
-                  <th className="text-left px-5 py-3 font-medium text-muted-foreground text-xs uppercase tracking-wide">Expires</th>
-                  <th className="text-left px-5 py-3 font-medium text-muted-foreground text-xs uppercase tracking-wide">Days Left</th>
+                  <th className="text-left px-5 py-2.5 text-xs font-medium text-muted-foreground">Domain</th>
+                  <th className="text-left px-5 py-2.5 text-xs font-medium text-muted-foreground">Status</th>
+                  <th className="text-left px-5 py-2.5 text-xs font-medium text-muted-foreground">Expires</th>
+                  <th className="text-left px-5 py-2.5 text-xs font-medium text-muted-foreground">Days Left</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
                 {allSslEntries.map(e => {
                   const ok = !e.isExpired && !e.isExpiringSoon;
+                  const dayColor = e.isExpired ? "text-red-600 font-semibold" : e.isExpiringSoon ? "text-amber-600 font-semibold" : "text-muted-foreground";
                   return (
-                    <tr key={e.domain} className="hover:bg-secondary/30 transition-colors">
-                      <td className="px-5 py-3.5 font-mono text-xs font-medium">{e.domain}</td>
-                      <td className="px-5 py-3.5">
-                        <span className={`inline-flex items-center gap-1.5 text-xs font-medium ${ok ? "text-emerald-700" : e.isExpiringSoon ? "text-amber-700" : "text-red-700"}`}>
-                          <span className={`w-2 h-2 rounded-full ${ok ? "bg-emerald-500" : e.isExpiringSoon ? "bg-amber-400" : "bg-red-500"}`} />
+                    <tr key={e.domain} className="hover:bg-muted/20 transition-colors">
+                      <td className="px-5 py-3 font-mono text-xs">{e.domain}</td>
+                      <td className="px-5 py-3">
+                        <span className={`inline-flex items-center gap-1.5 text-xs ${ok ? "text-emerald-700" : e.isExpiringSoon ? "text-amber-700" : "text-red-700"}`}>
+                          <span className={`w-1.5 h-1.5 rounded-full ${ok ? "bg-emerald-500" : e.isExpiringSoon ? "bg-amber-400" : "bg-red-500"}`} />
                           {e.isExpired ? "Expired" : e.isExpiringSoon ? "Expiring soon" : "Valid"}
                         </span>
                       </td>
-                      <td className="px-5 py-3.5 text-xs text-muted-foreground">
+                      <td className="px-5 py-3 text-xs text-muted-foreground">
                         {e.expiresAt ? new Date(e.expiresAt).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "—"}
                       </td>
-                      <td className="px-5 py-3.5">
-                        <SslDaysChip days={e.daysRemaining} isExpired={e.isExpired} isExpiringSoon={e.isExpiringSoon} />
+                      <td className={`px-5 py-3 text-xs font-mono ${dayColor}`}>
+                        {e.isExpired ? "Expired" : `${e.daysRemaining}d`}
                       </td>
                     </tr>
                   );
                 })}
               </tbody>
             </table>
-          </Card>
-        </section>
-      )}
-
-      {/* Empty state when no servers */}
-      {report.servers.length === 0 && (
-        <Card className="shadow-sm border-dashed">
-          <CardContent className="p-10 text-center">
-            <Server className="w-10 h-10 text-muted-foreground/40 mx-auto mb-3" />
-            <h3 className="font-semibold text-foreground mb-1">No servers registered</h3>
-            <p className="text-sm text-muted-foreground">
-              Add your EC2 instance in the Servers page to see infrastructure metrics here.
-            </p>
-          </CardContent>
+          </div>
         </Card>
       )}
 
