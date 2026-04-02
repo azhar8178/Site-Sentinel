@@ -1,15 +1,19 @@
 # Site Sentinel
 
-A self-hosted monitoring and alerting system for your websites. Checks site availability every 60 seconds, monitors server vitals (CPU/memory/disk/network), tracks Magento orders and carts, and sends alerts via Email, Slack, and WhatsApp.
+A self-hosted monitoring and alerting system for your websites. Checks site availability every 60 seconds, monitors server vitals and service health via a lightweight agent, tracks Magento orders and carts, and sends alerts via Email, Slack, and WhatsApp.
 
-Built for **Love Furniture IE** and **Love Furniture UK** Magento stores.
+Built for **Love Furniture IE** (lovefurniture.ie, EUR) and **Love Furniture UK** (lovefurniture.co.uk, GBP) Magento stores.
 
 ## What It Does
 
 - Checks your sites every 60 seconds — detects downtime, slow responses, and recovery
-- Server vitals monitoring: CPU, memory, disk, network via lightweight agent
+- Server vitals monitoring: CPU, memory, disk, network via lightweight agent (v3.0.0)
+- Service-level health monitoring: Nginx, Varnish, PHP-FPM, MySQL, Elasticsearch
+- SSL certificate expiry tracking per domain — warns when certificates are expiring soon
 - Magento integration: syncs orders and abandoned carts every 5 minutes
 - Multi-channel alerts: Email (SMTP), Slack (webhook), WhatsApp (Meta API)
+- Health Report: a clean, printable report covering servers, services, SSL, sites, and payment gateways — split by IE and UK stores
+- Google Analytics integration: OAuth-linked GA4 property with status visible in dashboard
 - Web dashboard (React + Vite) for browser access
 - Mobile app (React Native / Expo) for Android APK builds
 - Team management: admin/editor/viewer roles with user CRUD
@@ -43,9 +47,11 @@ Built for **Love Furniture IE** and **Love Furniture UK** Magento stores.
                             └──────────────────┘
                                     ▲
 ┌─────────────────────┐             │
-│  Server Agent       │─────────────┘
-│  (monitor-agent.js) │  Reports CPU/mem/disk/net every 30s
-└─────────────────────┘  (one per monitored server)
+│  Server Agent v3    │─────────────┘
+│  (monitor-agent.js) │  Reports every 30s:
+│                     │  CPU, mem, disk, net
+└─────────────────────┘  Nginx, Varnish, PHP-FPM
+                         MySQL, Elasticsearch, SSL
 ```
 
 The Docker image builds both the Vite web dashboard and the API server. The API server serves the static dashboard files and the API — Nginx just proxies everything to port 8080.
@@ -229,11 +235,15 @@ Then configure your alert channels in Settings:
 - **Slack** — paste your Slack webhook URL
 - **WhatsApp** — enter your Meta API token and phone number ID
 
+You can also configure the following in Settings:
+- **Google Analytics** — link a GA4 property via OAuth for traffic visibility in the dashboard
+- **Health Report** — set the company name and configure IE/UK payment gateway statuses that appear in the printable health report
+
 ---
 
 ### Step 7: Install the Server Vitals Agent
 
-The agent is a lightweight Node.js script that runs on each server you want to monitor (your Magento web server, database server, etc.).
+The agent (v3.0.0) is a lightweight Node.js script that runs on each server you want to monitor. It collects CPU, memory, disk, network, and service-level metrics (Nginx, Varnish, PHP-FPM, MySQL, Elasticsearch) and reports them to the API every 30 seconds.
 
 **Step 7a: Register the server in the dashboard**
 
@@ -252,28 +262,35 @@ sudo apt-get install -y nodejs
 sudo mkdir -p /opt/monitor-agent
 
 # Copy agent files (from repo clone, scp, or download)
-sudo cp monitor-agent.js /opt/monitor-agent/
+sudo cp agent/monitor-agent.js /opt/monitor-agent/
+sudo cp agent/monitor-agent.service /etc/systemd/system/
 
 # Configure the agent
 sudo tee /opt/monitor-agent/.env > /dev/null << EOF
 MONITOR_API_URL=https://monit.lovefurniture.ie
 MONITOR_API_KEY=sm_YOUR_API_KEY_HERE
 MONITOR_INTERVAL=30
+MONITOR_SSL_DOMAINS=lovefurniture.ie,lovefurniture.co.uk
 EOF
 
 sudo chmod 600 /opt/monitor-agent/.env
 
-# Install systemd service
-sudo cp monitor-agent.service /etc/systemd/system/
+# Enable and start the agent
 sudo systemctl daemon-reload
 sudo systemctl enable monitor-agent
 sudo systemctl start monitor-agent
 ```
 
-**Important notes:**
-- `MONITOR_API_URL` must be the base URL **without** `/api` at the end. The agent appends `/api/servers/report` automatically.
-- The `monitor-agent.service` file must be copied to `/etc/systemd/system/` (not `/opt/monitor-agent/`).
-- The `monitor-agent.js` file goes in `/opt/monitor-agent/`.
+**Agent environment variables:**
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `MONITOR_API_URL` | Yes | Base URL of your Site Sentinel instance — no trailing `/api` |
+| `MONITOR_API_KEY` | Yes | API key shown when you register a server in the dashboard |
+| `MONITOR_INTERVAL` | No | Reporting interval in seconds (default: 30) |
+| `MONITOR_SSL_DOMAINS` | No | Comma-separated list of domains to check SSL expiry for |
+
+**Important:** `MONITOR_API_URL` must be the base URL **without** `/api` at the end. The agent appends `/api/servers/report` automatically.
 
 **Verify it's working:**
 
@@ -282,7 +299,7 @@ sudo systemctl status monitor-agent
 sudo journalctl -u monitor-agent -f
 ```
 
-You should see lines like `CPU: 12.3% | Mem: 45.2% | Disk: 23.1% | Load: 0.5` every 30 seconds.
+You should see lines like `CPU: 12.3% | Mem: 45.2% | Disk: 23.1% | Load: 0.5` every 30 seconds. Service metrics (Nginx, Varnish, etc.) are collected automatically if those processes are running on the server.
 
 **To regenerate an API key** for a server, click the server card in the dashboard, then click "Regenerate API Key". Update the `.env` on the server and restart: `sudo systemctl restart monitor-agent`.
 
@@ -351,9 +368,11 @@ If you update `agent/monitor-agent.js`:
 
 ```bash
 # On each monitored server
-sudo cp monitor-agent.js /opt/monitor-agent/
+sudo cp agent/monitor-agent.js /opt/monitor-agent/
 sudo systemctl restart monitor-agent
 ```
+
+The agent version is shown in each report payload. The current version is **v3.0.0**.
 
 ### Backup Database
 
@@ -403,7 +422,24 @@ docker compose exec -T postgres psql -U monitor site_monitor < backup_20260326.s
 | DELETE | `/api/servers/:id` | JWT | Remove a server |
 | POST | `/api/servers/:id/regenerate-key` | JWT (admin) | Regenerate API key |
 | GET | `/api/servers/:id/metrics?hours=1` | JWT | Server metrics history |
-| POST | `/api/servers/report` | API Key (`x-api-key`) | Agent reports metrics |
+| POST | `/api/servers/report` | API Key (`x-api-key`) | Agent reports metrics (CPU, mem, disk, services, SSL) |
+
+### Health Report
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| GET | `/api/health-report` | JWT | Full health report: sites, servers, services, SSL, gateways |
+
+### Configuration
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| GET | `/api/config/health-report` | JWT | Get health report config (company name, IE/UK gateways) |
+| PUT | `/api/config/health-report` | JWT (admin) | Update health report config |
+| GET | `/api/config/google-analytics` | JWT | Get Google Analytics OAuth config |
+| PUT | `/api/config/google-analytics` | JWT (admin) | Update Google Analytics config |
+| GET | `/api/config/server-alerts` | JWT | Get per-server alert thresholds |
+| PUT | `/api/config/server-alerts` | JWT (admin) | Update server alert thresholds |
 
 ### Team Management
 
@@ -459,6 +495,15 @@ All endpoints except auth and server report require a JWT token in the `Authoriz
 - The `.service` file must be in `/etc/systemd/system/`, not `/opt/monitor-agent/`
 - Fix: `sudo cp /opt/monitor-agent/monitor-agent.service /etc/systemd/system/ && sudo systemctl daemon-reload`
 
+### Service metrics not appearing in Health Report
+- Service metrics require agent v3.0.0 or later — check with `sudo journalctl -u monitor-agent | grep version`
+- Copy the updated `agent/monitor-agent.js` to `/opt/monitor-agent/` and restart the agent
+- Nginx/Varnish/Elasticsearch metrics are only collected if those processes are running on the monitored server
+
+### SSL expiry not showing
+- Set `MONITOR_SSL_DOMAINS=yourdomain.ie,yourdomain.co.uk` in `/opt/monitor-agent/.env` and restart the agent
+- The agent checks expiry using a TLS socket connection, so port 443 must be reachable from the monitored server
+
 ### Magento sync not working
 - Check API logs: `docker compose logs -f api | grep magento`
 - If the WAF blocks the token endpoint (403), generate a static token locally on the Magento server and use `MAGENTO_API_TOKEN` in `.env`
@@ -487,10 +532,11 @@ site-monitor/
 │   │       │   └── server-vitals.ts # Server vitals alerting (60s loop)
 │   │       └── routes/
 │   │           ├── sites.ts         # Site monitoring endpoints
-│   │           ├── servers.ts       # Server vitals endpoints
+│   │           ├── servers.ts       # Server vitals + service metrics report endpoint
 │   │           ├── magento.ts       # Magento order/cart endpoints
 │   │           ├── users.ts         # Team management endpoints
-│   │           └── config.ts        # Alert config endpoints
+│   │           ├── config.ts        # Alert + health report + GA config endpoints
+│   │           └── health-report.ts # Health report endpoint (sites/servers/services/SSL/gateways)
 │   ├── web-dashboard/           # Web dashboard (React + Vite + Tailwind)
 │   │   └── src/
 │   │       └── pages/
@@ -499,14 +545,19 @@ site-monitor/
 │   │           ├── store.tsx        # Magento orders & carts
 │   │           ├── alerts.tsx       # Alert history
 │   │           ├── history.tsx      # Check history
-│   │           └── settings.tsx     # SMTP/Slack/WhatsApp/Team/Thresholds
+│   │           ├── health-report.tsx # Printable health report (IE/UK split, services, SSL)
+│   │           └── settings.tsx     # SMTP/Slack/WhatsApp/GA/Health Report/Team/Thresholds
 │   └── mobile/                  # Mobile app (Expo / React Native)
 ├── agent/
-│   ├── monitor-agent.js         # Server vitals agent
+│   ├── monitor-agent.js         # Server vitals agent v3.0.0
+│   │                            # Collects: CPU, mem, disk, net, Nginx, Varnish,
+│   │                            # PHP-FPM, MySQL, Elasticsearch, SSL expiry
 │   ├── monitor-agent.service    # Systemd service file (copy to /etc/systemd/system/)
 │   └── install.sh               # Automated install script
 ├── lib/
 │   ├── db/                      # Database schema (Drizzle ORM)
+│   │   └── src/schema/
+│   │       └── servers.ts       # server_metrics table (incl. nginx/varnish/elasticsearch/ssl_expiry columns)
 │   ├── api-spec/                # OpenAPI spec
 │   └── api-client-react/        # Generated React Query hooks
 ├── Dockerfile                   # Builds web dashboard + API server
