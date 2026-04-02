@@ -53,7 +53,7 @@ interface HealthReport {
       nginx: { isRunning: boolean; activeConnections: number | null } | null;
       varnish: { isRunning: boolean; hitRate: number | null } | null;
       elasticsearch: { isRunning: boolean; status: string | null } | null;
-      sslExpiry: { domain: string; daysRemaining: number; isExpired: boolean; isExpiringSoon: boolean }[] | null;
+      sslExpiry: { domain: string; expiresAt?: string; daysRemaining: number; isExpired: boolean; isExpiringSoon: boolean }[] | null;
     } | null;
   }[];
 }
@@ -467,7 +467,9 @@ export default function Dashboard() {
                           {e.isExpired ? "Expired" : e.isExpiringSoon ? "Expiring soon" : "Valid"}
                         </span>
                       </td>
-                      <td className="px-5 py-3.5 text-xs text-muted-foreground">—</td>
+                      <td className="px-5 py-3.5 text-xs text-muted-foreground">
+                        {e.expiresAt ? new Date(e.expiresAt).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "—"}
+                      </td>
                       <td className="px-5 py-3.5">
                         <SslDaysChip days={e.daysRemaining} isExpired={e.isExpired} isExpiringSoon={e.isExpiringSoon} />
                       </td>
