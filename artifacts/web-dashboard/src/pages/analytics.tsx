@@ -138,6 +138,7 @@ export default function Analytics() {
   const connectMutation = useMutation({
     mutationFn: () => apiFetch<{ url: string }>("/api/analytics/google/auth-url"),
     onSuccess: ({ url }) => { window.location.href = url; },
+    onError: (err: Error) => { setUrlError(err.message); },
   });
 
   const disconnectMutation = useMutation({

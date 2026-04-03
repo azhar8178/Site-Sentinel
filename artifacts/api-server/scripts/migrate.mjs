@@ -217,6 +217,16 @@ try {
     }
   }
 
+  await run("google_analytics_tokens table", `CREATE TABLE IF NOT EXISTS google_analytics_tokens (
+    id serial PRIMARY KEY,
+    access_token text NOT NULL,
+    refresh_token text,
+    expires_at timestamp NOT NULL,
+    ga_property_id text,
+    email text,
+    created_at timestamp NOT NULL DEFAULT now()
+  )`);
+
   await run("seed google_oauth_config", `INSERT INTO google_oauth_config (client_id, client_secret) SELECT '', '' WHERE NOT EXISTS (SELECT 1 FROM google_oauth_config LIMIT 1)`);
   await run("seed health_report_config", `INSERT INTO health_report_config (payment_gateways) SELECT '[]'::jsonb WHERE NOT EXISTS (SELECT 1 FROM health_report_config LIMIT 1)`);
 

@@ -154,11 +154,16 @@ router.get("/analytics/google/callback", async (req, res, next) => {
 
 router.get("/analytics/google/status", requireAuth, async (_req, res, next) => {
   try {
-    const rows = await db.execute(
-      "SELECT id, expires_at, ga_property_id, email FROM google_analytics_tokens ORDER BY id DESC LIMIT 1"
-    );
-    const row = (rows as any).rows?.[0] ?? (rows as any)[0] ?? null;
     const { clientId } = await getGoogleCredentials();
+    let row: any = null;
+    try {
+      const rows = await db.execute(
+        "SELECT id, expires_at, ga_property_id, email FROM google_analytics_tokens ORDER BY id DESC LIMIT 1"
+      );
+      row = (rows as any).rows?.[0] ?? (rows as any)[0] ?? null;
+    } catch {
+      // Table may not exist yet — migrations pending on this install
+    }
     if (!row) {
       res.json({ connected: false, configured: !!clientId });
       return;
