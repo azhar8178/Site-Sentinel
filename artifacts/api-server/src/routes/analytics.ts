@@ -4,6 +4,9 @@ import { requireAuth } from "../middleware/auth";
 
 const router: IRouter = Router();
 
+// Public router — only the OAuth callback (no auth required; Google redirects here)
+export const analyticsPublicRouter: IRouter = Router();
+
 const GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth";
 const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
 const GOOGLE_REVOKE_URL = "https://oauth2.googleapis.com/revoke";
@@ -99,7 +102,7 @@ router.get("/analytics/google/auth-url", requireAuth, async (req, res) => {
   res.json({ url: `${GOOGLE_AUTH_URL}?${params}`, callbackUrl });
 });
 
-router.get("/analytics/google/callback", async (req, res, next) => {
+analyticsPublicRouter.get("/analytics/google/callback", async (req, res, next) => {
   try {
     const { code, error } = req.query as Record<string, string>;
     const origin = `${req.headers["x-forwarded-proto"] ?? req.protocol}://${req.headers["x-forwarded-host"] ?? req.headers.host}`;

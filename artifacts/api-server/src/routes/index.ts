@@ -9,7 +9,7 @@ import agentUpdateRouter from "./agent-update";
 import magentoRouter from "./magento";
 import usersRouter from "./users";
 import healthReportRouter from "./health-report";
-import analyticsRouter from "./analytics";
+import analyticsRouter, { analyticsPublicRouter } from "./analytics";
 import { requireAuth, requireRole } from "../middleware/auth";
 
 const router: IRouter = Router();
@@ -18,6 +18,7 @@ router.use(healthRouter);
 router.use(authRouter);
 router.use(reportRouter);
 router.use(agentUpdateRouter);
+router.use(analyticsPublicRouter);  // OAuth callback — must be before requireAuth
 
 router.use(requireAuth);
 
