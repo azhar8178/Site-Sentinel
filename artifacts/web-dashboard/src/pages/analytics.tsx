@@ -4,7 +4,7 @@ import { useLocation } from "wouter";
 import {
   Users, UserPlus, Activity, TrendingUp, MousePointerClick, Eye, Clock, RefreshCw,
   BarChart2, Link2, Link2Off, AlertCircle, ChevronDown, Globe, Smartphone, Monitor, Tablet,
-  ShoppingBag, Package, DollarSign, ArrowRight, ShoppingCart,
+  ShoppingBag, Package, DollarSign, ArrowRight,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -81,7 +81,8 @@ function formatRevenue(value: number): string {
 
 function dropOff(from: number, to: number): string {
   if (from === 0) return "—";
-  return `${Math.round((to / from) * 100)}%`;
+  const pct = Math.round((1 - to / from) * 100);
+  return `${pct}% drop-off`;
 }
 
 function MetricCard({
@@ -352,9 +353,9 @@ export default function Analytics() {
                     <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">Ecommerce · Last 30 Days</p>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                       <MetricCard icon={DollarSign} label="Revenue" value={formatRevenue(gaData.ecommerce.revenue)} sub="GA4 reporting currency" color="bg-emerald-100 text-emerald-700" delay={0.05} />
-                      <MetricCard icon={ShoppingBag} label="Orders" value={gaData.ecommerce.transactions.toLocaleString()} sub={`${gaData.ecommerce.conversionRate}% conversion rate`} color="bg-blue-100 text-blue-700" delay={0.1} />
+                      <MetricCard icon={ShoppingBag} label="Orders" value={gaData.ecommerce.transactions.toLocaleString()} sub="Completed purchases" color="bg-blue-100 text-blue-700" delay={0.1} />
                       <MetricCard icon={DollarSign} label="Avg Order Value" value={formatRevenue(gaData.ecommerce.avgOrderValue)} sub="Per transaction" color="bg-violet-100 text-violet-700" delay={0.15} />
-                      <MetricCard icon={ShoppingCart} label="Add to Carts" value={gaData.ecommerce.addToCarts.toLocaleString()} sub={`${gaData.ecommerce.checkouts.toLocaleString()} proceeded to checkout`} color="bg-orange-100 text-orange-700" delay={0.2} />
+                      <MetricCard icon={TrendingUp} label="Conversion Rate" value={`${gaData.ecommerce.conversionRate}%`} sub="Sessions that purchased" color="bg-orange-100 text-orange-700" delay={0.2} />
                     </div>
                   </div>
 

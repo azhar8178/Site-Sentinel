@@ -76,7 +76,8 @@ function formatRevenue(value: number): string {
 
 function dropOffPct(from: number, to: number): string {
   if (from === 0) return "—";
-  return `${Math.round((to / from) * 100)}%`;
+  const pct = Math.round((1 - to / from) * 100);
+  return `${pct}% drop-off`;
 }
 
 function MetricCard({
@@ -431,9 +432,9 @@ export default function AnalyticsScreen() {
                     {/* Revenue Summary 2×2 grid */}
                     <View style={styles.metricsGrid}>
                       <MetricCard icon="dollar-sign" label="Revenue" value={formatRevenue(gaData.ecommerce.revenue)} sub="GA4 reporting currency" iconBg="#D1FAE5" iconColor="#059669" />
-                      <MetricCard icon="shopping-bag" label="Orders" value={gaData.ecommerce.transactions.toLocaleString()} sub={`${gaData.ecommerce.conversionRate}% conv. rate`} iconBg="#DBEAFE" iconColor="#2563EB" />
-                      <MetricCard icon="trending-up" label="Avg Order Value" value={formatRevenue(gaData.ecommerce.avgOrderValue)} sub="Per transaction" iconBg="#EDE9FE" iconColor="#7C3AED" />
-                      <MetricCard icon="shopping-cart" label="Add to Carts" value={gaData.ecommerce.addToCarts.toLocaleString()} sub={`${gaData.ecommerce.checkouts.toLocaleString()} to checkout`} iconBg="#FFEDD5" iconColor="#EA580C" />
+                      <MetricCard icon="shopping-bag" label="Orders" value={gaData.ecommerce.transactions.toLocaleString()} sub="Completed purchases" iconBg="#DBEAFE" iconColor="#2563EB" />
+                      <MetricCard icon="dollar-sign" label="Avg Order Value" value={formatRevenue(gaData.ecommerce.avgOrderValue)} sub="Per transaction" iconBg="#EDE9FE" iconColor="#7C3AED" />
+                      <MetricCard icon="trending-up" label="Conversion Rate" value={`${gaData.ecommerce.conversionRate}%`} sub="Sessions that purchased" iconBg="#FFEDD5" iconColor="#EA580C" />
                     </View>
 
                     {/* Conversion Funnel */}
@@ -457,7 +458,7 @@ export default function AnalyticsScreen() {
                             {idx > 0 && (
                               <View style={styles.funnelArrowRow}>
                                 <Feather name="chevron-down" size={14} color={Colors.light.tabIconDefault} />
-                                <Text style={styles.funnelRate}>{rate} continued</Text>
+                                <Text style={styles.funnelRate}>{rate}</Text>
                               </View>
                             )}
                             <View style={styles.funnelStep}>
