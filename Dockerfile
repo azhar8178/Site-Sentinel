@@ -1,4 +1,4 @@
-FROM node:24-slim AS builder
+FROM public.ecr.aws/docker/library/node:24-slim AS builder
 ENV CI=true
 RUN npm install -g pnpm@10
 
@@ -25,7 +25,7 @@ COPY artifacts/web-dashboard/ ./artifacts/web-dashboard/
 RUN pnpm --filter @workspace/web-dashboard run build
 RUN pnpm --filter @workspace/api-server run build
 
-FROM node:24-slim
+FROM public.ecr.aws/docker/library/node:24-slim
 ENV CI=true NODE_ENV=production
 RUN npm install -g pnpm@10
 
