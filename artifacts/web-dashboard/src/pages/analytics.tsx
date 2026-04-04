@@ -4,6 +4,7 @@ import { useLocation } from "wouter";
 import {
   Users, UserPlus, Activity, TrendingUp, MousePointerClick, Eye, Clock, RefreshCw,
   BarChart2, Link2, Link2Off, AlertCircle, ChevronDown, Globe, Smartphone, Monitor, Tablet,
+  ShoppingBag, Package, DollarSign, ArrowRight, ShoppingCart,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -36,6 +37,18 @@ interface GAProperty {
   displayName: string;
 }
 
+interface GAEcommerce {
+  revenue: number;
+  transactions: number;
+  avgOrderValue: number;
+  conversionRate: number;
+  addToCarts: number;
+  checkouts: number;
+  cartToViewRate: number;
+  buyToDetailRate: number;
+  hasData: boolean;
+}
+
 interface GAData {
   propertyId: string;
   activeUsers: number;
@@ -50,12 +63,25 @@ interface GAData {
   topPages: { path: string; title: string; views: number; avgDurationSec: number }[];
   devices: { category: string; sessions: number; users: number }[];
   countries: { country: string; sessions: number; users: number }[];
+  ecommerce: GAEcommerce;
+  topProducts: { name: string; revenue: number; units: number; views: number }[];
 }
 
 function formatDuration(seconds: number): string {
   const m = Math.floor(seconds / 60);
   const s = seconds % 60;
   return m > 0 ? `${m}m ${s}s` : `${s}s`;
+}
+
+function formatRevenue(value: number): string {
+  if (value >= 1_000_000) return `€${(value / 1_000_000).toFixed(1)}M`;
+  if (value >= 1_000) return `€${(value / 1_000).toFixed(1)}k`;
+  return `€${value.toFixed(2)}`;
+}
+
+function dropOff(from: number, to: number): string {
+  if (from === 0) return "—";
+  return `${Math.round((to / from) * 100)}%`;
 }
 
 function MetricCard({
@@ -317,6 +343,99 @@ export default function Analytics() {
                 <MetricCard icon={Activity} label="Bounce Rate" value={`${gaData.bounceRate}%`} sub="Single-page sessions" color={gaData.bounceRate > 60 ? "bg-red-100 text-red-600" : "bg-yellow-100 text-yellow-600"} delay={0.3} />
                 <MetricCard icon={Clock} label="Avg Session Duration" value={formatDuration(gaData.avgSessionDurationSec)} sub="Time on site per session" color="bg-pink-100 text-pink-600" delay={0.35} />
               </div>
+
+              {/* ── Monetization ── */}
+              {gaData.ecommerce?.hasData ? (
+                <>
+                  {/* Revenue & Conversion strip */}
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">Ecommerce · Last 30 Days</p>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <MetricCard icon={DollarSign} label="Revenue" value={formatRevenue(gaData.ecommerce.revenue)} sub="GA4 reporting currency" color="bg-emerald-100 text-emerald-700" delay={0.05} />
+                      <MetricCard icon={ShoppingBag} label="Orders" value={gaData.ecommerce.transactions.toLocaleString()} sub={`${gaData.ecommerce.conversionRate}% conversion rate`} color="bg-blue-100 text-blue-700" delay={0.1} />
+                      <MetricCard icon={DollarSign} label="Avg Order Value" value={formatRevenue(gaData.ecommerce.avgOrderValue)} sub="Per transaction" color="bg-violet-100 text-violet-700" delay={0.15} />
+                      <MetricCard icon={ShoppingCart} label="Add to Carts" value={gaData.ecommerce.addToCarts.toLocaleString()} sub={`${gaData.ecommerce.checkouts.toLocaleString()} proceeded to checkout`} color="bg-orange-100 text-orange-700" delay={0.2} />
+                    </div>
+                  </div>
+
+                  {/* Conversion Funnel */}
+                  <Card className="shadow-none border">
+                    <CardHeader className="pb-2 pt-5 px-5">
+                      <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                        <TrendingUp className="w-4 h-4 text-muted-foreground" /> Conversion Funnel
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="px-5 pb-5">
+                      <div className="flex items-stretch gap-1">
+                        {[
+                          { label: "Sessions", value: gaData.sessions, color: "bg-blue-500" },
+                          { label: "Add to Cart", value: gaData.ecommerce.addToCarts, color: "bg-orange-500" },
+                          { label: "Checkout", value: gaData.ecommerce.checkouts, color: "bg-violet-500" },
+                          { label: "Purchase", value: gaData.ecommerce.transactions, color: "bg-emerald-500" },
+                        ].map((step, idx, arr) => {
+                          const prev = arr[idx - 1];
+                          const rate = prev ? dropOff(prev.value, step.value) : null;
+                          return (
+                            <div key={step.label} className="flex items-center gap-1 flex-1">
+                              {idx > 0 && (
+                                <div className="flex flex-col items-center shrink-0 px-1">
+                                  <ArrowRight className="w-4 h-4 text-muted-foreground/40" />
+                                  {rate && <span className="text-[10px] text-muted-foreground mt-0.5">{rate}</span>}
+                                </div>
+                              )}
+                              <div className="flex-1 bg-muted/30 rounded-xl p-3 text-center border">
+                                <div className={`w-2 h-2 rounded-full ${step.color} mx-auto mb-2`} />
+                                <p className="text-xs text-muted-foreground font-medium">{step.label}</p>
+                                <p className="text-lg font-bold font-display text-foreground mt-0.5">{step.value.toLocaleString()}</p>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Top Products */}
+                  {(gaData.topProducts?.length ?? 0) > 0 && (
+                    <Card className="shadow-none border">
+                      <CardHeader className="pb-2 pt-5 px-5">
+                        <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                          <Package className="w-4 h-4 text-muted-foreground" /> Top Products
+                        </CardTitle>
+                      </CardHeader>
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                          <thead className="border-t border-b bg-muted/30">
+                            <tr>
+                              <th className="text-left px-5 py-2.5 text-xs font-medium text-muted-foreground">Product</th>
+                              <th className="text-right px-5 py-2.5 text-xs font-medium text-muted-foreground">Revenue</th>
+                              <th className="text-right px-5 py-2.5 text-xs font-medium text-muted-foreground">Units</th>
+                              <th className="text-right px-5 py-2.5 text-xs font-medium text-muted-foreground">Views</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-border">
+                            {gaData.topProducts.map((p) => (
+                              <tr key={p.name} className="hover:bg-muted/20 transition-colors">
+                                <td className="px-5 py-3 max-w-xs">
+                                  <p className="font-medium text-xs truncate">{p.name}</p>
+                                </td>
+                                <td className="px-5 py-3 text-right text-xs font-mono font-semibold text-emerald-700">{formatRevenue(p.revenue)}</td>
+                                <td className="px-5 py-3 text-right text-xs font-mono">{p.units.toLocaleString()}</td>
+                                <td className="px-5 py-3 text-right text-xs text-muted-foreground font-mono">{p.views.toLocaleString()}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </Card>
+                  )}
+                </>
+              ) : (
+                <div className="flex items-center gap-3 px-5 py-4 bg-muted/30 border rounded-xl text-sm text-muted-foreground">
+                  <ShoppingBag className="w-5 h-5 shrink-0 opacity-50" />
+                  <span>Ecommerce tracking not detected on this property — revenue, orders, and product data will appear here once GA4 Enhanced Ecommerce is enabled on your Magento store.</span>
+                </div>
+              )}
 
               {/* Second row: Channels + Devices + Countries */}
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">

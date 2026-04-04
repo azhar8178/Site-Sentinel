@@ -281,13 +281,18 @@ router.post("/analytics/google/data", requireAuth, async (req, res, next) => {
       });
     }
 
-    const [reportResp, realtimeResp, channelsResp, pagesResp, devicesResp, countriesResp] = await Promise.all([
+    const [reportResp, realtimeResp, channelsResp, pagesResp, devicesResp, countriesResp, productsResp] = await Promise.all([
       gaReport({
         dateRanges: [{ startDate: "30daysAgo", endDate: "today" }],
         metrics: [
           { name: "sessions" }, { name: "newUsers" }, { name: "totalUsers" },
           { name: "engagementRate" }, { name: "bounceRate" },
           { name: "screenPageViews" }, { name: "averageSessionDuration" },
+          { name: "purchaseRevenue" }, { name: "transactions" },
+          { name: "ecommercePurchases" }, { name: "averagePurchaseRevenue" },
+          { name: "addToCarts" }, { name: "checkouts" },
+          { name: "cartToViewRate" }, { name: "buyToDetailRate" },
+          { name: "sessionConversionRate" },
         ],
       }),
       fetch(`${GA4_DATA_URL}/${propName}:runRealtimeReport`, {
@@ -322,6 +327,13 @@ router.post("/analytics/google/data", requireAuth, async (req, res, next) => {
         orderBys: [{ metric: { metricName: "sessions" }, desc: true }],
         limit: 10,
       }),
+      gaReport({
+        dateRanges: [{ startDate: "30daysAgo", endDate: "today" }],
+        dimensions: [{ name: "itemName" }],
+        metrics: [{ name: "itemRevenue" }, { name: "itemsPurchased" }, { name: "itemsViewed" }],
+        orderBys: [{ metric: { metricName: "itemRevenue" }, desc: true }],
+        limit: 10,
+      }),
     ]);
 
     if (!reportResp.ok) {
@@ -330,13 +342,14 @@ router.post("/analytics/google/data", requireAuth, async (req, res, next) => {
       return;
     }
 
-    const [reportData, realtimeData, channelsData, pagesData, devicesData, countriesData] = await Promise.all([
+    const [reportData, realtimeData, channelsData, pagesData, devicesData, countriesData, productsData] = await Promise.all([
       reportResp.json() as Promise<any>,
       realtimeResp.ok ? (realtimeResp.json() as Promise<any>) : Promise.resolve(null),
       channelsResp.ok ? (channelsResp.json() as Promise<any>) : Promise.resolve(null),
       pagesResp.ok ? (pagesResp.json() as Promise<any>) : Promise.resolve(null),
       devicesResp.ok ? (devicesResp.json() as Promise<any>) : Promise.resolve(null),
       countriesResp.ok ? (countriesResp.json() as Promise<any>) : Promise.resolve(null),
+      productsResp.ok ? (productsResp.json() as Promise<any>) : Promise.resolve(null),
     ]);
 
     const metricValues = reportData.rows?.[0]?.metricValues ?? [];
@@ -382,6 +395,36 @@ router.post("/analytics/google/data", requireAuth, async (req, res, next) => {
       users: Math.round(r.metrics[1]),
     }));
 
+    const revenue = parseFloat((metricsMap["purchaseRevenue"] ?? 0).toFixed(2));
+    const transactions = Math.round(metricsMap["ecommercePurchases"] ?? metricsMap["transactions"] ?? 0);
+    const avgOrderValue = parseFloat((metricsMap["averagePurchaseRevenue"] ?? 0).toFixed(2));
+    const addToCarts = Math.round(metricsMap["addToCarts"] ?? 0);
+    const checkouts = Math.round(metricsMap["checkouts"] ?? 0);
+    const cartToViewRate = parseFloat(((metricsMap["cartToViewRate"] ?? 0) * 100).toFixed(1));
+    const buyToDetailRate = parseFloat(((metricsMap["buyToDetailRate"] ?? 0) * 100).toFixed(1));
+    const conversionRate = parseFloat(((metricsMap["sessionConversionRate"] ?? 0) * 100).toFixed(2));
+
+    const ecommerce = {
+      revenue,
+      transactions,
+      avgOrderValue,
+      conversionRate,
+      addToCarts,
+      checkouts,
+      cartToViewRate,
+      buyToDetailRate,
+      hasData: revenue > 0 || transactions > 0 || addToCarts > 0,
+    };
+
+    const topProducts = parseRows(productsData, 1, 3)
+      .filter((r: any) => r.dims[0] && r.dims[0] !== "(not set)")
+      .map((r: any) => ({
+        name: r.dims[0],
+        revenue: parseFloat(r.metrics[0].toFixed(2)),
+        units: Math.round(r.metrics[1]),
+        views: Math.round(r.metrics[2]),
+      }));
+
     res.json({
       propertyId: fullPropName,
       activeUsers,
@@ -396,6 +439,8 @@ router.post("/analytics/google/data", requireAuth, async (req, res, next) => {
       topPages,
       devices,
       countries,
+      ecommerce,
+      topProducts,
     });
   } catch (err) {
     next(err);

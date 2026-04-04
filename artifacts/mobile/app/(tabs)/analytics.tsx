@@ -32,6 +32,18 @@ interface GAProperty {
   displayName: string;
 }
 
+interface GAEcommerce {
+  revenue: number;
+  transactions: number;
+  avgOrderValue: number;
+  conversionRate: number;
+  addToCarts: number;
+  checkouts: number;
+  cartToViewRate: number;
+  buyToDetailRate: number;
+  hasData: boolean;
+}
+
 interface GAData {
   propertyId: string;
   activeUsers: number;
@@ -46,12 +58,25 @@ interface GAData {
   topPages: { path: string; title: string; views: number; avgDurationSec: number }[];
   devices: { category: string; sessions: number; users: number }[];
   countries: { country: string; sessions: number; users: number }[];
+  ecommerce: GAEcommerce;
+  topProducts: { name: string; revenue: number; units: number; views: number }[];
 }
 
 function formatDuration(seconds: number): string {
   const m = Math.floor(seconds / 60);
   const s = seconds % 60;
   return m > 0 ? `${m}m ${s}s` : `${s}s`;
+}
+
+function formatRevenue(value: number): string {
+  if (value >= 1_000_000) return `€${(value / 1_000_000).toFixed(1)}M`;
+  if (value >= 1_000) return `€${(value / 1_000).toFixed(1)}k`;
+  return `€${value.toFixed(2)}`;
+}
+
+function dropOffPct(from: number, to: number): string {
+  if (from === 0) return "—";
+  return `${Math.round((to / from) * 100)}%`;
 }
 
 function MetricCard({
@@ -398,6 +423,85 @@ export default function AnalyticsScreen() {
                   <MetricCard icon="clock" label="Avg Session" value={formatDuration(gaData.avgSessionDurationSec)} sub="Time per session" iconBg="#FCE7F3" iconColor="#DB2777" />
                 </View>
 
+                {/* ── Monetization ── */}
+                {gaData.ecommerce?.hasData ? (
+                  <>
+                    <Text style={styles.sectionLabel}>ECOMMERCE · LAST 30 DAYS</Text>
+
+                    {/* Revenue Summary 2×2 grid */}
+                    <View style={styles.metricsGrid}>
+                      <MetricCard icon="dollar-sign" label="Revenue" value={formatRevenue(gaData.ecommerce.revenue)} sub="GA4 reporting currency" iconBg="#D1FAE5" iconColor="#059669" />
+                      <MetricCard icon="shopping-bag" label="Orders" value={gaData.ecommerce.transactions.toLocaleString()} sub={`${gaData.ecommerce.conversionRate}% conv. rate`} iconBg="#DBEAFE" iconColor="#2563EB" />
+                      <MetricCard icon="trending-up" label="Avg Order Value" value={formatRevenue(gaData.ecommerce.avgOrderValue)} sub="Per transaction" iconBg="#EDE9FE" iconColor="#7C3AED" />
+                      <MetricCard icon="shopping-cart" label="Add to Carts" value={gaData.ecommerce.addToCarts.toLocaleString()} sub={`${gaData.ecommerce.checkouts.toLocaleString()} to checkout`} iconBg="#FFEDD5" iconColor="#EA580C" />
+                    </View>
+
+                    {/* Conversion Funnel */}
+                    <View style={styles.sectionCard}>
+                      <View style={styles.sectionHeader}>
+                        <Feather name="filter" size={14} color={Colors.light.textSecondary} />
+                        <Text style={styles.sectionTitle}>Conversion Funnel</Text>
+                      </View>
+                      {[
+                        { label: "Sessions", value: gaData.sessions, color: Colors.light.tint },
+                        { label: "Add to Cart", value: gaData.ecommerce.addToCarts, color: "#EA580C" },
+                        { label: "Checkout", value: gaData.ecommerce.checkouts, color: "#7C3AED" },
+                        { label: "Purchase", value: gaData.ecommerce.transactions, color: Colors.light.success },
+                      ].map((step, idx, arr) => {
+                        const prev = arr[idx - 1];
+                        const maxVal = arr[0]?.value ?? 1;
+                        const barPct = maxVal > 0 ? Math.round((step.value / maxVal) * 100) : 0;
+                        const rate = prev ? dropOffPct(prev.value, step.value) : null;
+                        return (
+                          <View key={step.label}>
+                            {idx > 0 && (
+                              <View style={styles.funnelArrowRow}>
+                                <Feather name="chevron-down" size={14} color={Colors.light.tabIconDefault} />
+                                <Text style={styles.funnelRate}>{rate} continued</Text>
+                              </View>
+                            )}
+                            <View style={styles.funnelStep}>
+                              <View style={styles.funnelLeft}>
+                                <View style={[styles.funnelDot, { backgroundColor: step.color }]} />
+                                <Text style={styles.funnelLabel}>{step.label}</Text>
+                              </View>
+                              <Text style={[styles.funnelValue, { color: step.color }]}>{step.value.toLocaleString()}</Text>
+                            </View>
+                            <View style={styles.barTrack}>
+                              <View style={[styles.barFill, { width: `${barPct}%` as any, backgroundColor: `${step.color}80` }]} />
+                            </View>
+                          </View>
+                        );
+                      })}
+                    </View>
+
+                    {/* Top Products */}
+                    {(gaData.topProducts?.length ?? 0) > 0 && (
+                      <View style={styles.sectionCard}>
+                        <View style={styles.sectionHeader}>
+                          <Feather name="package" size={14} color={Colors.light.textSecondary} />
+                          <Text style={styles.sectionTitle}>Top Products</Text>
+                        </View>
+                        {gaData.topProducts.map((p, idx) => (
+                          <View key={p.name} style={[styles.productRow, idx > 0 && { borderTopWidth: 1, borderTopColor: Colors.light.border }]}>
+                            <Text style={styles.productName} numberOfLines={1}>{p.name}</Text>
+                            <View style={styles.productMeta}>
+                              <Text style={styles.productRevenue}>{formatRevenue(p.revenue)}</Text>
+                              <Text style={styles.productStat}>{p.units.toLocaleString()} sold</Text>
+                              <Text style={styles.productStat}>{p.views.toLocaleString()} views</Text>
+                            </View>
+                          </View>
+                        ))}
+                      </View>
+                    )}
+                  </>
+                ) : (
+                  <View style={styles.ecommerceNotice}>
+                    <Feather name="shopping-bag" size={16} color={Colors.light.tabIconDefault} />
+                    <Text style={styles.ecommerceNoticeText}>Ecommerce tracking not detected — enable GA4 Enhanced Ecommerce on your Magento store to see revenue data here.</Text>
+                  </View>
+                )}
+
                 {/* Traffic Channels */}
                 {(gaData.channels?.length ?? 0) > 0 && (
                   <View style={styles.sectionCard}>
@@ -591,6 +695,23 @@ const styles = StyleSheet.create({
   pageRight: { alignItems: "flex-end", flexShrink: 0 },
   pageViews: { fontSize: 13, fontFamily: "Inter_700Bold", color: Colors.light.text },
   pageTime: { fontSize: 10, fontFamily: "Inter_400Regular", color: Colors.light.textSecondary, marginTop: 2 },
+
+  funnelStep: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: 6 },
+  funnelLeft: { flexDirection: "row", alignItems: "center", gap: 8 },
+  funnelDot: { width: 10, height: 10, borderRadius: 5 },
+  funnelLabel: { fontSize: 13, fontFamily: "Inter_500Medium", color: Colors.light.text },
+  funnelValue: { fontSize: 15, fontFamily: "Inter_700Bold" },
+  funnelArrowRow: { flexDirection: "row", alignItems: "center", gap: 4, paddingLeft: 2, paddingVertical: 2 },
+  funnelRate: { fontSize: 11, fontFamily: "Inter_400Regular", color: Colors.light.tabIconDefault },
+
+  productRow: { paddingVertical: 10 },
+  productName: { fontSize: 13, fontFamily: "Inter_500Medium", color: Colors.light.text, marginBottom: 4 },
+  productMeta: { flexDirection: "row", gap: 12 },
+  productRevenue: { fontSize: 12, fontFamily: "Inter_700Bold", color: Colors.light.success },
+  productStat: { fontSize: 11, fontFamily: "Inter_400Regular", color: Colors.light.textSecondary },
+
+  ecommerceNotice: { flexDirection: "row", alignItems: "flex-start", gap: 10, backgroundColor: Colors.light.surface, borderRadius: 12, borderWidth: 1, borderColor: Colors.light.border, padding: 14, marginBottom: 12 },
+  ecommerceNoticeText: { flex: 1, fontSize: 12, fontFamily: "Inter_400Regular", color: Colors.light.textSecondary, lineHeight: 18 },
 
   dataSource: { fontSize: 11, fontFamily: "Inter_400Regular", color: Colors.light.tabIconDefault, textAlign: "right", marginBottom: 8 },
 
