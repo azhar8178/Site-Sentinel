@@ -273,35 +273,54 @@ router.post("/analytics/google/data", requireAuth, async (req, res, next) => {
     const propName = String(propertyId).replace(/^properties\//, "");
     const fullPropName = `properties/${propName}`;
 
-    const [reportResp, realtimeResp] = await Promise.all([
-      fetch(`${GA4_DATA_URL}/${propName}:runReport`, {
+    function gaReport(body: object) {
+      return fetch(`${GA4_DATA_URL}/${propName}:runReport`, {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          dateRanges: [{ startDate: "30daysAgo", endDate: "today" }],
-          metrics: [
-            { name: "sessions" },
-            { name: "newUsers" },
-            { name: "totalUsers" },
-            { name: "engagementRate" },
-            { name: "bounceRate" },
-            { name: "screenPageViews" },
-            { name: "averageSessionDuration" },
-          ],
-        }),
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+    }
+
+    const [reportResp, realtimeResp, channelsResp, pagesResp, devicesResp, countriesResp] = await Promise.all([
+      gaReport({
+        dateRanges: [{ startDate: "30daysAgo", endDate: "today" }],
+        metrics: [
+          { name: "sessions" }, { name: "newUsers" }, { name: "totalUsers" },
+          { name: "engagementRate" }, { name: "bounceRate" },
+          { name: "screenPageViews" }, { name: "averageSessionDuration" },
+        ],
       }),
       fetch(`${GA4_DATA_URL}/${propName}:runRealtimeReport`, {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          metrics: [{ name: "activeUsers" }],
-        }),
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ metrics: [{ name: "activeUsers" }] }),
+      }),
+      gaReport({
+        dateRanges: [{ startDate: "30daysAgo", endDate: "today" }],
+        dimensions: [{ name: "sessionDefaultChannelGroup" }],
+        metrics: [{ name: "sessions" }, { name: "totalUsers" }],
+        orderBys: [{ metric: { metricName: "sessions" }, desc: true }],
+        limit: 10,
+      }),
+      gaReport({
+        dateRanges: [{ startDate: "30daysAgo", endDate: "today" }],
+        dimensions: [{ name: "pagePath" }, { name: "pageTitle" }],
+        metrics: [{ name: "screenPageViews" }, { name: "averageSessionDuration" }],
+        orderBys: [{ metric: { metricName: "screenPageViews" }, desc: true }],
+        limit: 10,
+      }),
+      gaReport({
+        dateRanges: [{ startDate: "30daysAgo", endDate: "today" }],
+        dimensions: [{ name: "deviceCategory" }],
+        metrics: [{ name: "sessions" }, { name: "totalUsers" }],
+        orderBys: [{ metric: { metricName: "sessions" }, desc: true }],
+      }),
+      gaReport({
+        dateRanges: [{ startDate: "30daysAgo", endDate: "today" }],
+        dimensions: [{ name: "country" }],
+        metrics: [{ name: "sessions" }, { name: "totalUsers" }],
+        orderBys: [{ metric: { metricName: "sessions" }, desc: true }],
+        limit: 10,
       }),
     ]);
 
@@ -311,9 +330,13 @@ router.post("/analytics/google/data", requireAuth, async (req, res, next) => {
       return;
     }
 
-    const [reportData, realtimeData] = await Promise.all([
+    const [reportData, realtimeData, channelsData, pagesData, devicesData, countriesData] = await Promise.all([
       reportResp.json() as Promise<any>,
       realtimeResp.ok ? (realtimeResp.json() as Promise<any>) : Promise.resolve(null),
+      channelsResp.ok ? (channelsResp.json() as Promise<any>) : Promise.resolve(null),
+      pagesResp.ok ? (pagesResp.json() as Promise<any>) : Promise.resolve(null),
+      devicesResp.ok ? (devicesResp.json() as Promise<any>) : Promise.resolve(null),
+      countriesResp.ok ? (countriesResp.json() as Promise<any>) : Promise.resolve(null),
     ]);
 
     const metricValues = reportData.rows?.[0]?.metricValues ?? [];
@@ -327,6 +350,38 @@ router.post("/analytics/google/data", requireAuth, async (req, res, next) => {
       ? parseInt(realtimeData.rows[0].metricValues[0].value)
       : 0;
 
+    function parseRows(data: any, dimCount: number, metricCount: number) {
+      return (data?.rows ?? []).map((row: any) => ({
+        dims: (row.dimensionValues ?? []).slice(0, dimCount).map((d: any) => d.value as string),
+        metrics: (row.metricValues ?? []).slice(0, metricCount).map((m: any) => parseFloat(m.value ?? "0")),
+      }));
+    }
+
+    const channels = parseRows(channelsData, 1, 2).map((r: any) => ({
+      name: r.dims[0],
+      sessions: Math.round(r.metrics[0]),
+      users: Math.round(r.metrics[1]),
+    }));
+
+    const topPages = parseRows(pagesData, 2, 2).map((r: any) => ({
+      path: r.dims[0],
+      title: r.dims[1],
+      views: Math.round(r.metrics[0]),
+      avgDurationSec: Math.round(r.metrics[1]),
+    }));
+
+    const devices = parseRows(devicesData, 1, 2).map((r: any) => ({
+      category: r.dims[0],
+      sessions: Math.round(r.metrics[0]),
+      users: Math.round(r.metrics[1]),
+    }));
+
+    const countries = parseRows(countriesData, 1, 2).map((r: any) => ({
+      country: r.dims[0],
+      sessions: Math.round(r.metrics[0]),
+      users: Math.round(r.metrics[1]),
+    }));
+
     res.json({
       propertyId: fullPropName,
       activeUsers,
@@ -337,6 +392,10 @@ router.post("/analytics/google/data", requireAuth, async (req, res, next) => {
       bounceRate: parseFloat(((metricsMap["bounceRate"] ?? 0) * 100).toFixed(1)),
       pageViews: Math.round(metricsMap["screenPageViews"] ?? 0),
       avgSessionDurationSec: Math.round(metricsMap["averageSessionDuration"] ?? 0),
+      channels,
+      topPages,
+      devices,
+      countries,
     });
   } catch (err) {
     next(err);

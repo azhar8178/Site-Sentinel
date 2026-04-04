@@ -42,6 +42,10 @@ interface GAData {
   bounceRate: number;
   pageViews: number;
   avgSessionDurationSec: number;
+  channels: { name: string; sessions: number; users: number }[];
+  topPages: { path: string; title: string; views: number; avgDurationSec: number }[];
+  devices: { category: string; sessions: number; users: number }[];
+  countries: { country: string; sessions: number; users: number }[];
 }
 
 function formatDuration(seconds: number): string {
@@ -394,6 +398,111 @@ export default function AnalyticsScreen() {
                   <MetricCard icon="clock" label="Avg Session" value={formatDuration(gaData.avgSessionDurationSec)} sub="Time per session" iconBg="#FCE7F3" iconColor="#DB2777" />
                 </View>
 
+                {/* Traffic Channels */}
+                {(gaData.channels?.length ?? 0) > 0 && (
+                  <View style={styles.sectionCard}>
+                    <View style={styles.sectionHeader}>
+                      <Feather name="trending-up" size={14} color={Colors.light.textSecondary} />
+                      <Text style={styles.sectionTitle}>Traffic Channels</Text>
+                    </View>
+                    {gaData.channels.map((ch) => {
+                      const pct = gaData.sessions > 0 ? Math.round((ch.sessions / gaData.sessions) * 100) : 0;
+                      return (
+                        <View key={ch.name} style={styles.barRow}>
+                          <View style={styles.barLabelRow}>
+                            <Text style={styles.barLabel}>{ch.name}</Text>
+                            <Text style={styles.barValue}>{ch.sessions.toLocaleString()} <Text style={styles.barPct}>({pct}%)</Text></Text>
+                          </View>
+                          <View style={styles.barTrack}>
+                            <View style={[styles.barFill, { width: `${pct}%` as any, backgroundColor: Colors.light.tint }]} />
+                          </View>
+                        </View>
+                      );
+                    })}
+                  </View>
+                )}
+
+                {/* Devices */}
+                {(gaData.devices?.length ?? 0) > 0 && (
+                  <View style={styles.sectionCard}>
+                    <View style={styles.sectionHeader}>
+                      <Feather name="smartphone" size={14} color={Colors.light.textSecondary} />
+                      <Text style={styles.sectionTitle}>Devices</Text>
+                    </View>
+                    {gaData.devices.map((d) => {
+                      const pct = gaData.sessions > 0 ? Math.round((d.sessions / gaData.sessions) * 100) : 0;
+                      const icon = d.category === "mobile" ? "smartphone" : d.category === "tablet" ? "tablet" : "monitor";
+                      return (
+                        <View key={d.category} style={styles.barRow}>
+                          <View style={styles.barLabelRow}>
+                            <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
+                              <Feather name={icon as any} size={12} color={Colors.light.textSecondary} />
+                              <Text style={[styles.barLabel, { textTransform: "capitalize" }]}>{d.category}</Text>
+                            </View>
+                            <Text style={styles.barValue}>{d.sessions.toLocaleString()} <Text style={styles.barPct}>({pct}%)</Text></Text>
+                          </View>
+                          <View style={styles.barTrack}>
+                            <View style={[styles.barFill, { width: `${pct}%` as any, backgroundColor: "#7C3AED" }]} />
+                          </View>
+                        </View>
+                      );
+                    })}
+                  </View>
+                )}
+
+                {/* Top Countries */}
+                {(gaData.countries?.length ?? 0) > 0 && (
+                  <View style={styles.sectionCard}>
+                    <View style={styles.sectionHeader}>
+                      <Feather name="globe" size={14} color={Colors.light.textSecondary} />
+                      <Text style={styles.sectionTitle}>Top Countries</Text>
+                    </View>
+                    {gaData.countries.slice(0, 8).map((c) => {
+                      const pct = gaData.sessions > 0 ? Math.round((c.sessions / gaData.sessions) * 100) : 0;
+                      return (
+                        <View key={c.country} style={styles.barRow}>
+                          <View style={styles.barLabelRow}>
+                            <Text style={styles.barLabel}>{c.country}</Text>
+                            <Text style={styles.barValue}>{c.sessions.toLocaleString()} <Text style={styles.barPct}>({pct}%)</Text></Text>
+                          </View>
+                          <View style={styles.barTrack}>
+                            <View style={[styles.barFill, { width: `${pct}%` as any, backgroundColor: Colors.light.success }]} />
+                          </View>
+                        </View>
+                      );
+                    })}
+                  </View>
+                )}
+
+                {/* Top Pages */}
+                {(gaData.topPages?.length ?? 0) > 0 && (
+                  <View style={styles.sectionCard}>
+                    <View style={styles.sectionHeader}>
+                      <Feather name="eye" size={14} color={Colors.light.textSecondary} />
+                      <Text style={styles.sectionTitle}>Top Pages</Text>
+                    </View>
+                    {gaData.topPages.map((p, idx) => {
+                      const maxViews = gaData.topPages[0]?.views ?? 1;
+                      const pct = Math.round((p.views / maxViews) * 100);
+                      return (
+                        <View key={p.path} style={[styles.pageRow, idx > 0 && { borderTopWidth: 1, borderTopColor: Colors.light.border }]}>
+                          <View style={styles.pageLeft}>
+                            <Text style={styles.pageTitle} numberOfLines={1}>{p.title || p.path}</Text>
+                            <Text style={styles.pagePath} numberOfLines={1}>{p.path}</Text>
+                            <View style={styles.barTrack}>
+                              <View style={[styles.barFill, { width: `${pct}%` as any, backgroundColor: `${Colors.light.tint}70` }]} />
+                            </View>
+                          </View>
+                          <View style={styles.pageRight}>
+                            <Text style={styles.pageViews}>{p.views.toLocaleString()}</Text>
+                            <Text style={styles.pageTime}>{formatDuration(p.avgDurationSec)}</Text>
+                          </View>
+                        </View>
+                      );
+                    })}
+                  </View>
+                )}
+
                 <Text style={styles.dataSource}>
                   Google Analytics 4 · {gaData.propertyId}
                 </Text>
@@ -464,6 +573,24 @@ const styles = StyleSheet.create({
 
   sectionLabel: { fontSize: 10, fontFamily: "Inter_600SemiBold", color: Colors.light.textSecondary, letterSpacing: 1, marginBottom: 10 },
   metricsGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginBottom: 16 },
+
+  sectionCard: { backgroundColor: Colors.light.surface, borderRadius: 14, borderWidth: 1, borderColor: Colors.light.border, padding: 16, marginBottom: 12 },
+  sectionHeader: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 14 },
+  sectionTitle: { fontSize: 13, fontFamily: "Inter_600SemiBold", color: Colors.light.text },
+  barRow: { marginBottom: 10 },
+  barLabelRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 5 },
+  barLabel: { fontSize: 12, fontFamily: "Inter_500Medium", color: Colors.light.text },
+  barValue: { fontSize: 11, fontFamily: "Inter_400Regular", color: Colors.light.textSecondary },
+  barPct: { color: Colors.light.tabIconDefault },
+  barTrack: { height: 5, backgroundColor: Colors.light.border, borderRadius: 3, overflow: "hidden" },
+  barFill: { height: "100%", borderRadius: 3 },
+  pageRow: { paddingVertical: 10, flexDirection: "row", gap: 10 },
+  pageLeft: { flex: 1, minWidth: 0 },
+  pageTitle: { fontSize: 12, fontFamily: "Inter_500Medium", color: Colors.light.text, marginBottom: 2 },
+  pagePath: { fontSize: 10, fontFamily: "Inter_400Regular", color: Colors.light.textSecondary, marginBottom: 5 },
+  pageRight: { alignItems: "flex-end", flexShrink: 0 },
+  pageViews: { fontSize: 13, fontFamily: "Inter_700Bold", color: Colors.light.text },
+  pageTime: { fontSize: 10, fontFamily: "Inter_400Regular", color: Colors.light.textSecondary, marginTop: 2 },
 
   dataSource: { fontSize: 11, fontFamily: "Inter_400Regular", color: Colors.light.tabIconDefault, textAlign: "right", marginBottom: 8 },
 

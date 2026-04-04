@@ -3,9 +3,9 @@ import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import {
   Users, UserPlus, Activity, TrendingUp, MousePointerClick, Eye, Clock, RefreshCw,
-  BarChart2, Link2, Link2Off, AlertCircle, ChevronDown,
+  BarChart2, Link2, Link2Off, AlertCircle, ChevronDown, Globe, Smartphone, Monitor, Tablet,
 } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 
@@ -46,6 +46,10 @@ interface GAData {
   bounceRate: number;
   pageViews: number;
   avgSessionDurationSec: number;
+  channels: { name: string; sessions: number; users: number }[];
+  topPages: { path: string; title: string; views: number; avgDurationSec: number }[];
+  devices: { category: string; sessions: number; users: number }[];
+  countries: { country: string; sessions: number; users: number }[];
 }
 
 function formatDuration(seconds: number): string {
@@ -55,35 +59,21 @@ function formatDuration(seconds: number): string {
 }
 
 function MetricCard({
-  icon: Icon,
-  label,
-  value,
-  sub,
-  color,
-  delay,
+  icon: Icon, label, value, sub, color, delay,
 }: {
-  icon: any;
-  label: string;
-  value: string | number;
-  sub?: string;
-  color: string;
-  delay?: number;
+  icon: any; label: string; value: string | number; sub?: string; color: string; delay?: number;
 }) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: delay ?? 0 }}
-    >
+    <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: delay ?? 0 }}>
       <Card className="h-full hover:border-primary/20 transition-colors">
-        <CardContent className="p-6">
+        <CardContent className="p-5">
           <div className="flex justify-between items-start">
             <div>
               <p className="text-sm font-medium text-muted-foreground mb-1">{label}</p>
               <h3 className="text-3xl font-bold font-display text-foreground">{value}</h3>
               {sub && <p className="text-xs text-muted-foreground mt-1">{sub}</p>}
             </div>
-            <div className={`p-3 rounded-xl ${color}`}>
+            <div className={`p-2.5 rounded-xl ${color}`}>
               <Icon className="w-5 h-5" />
             </div>
           </div>
@@ -93,8 +83,38 @@ function MetricCard({
   );
 }
 
+function HorizBar({ value, max, color = "bg-primary" }: { value: number; max: number; color?: string }) {
+  const pct = max > 0 ? Math.round((value / max) * 100) : 0;
+  return (
+    <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+      <div className={`h-full rounded-full ${color}`} style={{ width: `${pct}%` }} />
+    </div>
+  );
+}
+
+const DEVICE_ICONS: Record<string, any> = {
+  mobile: Smartphone,
+  desktop: Monitor,
+  tablet: Tablet,
+};
+
+const CHANNEL_COLORS: Record<string, string> = {
+  "Organic Search": "bg-emerald-500",
+  "Direct": "bg-blue-500",
+  "Referral": "bg-violet-500",
+  "Organic Social": "bg-pink-500",
+  "Paid Search": "bg-orange-500",
+  "Email": "bg-cyan-500",
+  "Organic Video": "bg-red-500",
+  "Unassigned": "bg-gray-400",
+};
+
+function channelColor(name: string) {
+  return CHANNEL_COLORS[name] ?? "bg-gray-400";
+}
+
 export default function Analytics() {
-  const [location] = useLocation();
+  const [_location] = useLocation();
   const queryClient = useQueryClient();
   const [propertyPickerOpen, setPropertyPickerOpen] = useState(false);
   const [urlError, setUrlError] = useState<string | null>(null);
@@ -164,8 +184,8 @@ export default function Analytics() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-display font-bold">Analytics</h1>
-          <p className="text-muted-foreground mt-1">Google Analytics 4 — real-time & 30-day overview</p>
+          <h1 className="text-2xl font-display font-bold">Analytics</h1>
+          <p className="text-muted-foreground text-sm mt-0.5">Google Analytics 4 — real-time &amp; 30-day overview</p>
         </div>
         {status?.connected && gaData && (
           <Button variant="outline" onClick={() => refetchData()} disabled={dataLoading} className="gap-2 bg-white">
@@ -208,7 +228,6 @@ export default function Analytics() {
               </div>
             </div>
             <div className="flex items-center gap-3">
-              {/* Property Picker */}
               <div className="relative">
                 <button
                   onClick={() => setPropertyPickerOpen(!propertyPickerOpen)}
@@ -242,8 +261,7 @@ export default function Analytics() {
                 )}
               </div>
               <Button
-                variant="ghost"
-                size="sm"
+                variant="ghost" size="sm"
                 onClick={() => disconnectMutation.mutate()}
                 disabled={disconnectMutation.isPending}
                 className="text-muted-foreground hover:text-destructive gap-2"
@@ -274,82 +292,164 @@ export default function Analytics() {
           ) : gaData ? (
             <>
               {/* Active Users — Realtime */}
-              <div className="grid grid-cols-1 gap-4">
-                <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}>
-                  <Card className="border-primary/30 bg-primary/5">
-                    <CardContent className="p-6 flex items-center gap-6">
-                      <div className="p-4 bg-primary/10 rounded-xl text-primary">
-                        <Activity className="w-8 h-8" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-muted-foreground">Active Users Right Now</p>
-                        <h2 className="text-5xl font-bold font-display text-primary mt-1">{gaData.activeUsers.toLocaleString()}</h2>
-                        <p className="text-xs text-muted-foreground mt-1">Real-time — updates every 30s</p>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              </div>
+              <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}>
+                <Card className="border-primary/30 bg-primary/5">
+                  <CardContent className="p-6 flex items-center gap-6">
+                    <div className="p-4 bg-primary/10 rounded-xl text-primary">
+                      <Activity className="w-8 h-8" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Active Users Right Now</p>
+                      <h2 className="text-5xl font-bold font-display text-primary mt-1">{gaData.activeUsers.toLocaleString()}</h2>
+                      <p className="text-xs text-muted-foreground mt-1">Real-time — updates every 30s</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
 
               {/* 30-day Metrics Grid */}
-              <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
-                <MetricCard
-                  icon={Users}
-                  label="Total Users"
-                  value={gaData.totalUsers.toLocaleString()}
-                  sub="Last 30 days"
-                  color="bg-blue-100 text-blue-600"
-                  delay={0.05}
-                />
-                <MetricCard
-                  icon={UserPlus}
-                  label="New Users"
-                  value={gaData.newUsers.toLocaleString()}
-                  sub={`${gaData.totalUsers > 0 ? Math.round((gaData.newUsers / gaData.totalUsers) * 100) : 0}% of total`}
-                  color="bg-violet-100 text-violet-600"
-                  delay={0.1}
-                />
-                <MetricCard
-                  icon={MousePointerClick}
-                  label="Sessions"
-                  value={gaData.sessions.toLocaleString()}
-                  sub="Last 30 days"
-                  color="bg-orange-100 text-orange-600"
-                  delay={0.15}
-                />
-                <MetricCard
-                  icon={Eye}
-                  label="Page Views"
-                  value={gaData.pageViews.toLocaleString()}
-                  sub={`${gaData.sessions > 0 ? (gaData.pageViews / gaData.sessions).toFixed(1) : 0} per session`}
-                  color="bg-cyan-100 text-cyan-600"
-                  delay={0.2}
-                />
-                <MetricCard
-                  icon={TrendingUp}
-                  label="Engagement Rate"
-                  value={`${gaData.engagementRate}%`}
-                  sub="% of engaged sessions"
-                  color="bg-emerald-100 text-emerald-600"
-                  delay={0.25}
-                />
-                <MetricCard
-                  icon={Activity}
-                  label="Bounce Rate"
-                  value={`${gaData.bounceRate}%`}
-                  sub="Single-page sessions"
-                  color={gaData.bounceRate > 60 ? "bg-red-100 text-red-600" : "bg-yellow-100 text-yellow-600"}
-                  delay={0.3}
-                />
-                <MetricCard
-                  icon={Clock}
-                  label="Avg Session Duration"
-                  value={formatDuration(gaData.avgSessionDurationSec)}
-                  sub="Time on site per session"
-                  color="bg-pink-100 text-pink-600"
-                  delay={0.35}
-                />
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <MetricCard icon={Users} label="Total Users" value={gaData.totalUsers.toLocaleString()} sub="Last 30 days" color="bg-blue-100 text-blue-600" delay={0.05} />
+                <MetricCard icon={UserPlus} label="New Users" value={gaData.newUsers.toLocaleString()} sub={`${gaData.totalUsers > 0 ? Math.round((gaData.newUsers / gaData.totalUsers) * 100) : 0}% of total`} color="bg-violet-100 text-violet-600" delay={0.1} />
+                <MetricCard icon={MousePointerClick} label="Sessions" value={gaData.sessions.toLocaleString()} sub="Last 30 days" color="bg-orange-100 text-orange-600" delay={0.15} />
+                <MetricCard icon={Eye} label="Page Views" value={gaData.pageViews.toLocaleString()} sub={`${gaData.sessions > 0 ? (gaData.pageViews / gaData.sessions).toFixed(1) : 0} per session`} color="bg-cyan-100 text-cyan-600" delay={0.2} />
+                <MetricCard icon={TrendingUp} label="Engagement Rate" value={`${gaData.engagementRate}%`} sub="% of engaged sessions" color="bg-emerald-100 text-emerald-600" delay={0.25} />
+                <MetricCard icon={Activity} label="Bounce Rate" value={`${gaData.bounceRate}%`} sub="Single-page sessions" color={gaData.bounceRate > 60 ? "bg-red-100 text-red-600" : "bg-yellow-100 text-yellow-600"} delay={0.3} />
+                <MetricCard icon={Clock} label="Avg Session Duration" value={formatDuration(gaData.avgSessionDurationSec)} sub="Time on site per session" color="bg-pink-100 text-pink-600" delay={0.35} />
               </div>
+
+              {/* Second row: Channels + Devices + Countries */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+
+                {/* Traffic Channels */}
+                {(gaData.channels?.length ?? 0) > 0 && (
+                  <Card className="shadow-none border">
+                    <CardHeader className="pb-2 pt-5 px-5">
+                      <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                        <TrendingUp className="w-4 h-4 text-muted-foreground" /> Traffic Channels
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="px-5 pb-5 space-y-3">
+                      {gaData.channels.map((ch) => {
+                        const pct = gaData.sessions > 0 ? Math.round((ch.sessions / gaData.sessions) * 100) : 0;
+                        return (
+                          <div key={ch.name} className="space-y-1">
+                            <div className="flex items-center justify-between text-xs">
+                              <span className="flex items-center gap-1.5 font-medium text-foreground">
+                                <span className={`w-2 h-2 rounded-full shrink-0 ${channelColor(ch.name)}`} />
+                                {ch.name}
+                              </span>
+                              <span className="text-muted-foreground font-mono">{ch.sessions.toLocaleString()} <span className="text-muted-foreground/60">({pct}%)</span></span>
+                            </div>
+                            <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                              <div className={`h-full rounded-full ${channelColor(ch.name)}`} style={{ width: `${pct}%` }} />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Device Breakdown */}
+                {(gaData.devices?.length ?? 0) > 0 && (
+                  <Card className="shadow-none border">
+                    <CardHeader className="pb-2 pt-5 px-5">
+                      <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                        <Smartphone className="w-4 h-4 text-muted-foreground" /> Devices
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="px-5 pb-5 space-y-3">
+                      {gaData.devices.map((d) => {
+                        const pct = gaData.sessions > 0 ? Math.round((d.sessions / gaData.sessions) * 100) : 0;
+                        const DevIcon = DEVICE_ICONS[d.category.toLowerCase()] ?? Monitor;
+                        return (
+                          <div key={d.category} className="space-y-1">
+                            <div className="flex items-center justify-between text-xs">
+                              <span className="flex items-center gap-1.5 font-medium text-foreground capitalize">
+                                <DevIcon className="w-3.5 h-3.5 text-muted-foreground" />
+                                {d.category}
+                              </span>
+                              <span className="text-muted-foreground font-mono">{d.sessions.toLocaleString()} <span className="text-muted-foreground/60">({pct}%)</span></span>
+                            </div>
+                            <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                              <div className="h-full rounded-full bg-primary/70" style={{ width: `${pct}%` }} />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Top Countries */}
+                {(gaData.countries?.length ?? 0) > 0 && (
+                  <Card className="shadow-none border">
+                    <CardHeader className="pb-2 pt-5 px-5">
+                      <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                        <Globe className="w-4 h-4 text-muted-foreground" /> Top Countries
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="px-5 pb-5 space-y-3">
+                      {gaData.countries.slice(0, 8).map((c) => {
+                        const pct = gaData.sessions > 0 ? Math.round((c.sessions / gaData.sessions) * 100) : 0;
+                        return (
+                          <div key={c.country} className="space-y-1">
+                            <div className="flex items-center justify-between text-xs">
+                              <span className="font-medium text-foreground">{c.country}</span>
+                              <span className="text-muted-foreground font-mono">{c.sessions.toLocaleString()} <span className="text-muted-foreground/60">({pct}%)</span></span>
+                            </div>
+                            <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                              <div className="h-full rounded-full bg-emerald-500/70" style={{ width: `${pct}%` }} />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+
+              {/* Top Pages */}
+              {(gaData.topPages?.length ?? 0) > 0 && (
+                <Card className="shadow-none border">
+                  <CardHeader className="pb-2 pt-5 px-5">
+                    <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                      <Eye className="w-4 h-4 text-muted-foreground" /> Top Pages
+                    </CardTitle>
+                  </CardHeader>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead className="border-t border-b bg-muted/30">
+                        <tr>
+                          <th className="text-left px-5 py-2.5 text-xs font-medium text-muted-foreground">Page</th>
+                          <th className="text-right px-5 py-2.5 text-xs font-medium text-muted-foreground">Views</th>
+                          <th className="text-right px-5 py-2.5 text-xs font-medium text-muted-foreground">Avg Time</th>
+                          <th className="text-right px-5 py-2.5 text-xs font-medium text-muted-foreground w-32">Share</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border">
+                        {gaData.topPages.map((p) => {
+                          const maxViews = gaData.topPages[0]?.views ?? 1;
+                          return (
+                            <tr key={p.path} className="hover:bg-muted/20 transition-colors">
+                              <td className="px-5 py-3 max-w-xs">
+                                <p className="font-medium text-xs truncate">{p.title || p.path}</p>
+                                <p className="text-xs text-muted-foreground font-mono truncate">{p.path}</p>
+                              </td>
+                              <td className="px-5 py-3 text-right text-xs font-mono font-semibold">{p.views.toLocaleString()}</td>
+                              <td className="px-5 py-3 text-right text-xs text-muted-foreground">{formatDuration(p.avgDurationSec)}</td>
+                              <td className="px-5 py-3">
+                                <HorizBar value={p.views} max={maxViews} color="bg-primary/60" />
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </Card>
+              )}
 
               <p className="text-xs text-muted-foreground text-right">
                 Data from Google Analytics 4 · Property: {gaData.propertyId}
@@ -373,7 +473,6 @@ function NotConfiguredCard() {
           <h3 className="text-lg font-semibold font-display">Google OAuth not configured</h3>
           <p className="text-muted-foreground text-sm mt-2 max-w-md mx-auto">
             Add your Google OAuth credentials in <strong>Settings → Google Analytics</strong> to enable this integration.
-            The credentials are stored in the database — no environment variables required.
           </p>
         </div>
         <div className="bg-gray-50 border rounded-xl p-5 text-left text-sm max-w-lg mx-auto space-y-2">
@@ -404,7 +503,7 @@ function ConnectCard({ onConnect, isPending }: { onConnect: () => void; isPendin
         <div>
           <h3 className="text-xl font-semibold font-display">Connect Google Analytics</h3>
           <p className="text-muted-foreground text-sm mt-2 max-w-sm mx-auto">
-            Sign in with your Google account to pull live metrics from your GA4 properties — active users, sessions, engagement rate, and more.
+            Sign in with your Google account to pull live metrics from your GA4 properties.
           </p>
         </div>
         <Button onClick={onConnect} disabled={isPending} className="gap-2 px-8">
