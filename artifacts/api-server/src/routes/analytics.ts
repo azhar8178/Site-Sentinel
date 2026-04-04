@@ -291,7 +291,6 @@ router.post("/analytics/google/data", requireAuth, async (req, res, next) => {
           { name: "purchaseRevenue" }, { name: "transactions" },
           { name: "ecommercePurchases" }, { name: "averagePurchaseRevenue" },
           { name: "addToCarts" }, { name: "checkouts" },
-          { name: "cartToViewRate" }, { name: "buyToDetailRate" },
           { name: "sessionConversionRate" },
         ],
       }),
@@ -400,8 +399,6 @@ router.post("/analytics/google/data", requireAuth, async (req, res, next) => {
     const avgOrderValue = parseFloat((metricsMap["averagePurchaseRevenue"] ?? 0).toFixed(2));
     const addToCarts = Math.round(metricsMap["addToCarts"] ?? 0);
     const checkouts = Math.round(metricsMap["checkouts"] ?? 0);
-    const cartToViewRate = parseFloat(((metricsMap["cartToViewRate"] ?? 0) * 100).toFixed(1));
-    const buyToDetailRate = parseFloat(((metricsMap["buyToDetailRate"] ?? 0) * 100).toFixed(1));
     const conversionRate = parseFloat(((metricsMap["sessionConversionRate"] ?? 0) * 100).toFixed(2));
 
     const ecommerce = {
@@ -411,8 +408,6 @@ router.post("/analytics/google/data", requireAuth, async (req, res, next) => {
       conversionRate,
       addToCarts,
       checkouts,
-      cartToViewRate,
-      buyToDetailRate,
       hasData: revenue > 0 || transactions > 0 || addToCarts > 0,
     };
 

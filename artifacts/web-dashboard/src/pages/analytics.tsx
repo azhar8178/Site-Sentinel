@@ -44,8 +44,6 @@ interface GAEcommerce {
   conversionRate: number;
   addToCarts: number;
   checkouts: number;
-  cartToViewRate: number;
-  buyToDetailRate: number;
   hasData: boolean;
 }
 
