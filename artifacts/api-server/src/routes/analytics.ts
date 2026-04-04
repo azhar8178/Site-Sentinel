@@ -281,17 +281,13 @@ router.post("/analytics/google/data", requireAuth, async (req, res, next) => {
       });
     }
 
-    const [reportResp, realtimeResp, channelsResp, pagesResp, devicesResp, countriesResp, productsResp] = await Promise.all([
+    const [reportResp, realtimeResp, channelsResp, pagesResp, devicesResp, countriesResp, productsResp, ecommerceResp] = await Promise.all([
       gaReport({
         dateRanges: [{ startDate: "30daysAgo", endDate: "today" }],
         metrics: [
           { name: "sessions" }, { name: "newUsers" }, { name: "totalUsers" },
           { name: "engagementRate" }, { name: "bounceRate" },
           { name: "screenPageViews" }, { name: "averageSessionDuration" },
-          { name: "purchaseRevenue" }, { name: "transactions" },
-          { name: "ecommercePurchases" }, { name: "averagePurchaseRevenue" },
-          { name: "addToCarts" }, { name: "checkouts" },
-          { name: "sessionConversionRate" },
         ],
       }),
       fetch(`${GA4_DATA_URL}/${propName}:runRealtimeReport`, {
@@ -333,6 +329,15 @@ router.post("/analytics/google/data", requireAuth, async (req, res, next) => {
         orderBys: [{ metric: { metricName: "itemRevenue" }, desc: true }],
         limit: 10,
       }),
+      gaReport({
+        dateRanges: [{ startDate: "30daysAgo", endDate: "today" }],
+        metrics: [
+          { name: "purchaseRevenue" }, { name: "transactions" },
+          { name: "ecommercePurchases" }, { name: "averagePurchaseRevenue" },
+          { name: "addToCarts" }, { name: "checkouts" },
+          { name: "sessionConversionRate" },
+        ],
+      }),
     ]);
 
     if (!reportResp.ok) {
@@ -341,7 +346,7 @@ router.post("/analytics/google/data", requireAuth, async (req, res, next) => {
       return;
     }
 
-    const [reportData, realtimeData, channelsData, pagesData, devicesData, countriesData, productsData] = await Promise.all([
+    const [reportData, realtimeData, channelsData, pagesData, devicesData, countriesData, productsData, ecommerceData] = await Promise.all([
       reportResp.json() as Promise<any>,
       realtimeResp.ok ? (realtimeResp.json() as Promise<any>) : Promise.resolve(null),
       channelsResp.ok ? (channelsResp.json() as Promise<any>) : Promise.resolve(null),
@@ -349,6 +354,7 @@ router.post("/analytics/google/data", requireAuth, async (req, res, next) => {
       devicesResp.ok ? (devicesResp.json() as Promise<any>) : Promise.resolve(null),
       countriesResp.ok ? (countriesResp.json() as Promise<any>) : Promise.resolve(null),
       productsResp.ok ? (productsResp.json() as Promise<any>) : Promise.resolve(null),
+      ecommerceResp.ok ? (ecommerceResp.json() as Promise<any>) : Promise.resolve(null),
     ]);
 
     const metricValues = reportData.rows?.[0]?.metricValues ?? [];
@@ -394,12 +400,19 @@ router.post("/analytics/google/data", requireAuth, async (req, res, next) => {
       users: Math.round(r.metrics[1]),
     }));
 
-    const revenue = parseFloat((metricsMap["purchaseRevenue"] ?? 0).toFixed(2));
-    const transactions = Math.round(metricsMap["ecommercePurchases"] ?? metricsMap["transactions"] ?? 0);
-    const avgOrderValue = parseFloat((metricsMap["averagePurchaseRevenue"] ?? 0).toFixed(2));
-    const addToCarts = Math.round(metricsMap["addToCarts"] ?? 0);
-    const checkouts = Math.round(metricsMap["checkouts"] ?? 0);
-    const conversionRate = parseFloat(((metricsMap["sessionConversionRate"] ?? 0) * 100).toFixed(2));
+    const ecomMetricValues = ecommerceData?.rows?.[0]?.metricValues ?? [];
+    const ecomMetricHeaders = ecommerceData?.metricHeaders ?? [];
+    const ecomMap: Record<string, number> = {};
+    for (let i = 0; i < ecomMetricHeaders.length; i++) {
+      ecomMap[ecomMetricHeaders[i].name] = parseFloat(ecomMetricValues[i]?.value ?? "0");
+    }
+
+    const revenue = parseFloat((ecomMap["purchaseRevenue"] ?? 0).toFixed(2));
+    const transactions = Math.round(ecomMap["ecommercePurchases"] ?? ecomMap["transactions"] ?? 0);
+    const avgOrderValue = parseFloat((ecomMap["averagePurchaseRevenue"] ?? 0).toFixed(2));
+    const addToCarts = Math.round(ecomMap["addToCarts"] ?? 0);
+    const checkouts = Math.round(ecomMap["checkouts"] ?? 0);
+    const conversionRate = parseFloat(((ecomMap["sessionConversionRate"] ?? 0) * 100).toFixed(2));
 
     const ecommerce = {
       revenue,
