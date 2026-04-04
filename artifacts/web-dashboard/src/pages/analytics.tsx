@@ -74,9 +74,9 @@ function formatDuration(seconds: number): string {
 }
 
 function formatRevenue(value: number): string {
-  if (value >= 1_000_000) return `€${(value / 1_000_000).toFixed(1)}M`;
-  if (value >= 1_000) return `€${(value / 1_000).toFixed(1)}k`;
-  return `€${value.toFixed(2)}`;
+  const [int, dec] = value.toFixed(2).split(".");
+  const intFormatted = int.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  return `€${intFormatted}.${dec}`;
 }
 
 function dropOff(from: number, to: number): string {
