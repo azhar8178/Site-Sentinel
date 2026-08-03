@@ -17,25 +17,17 @@ COPY lib/api-zod/ ./lib/api-zod/
 COPY artifacts/api-server/ ./artifacts/api-server/
 
 RUN pnpm --filter @workspace/api-server run build
+RUN rm -rf /tmp/runtime \
+  && mkdir -p /tmp/runtime/artifacts/api-server \
+  && pnpm --filter @workspace/api-server deploy --prod --legacy /tmp/runtime/artifacts/api-server
 
 FROM public.ecr.aws/docker/library/node:24-slim
 ENV CI=true NODE_ENV=production
-RUN npm install -g pnpm@10
 
 WORKDIR /app
 
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-COPY artifacts/api-server/package.json ./artifacts/api-server/package.json
-COPY lib/db/package.json ./lib/db/package.json
-COPY lib/api-zod/package.json ./lib/api-zod/package.json
-COPY --from=api-builder /app/artifacts/api-server/package.json /tmp/api-build-order
-
-RUN pnpm install --frozen-lockfile --prod --filter @workspace/api-server...
-
-COPY --from=api-builder /app/artifacts/api-server/dist ./artifacts/api-server/dist
-COPY --from=api-builder /app/artifacts/api-server/scripts ./artifacts/api-server/scripts
+COPY --from=api-builder /tmp/runtime ./
 COPY artifacts/web-dashboard/dist ./artifacts/web-dashboard/dist
-COPY --from=api-builder /app/lib/db ./lib/db
 COPY agent ./agent
 
 EXPOSE 8080

@@ -1,0 +1,18 @@
+ => [stage-1 11/14] COPY --from=api-builder /app/artifacts/api-server/scripts ./artifacts/api-server/scripts                                                          0.1s 
+ => [stage-1 12/14] COPY artifacts/web-dashboard/dist ./artifacts/web-dashboard/dist                                                                                  0.1s 
+ => [stage-1 13/14] COPY --from=api-builder /app/lib/db ./lib/db                                                                                                      0.1s 
+ => [stage-1 14/14] COPY agent ./agent                                                                                                                                0.0s 
+ => ERROR exporting to image                                                                                                                                          3.6s 
+ => => exporting layers                                                                                                                                               3.3s
+ => => exporting manifest sha256:0f27e71b402c9bf7b42abce8bf1dca6cf636b262742eb206e53b8f94fea25a9d                                                                     0.0s
+ => => exporting config sha256:e9c8a942f39f3264b67df4f2efcec7bde4e1da510ac29d2b61a548ff597e2e94                                                                       0.0s
+ => => exporting attestation manifest sha256:6a8b9ebf8c5174da63e097fb372859525bed4f9a75a6d94d299365ac7a5761aa                                                         0.0s
+ => => exporting manifest list sha256:4ea8d40b2c8deffac543e8e0e1d180a8235cf90afe5eb10b3e5a7c1c09de35cc                                                                0.0s
+ => => naming to docker.io/library/site-sentinel-api:latest                                                                                                           0.0s
+ => => unpacking to docker.io/library/site-sentinel-api:latest                                                                                                        0.1s
+------
+ > exporting to image:
+------
+[+] up 0/1
+ ⠙ Image site-sentinel-api Building                                                                                                                                   14.1s
+failed to solve: failed to extract layer sha256:7cf90c2ad1720b829f5bfceeed680f614e0a2febae282c5d8b4dd4ef69f339cf: write /var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/1605/fs/tmp/node-compile-cache/v24.18.1-x64-cf738c9d-0/70594976: no space left on device

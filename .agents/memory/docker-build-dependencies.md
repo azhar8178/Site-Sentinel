@@ -7,4 +7,4 @@ Docker builds for this project should install only the workspace packages needed
 
 **Why:** The full workspace install pulled the React Native/Expo tree and failed with `ERR_PNPM_ENOSPC`; even the combined API/dashboard filter still exceeded the builder limit. Separate filtered stages now build successfully. Optional dependencies must remain enabled for Vite/Rollup platform binaries and the API's `pg` bundling.
 
-**How to apply:** Keep Docker dependency installation scoped with pnpm workspace filters, use separate dashboard/API builder stages, and serialize stages before the production install. Keep the dashboard manifest limited to packages imported by its source; the dashboard build now needs about 190 packages instead of the previous 242.
+**How to apply:** Keep Docker dependency installation scoped with pnpm workspace filters, build the dashboard bundle outside the constrained Docker builder, and use `pnpm deploy --prod --legacy` to create an API-only runtime bundle. The final runtime stage must not reinstall pnpm or the workspace.
