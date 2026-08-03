@@ -310,6 +310,7 @@ export default function Servers() {
   const [selectedServer, setSelectedServer] = useState<{ id: number; name: string; hostname: string } | null>(null);
 
   const canEdit = user?.role === "admin" || user?.role === "editor";
+  const installerApiUrl = typeof window !== "undefined" ? window.location.origin : "";
 
   const handleAdd = async () => {
     if (!newName.trim() || !newHostname.trim()) return;
@@ -390,7 +391,13 @@ export default function Servers() {
               </button>
             </div>
             <p className="text-xs text-green-700">
-              Copy this key now — you won't see it again. Install: <code className="bg-white px-1 rounded">curl -sL https://your-domain/agent/install.sh | sudo bash -s -- https://your-domain API_KEY</code>
+              Copy this key now — you won't see it again. Install with the command below:
+            </p>
+            <code className="block bg-white px-3 py-2 rounded border text-xs break-all select-all">
+              curl -sL {installerApiUrl}/api/agent/install | sudo bash -s -- {installerApiUrl} {showApiKey}
+            </code>
+            <p className="text-xs text-muted-foreground">
+              The installer checks the configured Amazon OpenSearch domain in IAM mode. The EC2 instance needs network access to the VPC endpoint and an IAM role allowed to query the domain.
             </p>
             <Button size="sm" variant="outline" onClick={() => { setShowApiKey(null); setCopiedKey(false); }}>Got it</Button>
           </CardContent>

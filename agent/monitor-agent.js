@@ -5,10 +5,16 @@ const https = require("https");
 const http = require("http");
 const os = require("os");
 const { execSync } = require("child_process");
+const crypto = require("crypto");
 
 const API_URL = process.env.MONITOR_API_URL;
 const API_KEY = process.env.MONITOR_API_KEY;
 const INTERVAL = parseInt(process.env.MONITOR_INTERVAL || "30", 10) * 1000;
+const OPENSEARCH_URL =
+  process.env.MONITOR_OPENSEARCH_URL ||
+  "https://vpc-magento-prod-nzaysstzukhdmqqtuhh6be2use.eu-west-2.es.amazonaws.com";
+const OPENSEARCH_REGION = process.env.MONITOR_OPENSEARCH_REGION || "eu-west-2";
+const OPENSEARCH_AUTH = process.env.MONITOR_OPENSEARCH_AUTH || "iam";
 
 if (!API_URL || !API_KEY) {
   console.error("ERROR: MONITOR_API_URL and MONITOR_API_KEY are required.");
@@ -260,7 +266,197 @@ function getVarnishStats() {
   };
 }
 
-function getElasticsearchStatus() {
+function requestText(urlString, options = {}) {
+  const url = new URL(urlString);
+  const isHttps = url.protocol === "https:";
+  const mod = isHttps ? https : http;
+
+  return new Promise((resolve) => {
+    const req = mod.request(
+      {
+        hostname: url.hostname,
+        port: url.port || (isHttps ? 443 : 80),
+        path: `${url.pathname || "/"}${url.search}`,
+        method: options.method || "GET",
+        headers: options.headers || {},
+      },
+      (res) => {
+        let body = "";
+        res.setEncoding("utf8");
+        res.on("data", (chunk) => (body += chunk));
+        res.on("end", () =>
+          resolve({ statusCode: res.statusCode || 0, body })
+        );
+      }
+    );
+
+    req.on("error", (error) =>
+      resolve({ statusCode: 0, body: "", error: error.message })
+    );
+    req.setTimeout(options.timeout || 5000, () => {
+      req.destroy();
+      resolve({ statusCode: 0, body: "", error: "request timed out" });
+    });
+    req.end();
+  });
+}
+
+function awsEncode(value) {
+  return encodeURIComponent(value).replace(/[!'()*]/g, (char) =>
+    `%${char.charCodeAt(0).toString(16).toUpperCase()}`
+  );
+}
+
+function signAwsRequest(url, region, credentials) {
+  const service = "es";
+  const now = new Date();
+  const amzDate = now.toISOString().replace(/[:-]|\.\d{3}/g, "");
+  const dateStamp = amzDate.slice(0, 8);
+  const host = url.host;
+  const canonicalUri =
+    (url.pathname || "/")
+      .split("/")
+      .map((part) => awsEncode(part))
+      .join("/") || "/";
+  const canonicalQuery = [...url.searchParams.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([key, value]) => `${awsEncode(key)}=${awsEncode(value)}`)
+    .join("&");
+  const sessionToken = credentials.Token || credentials.SessionToken;
+  const signedHeaders = sessionToken
+    ? "host;x-amz-date;x-amz-security-token"
+    : "host;x-amz-date";
+  const canonicalHeaders = sessionToken
+    ? `host:${host}\nx-amz-date:${amzDate}\nx-amz-security-token:${sessionToken}\n`
+    : `host:${host}\nx-amz-date:${amzDate}\n`;
+  const payloadHash = crypto.createHash("sha256").update("").digest("hex");
+  const canonicalRequest = [
+    "GET",
+    canonicalUri,
+    canonicalQuery,
+    canonicalHeaders,
+    signedHeaders,
+    payloadHash,
+  ].join("\n");
+  const credentialScope = `${dateStamp}/${region}/${service}/aws4_request`;
+  const stringToSign = [
+    "AWS4-HMAC-SHA256",
+    amzDate,
+    credentialScope,
+    crypto.createHash("sha256").update(canonicalRequest).digest("hex"),
+  ].join("\n");
+  const hmac = (key, value) =>
+    crypto.createHmac("sha256", key).update(value).digest();
+  const dateKey = hmac(`AWS4${credentials.SecretAccessKey}`, dateStamp);
+  const regionKey = hmac(dateKey, region);
+  const serviceKey = hmac(regionKey, service);
+  const signingKey = hmac(serviceKey, "aws4_request");
+  const signature = crypto
+    .createHmac("sha256", signingKey)
+    .update(stringToSign)
+    .digest("hex");
+
+  return {
+    Host: host,
+    "X-Amz-Date": amzDate,
+    ...(sessionToken ? { "X-Amz-Security-Token": sessionToken } : {}),
+    Authorization: `AWS4-HMAC-SHA256 Credential=${credentials.AccessKeyId}/${credentialScope}, SignedHeaders=${signedHeaders}, Signature=${signature}`,
+  };
+}
+
+async function getAwsCredentials() {
+  const accessKeyId = process.env.AWS_ACCESS_KEY_ID;
+  const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY;
+  const sessionToken = process.env.AWS_SESSION_TOKEN;
+  if (accessKeyId && secretAccessKey) {
+    return { AccessKeyId: accessKeyId, SecretAccessKey: secretAccessKey, Token: sessionToken };
+  }
+
+  const tokenResponse = await requestText("http://169.254.169.254/latest/api/token", {
+    method: "PUT",
+    headers: { "X-aws-ec2-metadata-token-ttl-seconds": "21600" },
+    timeout: 1500,
+  });
+  if (tokenResponse.statusCode !== 200 || !tokenResponse.body) return null;
+
+  const metadataHeaders = { "X-aws-ec2-metadata-token": tokenResponse.body };
+  const roleResponse = await requestText(
+    "http://169.254.169.254/latest/meta-data/iam/security-credentials/",
+    { headers: metadataHeaders, timeout: 1500 }
+  );
+  if (roleResponse.statusCode !== 200 || !roleResponse.body.trim()) return null;
+
+  const credentialsResponse = await requestText(
+    `http://169.254.169.254/latest/meta-data/iam/security-credentials/${encodeURIComponent(roleResponse.body.trim())}`,
+    { headers: metadataHeaders, timeout: 1500 }
+  );
+  if (credentialsResponse.statusCode !== 200) return null;
+
+  try {
+    const credentials = JSON.parse(credentialsResponse.body);
+    if (!credentials.AccessKeyId || !credentials.SecretAccessKey) return null;
+    return credentials;
+  } catch {
+    return null;
+  }
+}
+
+async function getRemoteOpenSearchStatus(endpoint) {
+  const url = new URL(endpoint);
+  url.pathname = "/_cluster/health";
+  url.search = "";
+  const region = OPENSEARCH_REGION;
+  const auth = OPENSEARCH_AUTH.toLowerCase();
+  let headers = {};
+
+  if (auth === "basic") {
+    const username = process.env.MONITOR_OPENSEARCH_USERNAME;
+    const password = process.env.MONITOR_OPENSEARCH_PASSWORD;
+    if (!username || !password) {
+      return { isRunning: false, error: "Basic auth is configured but credentials are missing" };
+    }
+    headers.Authorization = `Basic ${Buffer.from(`${username}:${password}`).toString("base64")}`;
+  } else {
+    const credentials = await getAwsCredentials();
+    if (!credentials) {
+      return { isRunning: false, error: "AWS IAM credentials unavailable on this host" };
+    }
+    headers = signAwsRequest(url, region, credentials);
+  }
+
+  const response = await requestText(url.href, { headers, timeout: 7000 });
+  if (response.statusCode < 200 || response.statusCode >= 300) {
+    return {
+      isRunning: false,
+      error: response.statusCode
+        ? `OpenSearch health check returned HTTP ${response.statusCode}`
+        : response.error || "OpenSearch health check failed",
+    };
+  }
+
+  try {
+    const health = JSON.parse(response.body);
+    return {
+      isRunning: true,
+      status: health.status,
+      numberOfNodes: health.number_of_nodes,
+      numberOfDataNodes: health.number_of_data_nodes,
+      activeShards: health.active_shards,
+      relocatingShards: health.relocating_shards,
+      unassignedShards: health.unassigned_shards,
+    };
+  } catch {
+    return { isRunning: false, error: "OpenSearch returned invalid health data" };
+  }
+}
+
+async function getElasticsearchStatus() {
+  const remoteEndpoint =
+    process.env.MONITOR_ELASTICSEARCH_URL || OPENSEARCH_URL;
+  if (remoteEndpoint) {
+    return getRemoteOpenSearchStatus(remoteEndpoint);
+  }
+
   const isRunning = !!(
     exec("systemctl is-active --quiet elasticsearch 2>/dev/null && echo yes") ||
     exec("curl -sf --max-time 2 http://127.0.0.1:9200/ 2>/dev/null | head -c1")
@@ -410,7 +606,7 @@ async function collect() {
   const httpConns = getHttpConnections();
   const nginx = getNginxStatus();
   const varnish = getVarnishStats();
-  const elasticsearch = getElasticsearchStatus();
+  const elasticsearch = await getElasticsearchStatus();
   const sslExpiry = getSslExpiry();
 
   const data = {
@@ -450,7 +646,7 @@ async function collect() {
   }
 }
 
-const AGENT_VERSION = "3.0.0";
+const AGENT_VERSION = "3.1.0";
 const UPDATE_CHECK_INTERVAL = 3600000;
 let lastUpdateCheck = 0;
 
@@ -487,8 +683,9 @@ console.log(`Site Sentinel Monitor Agent v${AGENT_VERSION}`);
 console.log(`  API: ${API_URL}`);
 console.log(`  Interval: ${INTERVAL / 1000}s`);
 console.log(
-  `  Features: CPU, Memory, Disk, Network, Load, PHP-FPM, MySQL, Nginx, Varnish, Elasticsearch, SSL`
+  `  Features: CPU, Memory, Disk, Network, Load, PHP-FPM, MySQL, Nginx, Varnish, OpenSearch, SSL`
 );
+console.log(`  OpenSearch: ${OPENSEARCH_URL} (${OPENSEARCH_AUTH} auth)`);
 if (process.env.MONITOR_SSL_DOMAINS) {
   console.log(`  SSL domains: ${process.env.MONITOR_SSL_DOMAINS}`);
 } else {

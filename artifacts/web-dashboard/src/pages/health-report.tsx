@@ -47,7 +47,7 @@ interface HealthReport {
       mysql: { threads: number; questions: number; slowQueries: number } | null;
       nginx: { isRunning: boolean; activeConnections: number | null; requests: number | null; waiting: number | null } | null;
       varnish: { isRunning: boolean; hitRate: number | null; cacheHits: number | null; cacheMisses: number | null; clientRequests: number | null } | null;
-      elasticsearch: { isRunning: boolean; status: string | null; numberOfNodes: number | null; activeShards: number | null } | null;
+      elasticsearch: { isRunning: boolean; status: string | null; numberOfNodes: number | null; activeShards: number | null; error?: string } | null;
       sslExpiry: { domain: string; expiresAt: string; daysRemaining: number; isExpired: boolean; isExpiringSoon: boolean }[] | null;
     } | null;
   }[];
@@ -320,10 +320,12 @@ export default function HealthReport() {
                         )}
                         {svc.elasticsearch !== null && (
                           <ServiceRow
-                            label="Elasticsearch"
+                            label="OpenSearch"
                             ok={esOk}
                             statusLabel={esStatus === "green" ? "Green" : esStatus === "yellow" ? "Yellow" : esStatus === "red" ? "Red — critical" : "Unknown"}
-                            detail={svc.elasticsearch?.numberOfNodes != null ? `${svc.elasticsearch.numberOfNodes} node(s) · ${svc.elasticsearch.activeShards} active shards` : null}
+                            detail={svc.elasticsearch?.numberOfNodes != null
+                              ? `${svc.elasticsearch.numberOfNodes} node(s) · ${svc.elasticsearch.activeShards} active shards`
+                              : svc.elasticsearch?.error ?? null}
                           />
                         )}
                       </tbody>

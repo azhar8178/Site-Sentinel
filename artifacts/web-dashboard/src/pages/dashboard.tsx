@@ -52,7 +52,7 @@ interface HealthReport {
       mysql: { threads: number; slowQueries: number } | null;
       nginx: { isRunning: boolean; activeConnections: number | null } | null;
       varnish: { isRunning: boolean; hitRate: number | null } | null;
-      elasticsearch: { isRunning: boolean; status: string | null } | null;
+      elasticsearch: { isRunning: boolean; status: string | null; error?: string } | null;
       sslExpiry: { domain: string; expiresAt?: string; daysRemaining: number; isExpired: boolean; isExpiringSoon: boolean }[] | null;
     } | null;
   }[];
@@ -72,11 +72,11 @@ function MiniBar({ value, warn = 80, danger = 90 }: { value: number | null; warn
   );
 }
 
-function ServiceDot({ ok, label }: { ok: boolean | null; label: string }) {
+function ServiceDot({ ok, label, detail }: { ok: boolean | null; label: string; detail?: string }) {
   const dot = ok === null ? "bg-gray-300" : ok ? "bg-emerald-500" : "bg-red-500";
   const text = ok === null ? "text-muted-foreground" : ok ? "text-foreground" : "text-red-700";
   return (
-    <span className={`inline-flex items-center gap-1 text-xs ${text}`} title={label}>
+    <span className={`inline-flex items-center gap-1 text-xs ${text}`} title={detail || label}>
       <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${dot}`} />
       {label}
     </span>
@@ -323,7 +323,13 @@ export default function Dashboard() {
                         {svc.varnish !== null && <ServiceDot ok={varnishOk} label="Varnish" />}
                         {svc.phpFpm !== null && <ServiceDot ok={phpOk} label="PHP-FPM" />}
                         {svc.mysql !== null && <ServiceDot ok={mysqlOk} label="MySQL" />}
-                        {svc.elasticsearch !== null && <ServiceDot ok={esOk} label="Elasticsearch" />}
+                        {svc.elasticsearch !== null && (
+                          <ServiceDot
+                            ok={esOk}
+                            label="OpenSearch"
+                            detail={svc.elasticsearch.error}
+                          />
+                        )}
                       </div>
                     )}
                   </CardContent>

@@ -5,7 +5,7 @@ import crypto from "crypto";
 
 const router: IRouter = Router();
 
-const AGENT_VERSION = "2.0.0";
+const AGENT_VERSION = "3.1.0";
 
 function getAgentScript(): { content: string; hash: string } | null {
   const paths = [
@@ -57,6 +57,9 @@ set -e
 
 MONITOR_API_URL="\${1:?Usage: install.sh <API_URL> <API_KEY>}"
 MONITOR_API_KEY="\${2:?Usage: install.sh <API_URL> <API_KEY>}"
+MONITOR_OPENSEARCH_URL="\${3:-https://vpc-magento-prod-nzaysstzukhdmqqtuhh6be2use.eu-west-2.es.amazonaws.com}"
+MONITOR_OPENSEARCH_REGION="\${4:-eu-west-2}"
+MONITOR_OPENSEARCH_AUTH="\${5:-iam}"
 INSTALL_DIR="/opt/monitor-agent"
 
 echo "Installing Site Sentinel Monitor Agent..."
@@ -72,6 +75,9 @@ sudo tee "\$INSTALL_DIR/.env" > /dev/null <<EOF
 MONITOR_API_URL=\$MONITOR_API_URL
 MONITOR_API_KEY=\$MONITOR_API_KEY
 MONITOR_INTERVAL=30
+MONITOR_OPENSEARCH_URL=\$MONITOR_OPENSEARCH_URL
+MONITOR_OPENSEARCH_REGION=\$MONITOR_OPENSEARCH_REGION
+MONITOR_OPENSEARCH_AUTH=\$MONITOR_OPENSEARCH_AUTH
 EOF
 
 sudo tee /etc/systemd/system/monitor-agent.service > /dev/null <<EOF
