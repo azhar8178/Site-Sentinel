@@ -1,0 +1,77 @@
+ubuntu@ip-172-33-86-172:~/Site-Sentinel$ getent hosts vpc-magento-prod-nzaysstzukhdmqqtuhh6be2use.eu-west-2.es.amazonaws.com
+curl -I --connect-timeout 5 https://vpc-magento-prod-nzaysstzukhdmqqtuhh6be2use.eu-west-2.es.amazonaws.com
+172.33.212.99   vpc-magento-prod-nzaysstzukhdmqqtuhh6be2use.eu-west-2.es.amazonaws.com
+HTTP/2 200 
+date: Mon, 03 Aug 2026 22:01:51 GMT
+content-type: application/json; charset=UTF-8
+content-length: 567
+access-control-allow-origin: *
+
+ubuntu@ip-172-33-86-172:~/Site-Sentinel$ /_cluster/health
+-bash: /_cluster/health: No such file or directory
+ubuntu@ip-172-33-86-172:~/Site-Sentinel$ OPENSEARCH_URL="https://vpc-magento-prod-nzaysstzukhdmqqtuhh6be2use.eu-west-2.es.amazonaws.com"
+
+curl -sS --connect-timeout 5 \
+  "$OPENSEARCH_URL/_cluster/health"
+
+echo
+{"cluster_name":"913938730038:magento-prod","status":"green","timed_out":false,"number_of_nodes":1,"number_of_data_nodes":1,"discovered_master":true,"active_primary_shards":11,"active_shards":11,"relocating_shards":0,"initializing_shards":0,"unassigned_shards":0,"delayed_unassigned_shards":0,"number_of_pending_tasks":0,"number_of_in_flight_fetch":0,"task_max_waiting_in_queue_millis":0,"active_shards_percent_as_number":100.0}
+ubuntu@ip-172-33-86-172:~/Site-Sentinel$ API_URL=$(sudo awk -F= '/^MONITOR_API_URL=/{print substr($0,index($0,"=")+1)}' /opt/monitor-agent/.env)
+API_KEY=$(sudo awk -F= '/^MONITOR_API_KEY=/{print substr($0,index($0,"=")+1)}' /opt/monitor-agent/.env)
+
+curl -fsS "$API_URL/api/agent/script" \
+  -H "x-api-key: $API_KEY" \
+  -o /tmp/monitor-agent.js
+
+sudo install -m 755 /tmp/monitor-agent.js /opt/monitor-agent/monitor-agent.js
+
+sudo sed -i \
+  '/^MONITOR_OPENSEARCH_URL=/d; /^MONITOR_OPENSEARCH_REGION=/d; /^MONITOR_OPENSEARCH_AUTH=/d' \
+  /opt/monitor-agent/.env
+
+printf '%s\n' \
+  'MONITOR_OPENSEARCH_URL=https://vpc-magento-prod-nzaysstzukhdmqqtuhh6be2use.eu-west-2.es.amazonaws.com' \
+  'MONITOR_OPENSEARCH_REGION=eu-west-2' \
+  'MONITOR_OPENSEARCH_AUTH=none' \
+  | sudo tee -a /opt/monitor-agent/.env >/dev/null
+
+sudo systemctl restart monitor-agent
+sudo journalctl -u monitor-agent -n 30 --no-pager
+awk: fatal: cannot open file `/opt/monitor-agent/.env' for reading: No such file or directory
+awk: fatal: cannot open file `/opt/monitor-agent/.env' for reading: No such file or directory
+curl: (3) URL using bad/illegal format or missing URL
+install: cannot stat '/tmp/monitor-agent.js': No such file or directory
+sed: can't read /opt/monitor-agent/.env: No such file or directory
+tee: /opt/monitor-agent/.env: No such file or directory
+Job for monitor-agent.service failed because of unavailable resources or another system error.
+See "systemctl status monitor-agent.service" and "journalctl -xeu monitor-agent.service" for details.
+Aug 03 21:55:12 ip-172-33-86-172 node[761552]: Report failed: HTTP 401 - {"error":"Invalid API key"}
+Aug 03 21:55:42 ip-172-33-86-172 node[761552]: Report failed: HTTP 401 - {"error":"Invalid API key"}
+Aug 03 21:56:12 ip-172-33-86-172 node[761552]: Report failed: HTTP 401 - {"error":"Invalid API key"}
+Aug 03 21:56:42 ip-172-33-86-172 node[761552]: Report failed: HTTP 401 - {"error":"Invalid API key"}
+Aug 03 21:57:12 ip-172-33-86-172 node[761552]: Report failed: HTTP 401 - {"error":"Invalid API key"}
+Aug 03 21:57:42 ip-172-33-86-172 node[761552]: Report failed: HTTP 401 - {"error":"Invalid API key"}
+Aug 03 21:58:12 ip-172-33-86-172 node[761552]: Report failed: HTTP 401 - {"error":"Invalid API key"}
+Aug 03 21:58:42 ip-172-33-86-172 node[761552]: Report failed: HTTP 401 - {"error":"Invalid API key"}
+Aug 03 21:59:12 ip-172-33-86-172 node[761552]: Report failed: HTTP 401 - {"error":"Invalid API key"}
+Aug 03 21:59:42 ip-172-33-86-172 node[761552]: Report failed: HTTP 401 - {"error":"Invalid API key"}
+Aug 03 22:00:12 ip-172-33-86-172 node[761552]: Report failed: HTTP 401 - {"error":"Invalid API key"}
+Aug 03 22:00:42 ip-172-33-86-172 node[761552]: Report failed: HTTP 401 - {"error":"Invalid API key"}
+Aug 03 22:01:12 ip-172-33-86-172 node[761552]: Report failed: HTTP 401 - {"error":"Invalid API key"}
+Aug 03 22:01:42 ip-172-33-86-172 node[761552]: Report failed: HTTP 401 - {"error":"Invalid API key"}
+Aug 03 22:02:12 ip-172-33-86-172 node[761552]: Report failed: HTTP 401 - {"error":"Invalid API key"}
+Aug 03 22:02:42 ip-172-33-86-172 node[761552]: Report failed: HTTP 401 - {"error":"Invalid API key"}
+Aug 03 22:03:12 ip-172-33-86-172 node[761552]: Report failed: HTTP 401 - {"error":"Invalid API key"}
+Aug 03 22:03:42 ip-172-33-86-172 node[761552]: Report failed: HTTP 401 - {"error":"Invalid API key"}
+Aug 03 22:04:12 ip-172-33-86-172 node[761552]: Report failed: HTTP 401 - {"error":"Invalid API key"}
+Aug 03 22:04:42 ip-172-33-86-172 node[761552]: Report failed: HTTP 401 - {"error":"Invalid API key"}
+Aug 03 22:05:12 ip-172-33-86-172 node[761552]: Report failed: HTTP 401 - {"error":"Invalid API key"}
+Aug 03 22:05:42 ip-172-33-86-172 node[761552]: Report failed: HTTP 401 - {"error":"Invalid API key"}
+Aug 03 22:06:03 ip-172-33-86-172 systemd[1]: Stopping Site Monitor Agent...
+Aug 03 22:06:03 ip-172-33-86-172 systemd[1]: monitor-agent.service: Deactivated successfully.
+Aug 03 22:06:03 ip-172-33-86-172 systemd[1]: Stopped Site Monitor Agent.
+Aug 03 22:06:03 ip-172-33-86-172 systemd[1]: monitor-agent.service: Consumed 9min 8.447s CPU time.
+Aug 03 22:06:03 ip-172-33-86-172 systemd[1]: monitor-agent.service: Failed to load environment files: No such file or directory
+Aug 03 22:06:03 ip-172-33-86-172 systemd[1]: monitor-agent.service: Failed to run 'start' task: No such file or directory
+Aug 03 22:06:03 ip-172-33-86-172 systemd[1]: monitor-agent.service: Failed with result 'resources'.
+Aug 03 22:06:03 ip-172-33-86-172 systemd[1]: Failed to start Site Monitor Agent.
