@@ -1,0 +1,40 @@
+ubuntu@ip-172-33-86-172:~/Site-Sentinel$ curl -sL https://YOUR-SITE-SENTINEL-DOMAIN/api/agent/install \
+  | sudo bash -s -- \
+  https://YOUR-SITE-SENTINEL-DOMAIN \
+  NEW_API_KEY
+ubuntu@ip-172-33-86-172:~/Site-Sentinel$ sudo systemctl status monitor-agent --no-pager
+sudo journalctl -u monitor-agent -n 30 --no-pager
+● monitor-agent.service - Site Monitor Agent
+     Loaded: loaded (/etc/systemd/system/monitor-agent.service; enabled; vendor preset: enabled)
+     Active: activating (auto-restart) (Result: resources) since Mon 2026-08-03 22:07:25 UTC; 8s ago
+        CPU: 0
+Aug 03 22:06:44 ip-172-33-86-172 systemd[1]: monitor-agent.service: Scheduled restart job, restart counter is at 4.
+Aug 03 22:06:44 ip-172-33-86-172 systemd[1]: Stopped Site Monitor Agent.
+Aug 03 22:06:44 ip-172-33-86-172 systemd[1]: monitor-agent.service: Failed to load environment files: No such file or directory
+Aug 03 22:06:44 ip-172-33-86-172 systemd[1]: monitor-agent.service: Failed to run 'start' task: No such file or directory
+Aug 03 22:06:44 ip-172-33-86-172 systemd[1]: monitor-agent.service: Failed with result 'resources'.
+Aug 03 22:06:44 ip-172-33-86-172 systemd[1]: Failed to start Site Monitor Agent.
+Aug 03 22:06:54 ip-172-33-86-172 systemd[1]: monitor-agent.service: Scheduled restart job, restart counter is at 5.
+Aug 03 22:06:54 ip-172-33-86-172 systemd[1]: Stopped Site Monitor Agent.
+Aug 03 22:06:54 ip-172-33-86-172 systemd[1]: monitor-agent.service: Failed to load environment files: No such file or directory
+Aug 03 22:06:54 ip-172-33-86-172 systemd[1]: monitor-agent.service: Failed to run 'start' task: No such file or directory
+Aug 03 22:06:54 ip-172-33-86-172 systemd[1]: monitor-agent.service: Failed with result 'resources'.
+Aug 03 22:06:54 ip-172-33-86-172 systemd[1]: Failed to start Site Monitor Agent.
+Aug 03 22:07:04 ip-172-33-86-172 systemd[1]: monitor-agent.service: Scheduled restart job, restart counter is at 6.
+Aug 03 22:07:04 ip-172-33-86-172 systemd[1]: Stopped Site Monitor Agent.
+Aug 03 22:07:04 ip-172-33-86-172 systemd[1]: monitor-agent.service: Failed to load environment files: No such file or directory
+Aug 03 22:07:04 ip-172-33-86-172 systemd[1]: monitor-agent.service: Failed to run 'start' task: No such file or directory
+Aug 03 22:07:04 ip-172-33-86-172 systemd[1]: monitor-agent.service: Failed with result 'resources'.
+Aug 03 22:07:04 ip-172-33-86-172 systemd[1]: Failed to start Site Monitor Agent.
+Aug 03 22:07:15 ip-172-33-86-172 systemd[1]: monitor-agent.service: Scheduled restart job, restart counter is at 7.
+Aug 03 22:07:15 ip-172-33-86-172 systemd[1]: Stopped Site Monitor Agent.
+Aug 03 22:07:15 ip-172-33-86-172 systemd[1]: monitor-agent.service: Failed to load environment files: No such file or directory
+Aug 03 22:07:15 ip-172-33-86-172 systemd[1]: monitor-agent.service: Failed to run 'start' task: No such file or directory
+Aug 03 22:07:15 ip-172-33-86-172 systemd[1]: monitor-agent.service: Failed with result 'resources'.
+Aug 03 22:07:15 ip-172-33-86-172 systemd[1]: Failed to start Site Monitor Agent.
+Aug 03 22:07:25 ip-172-33-86-172 systemd[1]: monitor-agent.service: Scheduled restart job, restart counter is at 8.
+Aug 03 22:07:25 ip-172-33-86-172 systemd[1]: Stopped Site Monitor Agent.
+Aug 03 22:07:25 ip-172-33-86-172 systemd[1]: monitor-agent.service: Failed to load environment files: No such file or directory
+Aug 03 22:07:25 ip-172-33-86-172 systemd[1]: monitor-agent.service: Failed to run 'start' task: No such file or directory
+Aug 03 22:07:25 ip-172-33-86-172 systemd[1]: monitor-agent.service: Failed with result 'resources'.
+Aug 03 22:07:25 ip-172-33-86-172 systemd[1]: Failed to start Site Monitor Agent.
