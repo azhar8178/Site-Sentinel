@@ -20,7 +20,6 @@ artifacts/mobile/constants
 artifacts/mobile/hooks
 artifacts/mobile/scripts
 
-artifacts/web-dashboard/dist
 artifacts/mockup-sandbox/src
 artifacts/mockup-sandbox/public
 

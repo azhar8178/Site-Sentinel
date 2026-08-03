@@ -1,0 +1,42 @@
+=> ERROR [dashboard-builder  7/11] RUN pnpm install --frozen-lockfile --filter @workspace/web-dashboard...                                                           6.0s
+ => [api-builder  7/14] COPY lib/api-zod/package.json ./lib/api-zod/package.json                                                                                      0.1s
+ => [stage-2  7/14] COPY lib/api-zod/package.json ./lib/api-zod/package.json                                                                                          0.1s
+------                                                                                                                                                                     
+ > [dashboard-builder  7/11] RUN pnpm install --frozen-lockfile --filter @workspace/web-dashboard...:                                                                      
+0.806 Scope: 2 of 3 workspace projects                                                                                                                                     
+0.938 Lockfile is up to date, resolution step is skipped                                                                                                                   
+1.023 Progress: resolved 1, reused 0, downloaded 0, added 0                                                                                                                
+1.082 .                                        | +190 +++++++++++++++++++                                                                                                  
+2.024 Progress: resolved 190, reused 0, downloaded 84, added 31
+3.025 Progress: resolved 190, reused 0, downloaded 128, added 44
+4.026 Progress: resolved 190, reused 0, downloaded 136, added 48
+5.025 Progress: resolved 190, reused 0, downloaded 146, added 51
+5.592  WARN  GET https://registry.npmjs.org/typescript/-/typescript-5.9.3.tgz error (ERR_PNPM_ENOSPC). Will retry in 10 seconds. 2 retries left.
+5.595  WARN  GET https://registry.npmjs.org/@jridgewell/sourcemap-codec/-/sourcemap-codec-1.5.5.tgz error (ERR_PNPM_ENOSPC). Will retry in 10 seconds. 2 retries left.
+5.596  WARN  GET https://registry.npmjs.org/electron-to-chromium/-/electron-to-chromium-1.5.307.tgz error (ERR_PNPM_ENOSPC). Will retry in 10 seconds. 2 retries left.
+5.661  WARN  GET https://registry.npmjs.org/@esbuild/linux-x64/-/linux-x64-0.27.3.tgz error (ERR_PNPM_ENOSPC). Will retry in 10 seconds. 2 retries left.
+5.662  WARN  GET https://registry.npmjs.org/eventemitter3/-/eventemitter3-4.0.7.tgz error (ERR_PNPM_ENOSPC). Will retry in 10 seconds. 2 retries left.
+5.663  WARN  GET https://registry.npmjs.org/d3-time/-/d3-time-3.1.0.tgz error (ERR_PNPM_ENOSPC). Will retry in 10 seconds. 2 retries left.
+5.669  WARN  GET https://registry.npmjs.org/@rolldown/pluginutils/-/pluginutils-1.0.0-rc.3.tgz error (ERR_PNPM_ENOSPC). Will retry in 10 seconds. 2 retries left.
+5.670  WARN  GET https://registry.npmjs.org/@types/d3-array/-/d3-array-3.2.2.tgz error (ERR_PNPM_ENOSPC). Will retry in 10 seconds. 2 retries left.
+5.762  ERR_PNPM_ENOSPC  [importPackage /app/node_modules/.pnpm/tapable@2.3.0/node_modules/tapable] ENOSPC: no space left on device, mkdir '/app/node_modules/.pnpm/tapable@2.3.0/node_modules/tapable_tmp_6_1'
+------
+[+] up 0/1
+ ⠙ Image site-sentinel-api Building                                                                                                                                    7.3s
+Dockerfile:11
+
+--------------------
+
+   9 |     COPY lib/api-client-react/package.json ./lib/api-client-react/package.json
+
+  10 |     
+
+  11 | >>> RUN pnpm install --frozen-lockfile --filter @workspace/web-dashboard...
+
+  12 |     
+
+  13 |     COPY tsconfig.base.json ./
+
+--------------------
+
+failed to solve: process "/bin/sh -c pnpm install --frozen-lockfile --filter @workspace/web-dashboard..." did not complete successfully: exit code: 1
