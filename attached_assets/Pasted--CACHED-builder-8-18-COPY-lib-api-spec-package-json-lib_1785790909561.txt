@@ -1,0 +1,60 @@
+=> CACHED [builder  8/18] COPY lib/api-spec/package.json ./lib/api-spec/package.json                                                                                 0.0s
+ => CACHED [builder  9/18] COPY lib/api-zod/package.json ./lib/api-zod/package.json                                                                                   0.0s
+ => CACHED [builder 10/18] COPY lib/api-client-react/package.json ./lib/api-client-react/package.json                                                                 0.0s
+ => CACHED [builder 11/18] COPY scripts/package.json ./scripts/package.json                                                                                           0.0s
+ => ERROR [builder 12/18] RUN pnpm install --frozen-lockfile --filter @workspace/api-server... --filter @workspace/web-dashboard...                                   9.9s
+ => [stage-1  7/16] COPY lib/api-spec/package.json ./lib/api-spec/package.json                                                                                        0.1s
+ => [stage-1  8/16] COPY lib/api-zod/package.json ./lib/api-zod/package.json                                                                                          0.1s
+ => [stage-1  9/16] COPY lib/api-client-react/package.json ./lib/api-client-react/package.json                                                                        0.1s
+ => [stage-1 10/16] COPY scripts/package.json ./scripts/package.json                                                                                                  0.1s
+ => [stage-1 11/16] RUN pnpm install --frozen-lockfile --prod --filter @workspace/api-server...                                                                       4.4s
+------                                                                                                                                                                     
+ > [builder 12/18] RUN pnpm install --frozen-lockfile --filter @workspace/api-server... --filter @workspace/web-dashboard...:                                              
+1.223 Scope: 5 of 8 workspace projects                                                                                                                                     
+1.547 Lockfile is up to date, resolution step is skipped                                                                                                                   
+1.775 Progress: resolved 1, reused 0, downloaded 0, added 0                                                                                                                
+1.920 .                                        | +390 ++++++++++++++++++++++++++++++++
+2.782 Progress: resolved 390, reused 0, downloaded 13, added 0
+3.783 Progress: resolved 390, reused 0, downloaded 55, added 13
+4.786 Progress: resolved 390, reused 0, downloaded 142, added 44
+5.794 Progress: resolved 390, reused 0, downloaded 271, added 116
+6.793 Progress: resolved 390, reused 0, downloaded 307, added 128
+7.794 Progress: resolved 390, reused 0, downloaded 314, added 132
+8.794 Progress: resolved 390, reused 0, downloaded 322, added 132
+9.369  WARN  GET https://registry.npmjs.org/react-icons/-/react-icons-5.6.0.tgz error (ERR_PNPM_ENOSPC). Will retry in 10 seconds. 2 retries left.
+9.374  WARN  GET https://registry.npmjs.org/react-resizable-panels/-/react-resizable-panels-2.1.9.tgz error (ERR_PNPM_ENOSPC). Will retry in 10 seconds. 2 retries left.
+9.375  WARN  GET https://registry.npmjs.org/eventemitter3/-/eventemitter3-4.0.7.tgz error (ERR_PNPM_ENOSPC). Will retry in 10 seconds. 2 retries left.
+9.383  WARN  GET https://registry.npmjs.org/lodash/-/lodash-4.17.23.tgz error (ERR_PNPM_ENOSPC). Will retry in 10 seconds. 2 retries left.
+9.397  WARN  GET https://registry.npmjs.org/recharts/-/recharts-2.15.4.tgz error (ERR_PNPM_ENOSPC). Will retry in 10 seconds. 2 retries left.
+9.398  WARN  GET https://registry.npmjs.org/react-is/-/react-is-18.3.1.tgz error (ERR_PNPM_ENOSPC). Will retry in 10 seconds. 2 retries left.
+9.399  WARN  GET https://registry.npmjs.org/react-smooth/-/react-smooth-4.0.4.tgz error (ERR_PNPM_ENOSPC). Will retry in 10 seconds. 2 retries left.
+9.401  WARN  GET https://registry.npmjs.org/fast-equals/-/fast-equals-5.4.0.tgz error (ERR_PNPM_ENOSPC). Will retry in 10 seconds. 2 retries left.
+9.402  WARN  GET https://registry.npmjs.org/react-is/-/react-is-16.13.1.tgz error (ERR_PNPM_ENOSPC). Will retry in 10 seconds. 2 retries left.
+9.403  WARN  GET https://registry.npmjs.org/react-transition-group/-/react-transition-group-4.4.5.tgz error (ERR_PNPM_ENOSPC). Will retry in 10 seconds. 2 retries left.
+9.405  WARN  GET https://registry.npmjs.org/@babel/runtime/-/runtime-7.28.6.tgz error (ERR_PNPM_ENOSPC). Will retry in 10 seconds. 2 retries left.
+9.406  WARN  GET https://registry.npmjs.org/prop-types/-/prop-types-15.8.1.tgz error (ERR_PNPM_ENOSPC). Will retry in 10 seconds. 2 retries left.
+9.407  WARN  GET https://registry.npmjs.org/dom-helpers/-/dom-helpers-5.2.1.tgz error (ERR_PNPM_ENOSPC). Will retry in 10 seconds. 2 retries left.
+9.410  WARN  GET https://registry.npmjs.org/decimal.js-light/-/decimal.js-light-2.5.1.tgz error (ERR_PNPM_ENOSPC). Will retry in 10 seconds. 2 retries left.
+9.411  WARN  GET https://registry.npmjs.org/recharts-scale/-/recharts-scale-0.4.5.tgz error (ERR_PNPM_ENOSPC). Will retry in 10 seconds. 2 retries left.
+9.412  WARN  GET https://registry.npmjs.org/tiny-invariant/-/tiny-invariant-1.3.3.tgz error (ERR_PNPM_ENOSPC). Will retry in 10 seconds. 2 retries left.
+9.641  ERR_PNPM_ENOSPC  [importPackage /app/node_modules/.pnpm/help-me@5.0.0/node_modules/help-me] ENOSPC: no space left on device, mkdir '/app/node_modules/.pnpm/help-me@5.0.0/node_modules/help-me_tmp_6_1'
+------
+[+] up 0/1
+ ⠙ Image site-sentinel-api Building                                                                                                                                   10.9s
+Dockerfile:16
+
+--------------------
+
+  14 |     COPY scripts/package.json ./scripts/package.json
+
+  15 |     
+
+  16 | >>> RUN pnpm install --frozen-lockfile --filter @workspace/api-server... --filter @workspace/web-dashboard...
+
+  17 |     
+
+  18 |     COPY tsconfig.base.json ./
+
+--------------------
+
+failed to solve: process "/bin/sh -c pnpm install --frozen-lockfile --filter @workspace/api-server... --filter @workspace/web-dashboard..." did not complete successfully: exit code: 1

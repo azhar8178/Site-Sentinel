@@ -1,0 +1,1 @@
+- [Docker build dependencies](docker-build-dependencies.md) — production images must filter workspace installs to the API/dashboard and exclude mobile tooling.
