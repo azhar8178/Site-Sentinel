@@ -1,0 +1,50 @@
+=> ERROR [dashboard-builder  7/11] RUN pnpm install --frozen-lockfile --filter @workspace/web-dashboard...                                                           6.4s
+------                                                                                                                                                                     
+ > [dashboard-builder  7/11] RUN pnpm install --frozen-lockfile --filter @workspace/web-dashboard...:                                                                      
+0.809 Scope: 2 of 3 workspace projects                                                                                                                                     
+0.987 Lockfile is up to date, resolution step is skipped                                                                                                                   
+1.176 Progress: resolved 1, reused 0, downloaded 0, added 0                                                                                                                
+1.214 .                                        | +242 ++++++++++++++++++++++++                                                                                             
+2.180 Progress: resolved 242, reused 0, downloaded 106, added 40
+3.181 Progress: resolved 242, reused 0, downloaded 168, added 60
+4.182 Progress: resolved 242, reused 0, downloaded 172, added 64
+5.183 Progress: resolved 242, reused 0, downloaded 177, added 64
+6.057  WARN  GET https://registry.npmjs.org/date-fns/-/date-fns-4.1.0.tgz error (ERR_PNPM_ENOSPC). Will retry in 10 seconds. 2 retries left.
+6.071  WARN  GET https://registry.npmjs.org/recharts/-/recharts-2.15.4.tgz error (ERR_PNPM_ENOSPC). Will retry in 10 seconds. 2 retries left.
+6.071  WARN  GET https://registry.npmjs.org/eventemitter3/-/eventemitter3-4.0.7.tgz error (ERR_PNPM_ENOSPC). Will retry in 10 seconds. 2 retries left.
+6.086  WARN  GET https://registry.npmjs.org/lodash/-/lodash-4.17.23.tgz error (ERR_PNPM_ENOSPC). Will retry in 10 seconds. 2 retries left.
+6.092  WARN  GET https://registry.npmjs.org/react-is/-/react-is-18.3.1.tgz error (ERR_PNPM_ENOSPC). Will retry in 10 seconds. 2 retries left.
+6.097  WARN  GET https://registry.npmjs.org/react-smooth/-/react-smooth-4.0.4.tgz error (ERR_PNPM_ENOSPC). Will retry in 10 seconds. 2 retries left.
+6.098  WARN  GET https://registry.npmjs.org/fast-equals/-/fast-equals-5.4.0.tgz error (ERR_PNPM_ENOSPC). Will retry in 10 seconds. 2 retries left.
+6.099  WARN  GET https://registry.npmjs.org/prop-types/-/prop-types-15.8.1.tgz error (ERR_PNPM_ENOSPC). Will retry in 10 seconds. 2 retries left.
+6.100  WARN  GET https://registry.npmjs.org/loose-envify/-/loose-envify-1.4.0.tgz error (ERR_PNPM_ENOSPC). Will retry in 10 seconds. 2 retries left.
+6.101  WARN  GET https://registry.npmjs.org/object-assign/-/object-assign-4.1.1.tgz error (ERR_PNPM_ENOSPC). Will retry in 10 seconds. 2 retries left.
+6.101  WARN  GET https://registry.npmjs.org/react-is/-/react-is-16.13.1.tgz error (ERR_PNPM_ENOSPC). Will retry in 10 seconds. 2 retries left.
+6.103  WARN  GET https://registry.npmjs.org/react-transition-group/-/react-transition-group-4.4.5.tgz error (ERR_PNPM_ENOSPC). Will retry in 10 seconds. 2 retries left.
+6.104  WARN  GET https://registry.npmjs.org/dom-helpers/-/dom-helpers-5.2.1.tgz error (ERR_PNPM_ENOSPC). Will retry in 10 seconds. 2 retries left.
+6.107  WARN  GET https://registry.npmjs.org/@babel/runtime/-/runtime-7.28.6.tgz error (ERR_PNPM_ENOSPC). Will retry in 10 seconds. 2 retries left.
+6.108  WARN  GET https://registry.npmjs.org/decimal.js-light/-/decimal.js-light-2.5.1.tgz error (ERR_PNPM_ENOSPC). Will retry in 10 seconds. 2 retries left.
+6.110  WARN  GET https://registry.npmjs.org/tiny-invariant/-/tiny-invariant-1.3.3.tgz error (ERR_PNPM_ENOSPC). Will retry in 10 seconds. 2 retries left.
+6.198  ERR_PNPM_ENOSPC  [importPackage /app/node_modules/.pnpm/@radix-ui+react-select@2.2.6_@types+react-dom@19.2.3_@types+react@19.2.14__@types+react_1efa2f1d2a9a98ca996d4eb7d69d540a/node_modules/@radix-ui/react-select] ENOSPC: no space left on device, mkdir '/app/node_modules/.pnpm/@radix-ui+react-select@2.2.6_@types+react-dom@19.2.3_@types+react@19.2.14__@types+react_1efa2f1d2a9a98ca996d4eb7d69d540a/node_modules/@radix-ui/react-select_tmp_6_1'
+6.198 Progress: resolved 242, reused 0, downloaded 182, added 64
+------
+[+] up 0/1
+ ⠙ Image site-sentinel-api Building                                                                                                                                    7.6s
+Dockerfile:11
+
+--------------------
+
+   9 |     COPY lib/api-client-react/package.json ./lib/api-client-react/package.json
+
+  10 |     
+
+  11 | >>> RUN pnpm install --frozen-lockfile --filter @workspace/web-dashboard...
+
+  12 |     
+
+  13 |     COPY tsconfig.base.json ./
+
+--------------------
+
+failed to solve: process "/bin/sh -c pnpm install --frozen-lockfile --filter @workspace/web-dashboard..." did not complete successfully: exit code: 1
+
