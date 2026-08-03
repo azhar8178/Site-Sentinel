@@ -1,0 +1,51 @@
+=> ERROR [builder 12/18] RUN pnpm install --frozen-lockfile --filter @workspace/api-server... --filter @workspace/web-dashboard...                                   8.5s
+------                                                                                                                                                                     
+ > [builder 12/18] RUN pnpm install --frozen-lockfile --filter @workspace/api-server... --filter @workspace/web-dashboard...:                                              
+1.188 Scope: 5 of 8 workspace projects                                                                                                                                     
+1.529 Lockfile is up to date, resolution step is skipped                                                                                                                   
+1.676 Progress: resolved 1, reused 0, downloaded 0, added 0                                                                                                                
+1.779 .                                        | +387 ++++++++++++++++++++++++++++++++
+2.682 Progress: resolved 387, reused 0, downloaded 6, added 0
+3.688 Progress: resolved 387, reused 0, downloaded 60, added 14
+4.686 Progress: resolved 387, reused 0, downloaded 145, added 43
+5.688 Progress: resolved 387, reused 0, downloaded 272, added 98
+6.689 Progress: resolved 387, reused 0, downloaded 306, added 109
+7.691 Progress: resolved 387, reused 0, downloaded 315, added 113
+8.036  WARN  GET https://registry.npmjs.org/lucide-react/-/lucide-react-0.545.0.tgz error (ERR_PNPM_ENOSPC). Will retry in 10 seconds. 2 retries left.
+8.040  WARN  GET https://registry.npmjs.org/@tabby_ai/hijri-converter/-/hijri-converter-1.0.5.tgz error (ERR_PNPM_ENOSPC). Will retry in 10 seconds. 2 retries left.
+8.045  WARN  GET https://registry.npmjs.org/react-hook-form/-/react-hook-form-7.71.2.tgz error (ERR_PNPM_ENOSPC). Will retry in 10 seconds. 2 retries left.
+8.122  WARN  GET https://registry.npmjs.org/date-fns/-/date-fns-4.1.0.tgz error (ERR_PNPM_ENOSPC). Will retry in 10 seconds. 2 retries left.
+8.140  WARN  GET https://registry.npmjs.org/react-resizable-panels/-/react-resizable-panels-2.1.9.tgz error (ERR_PNPM_ENOSPC). Will retry in 10 seconds. 2 retries left.
+8.171  WARN  GET https://registry.npmjs.org/recharts/-/recharts-2.15.4.tgz error (ERR_PNPM_ENOSPC). Will retry in 10 seconds. 2 retries left.
+8.174  WARN  GET https://registry.npmjs.org/eventemitter3/-/eventemitter3-4.0.7.tgz error (ERR_PNPM_ENOSPC). Will retry in 10 seconds. 2 retries left.
+8.182  WARN  GET https://registry.npmjs.org/lodash/-/lodash-4.17.23.tgz error (ERR_PNPM_ENOSPC). Will retry in 10 seconds. 2 retries left.
+8.182  WARN  GET https://registry.npmjs.org/react-is/-/react-is-18.3.1.tgz error (ERR_PNPM_ENOSPC). Will retry in 10 seconds. 2 retries left.
+8.184  WARN  GET https://registry.npmjs.org/react-smooth/-/react-smooth-4.0.4.tgz error (ERR_PNPM_ENOSPC). Will retry in 10 seconds. 2 retries left.
+8.185  WARN  GET https://registry.npmjs.org/fast-equals/-/fast-equals-5.4.0.tgz error (ERR_PNPM_ENOSPC). Will retry in 10 seconds. 2 retries left.
+8.187  WARN  GET https://registry.npmjs.org/prop-types/-/prop-types-15.8.1.tgz error (ERR_PNPM_ENOSPC). Will retry in 10 seconds. 2 retries left.
+8.187  WARN  GET https://registry.npmjs.org/loose-envify/-/loose-envify-1.4.0.tgz error (ERR_PNPM_ENOSPC). Will retry in 10 seconds. 2 retries left.
+8.189  WARN  GET https://registry.npmjs.org/react-transition-group/-/react-transition-group-4.4.5.tgz error (ERR_PNPM_ENOSPC). Will retry in 10 seconds. 2 retries left.
+8.189  WARN  GET https://registry.npmjs.org/react-is/-/react-is-16.13.1.tgz error (ERR_PNPM_ENOSPC). Will retry in 10 seconds. 2 retries left.
+8.191  WARN  GET https://registry.npmjs.org/dom-helpers/-/dom-helpers-5.2.1.tgz error (ERR_PNPM_ENOSPC). Will retry in 10 seconds. 2 retries left.
+8.308  ERR_PNPM_ENOSPC  [importPackage /app/node_modules/.pnpm/@types+body-parser@1.19.6/node_modules/@types/body-parser] ENOSPC: no space left on device, mkdir '/app/node_modules/.pnpm/@types+body-parser@1.19.6/node_modules/@types/body-parser_tmp_6_1'
+------
+[+] up 0/1
+ ⠙ Image site-sentinel-api Building                                                                                                                                   10.4s
+Dockerfile:16
+
+--------------------
+
+  14 |     COPY scripts/package.json ./scripts/package.json
+
+  15 |     
+
+  16 | >>> RUN pnpm install --frozen-lockfile --filter @workspace/api-server... --filter @workspace/web-dashboard...
+
+  17 |     
+
+  18 |     COPY tsconfig.base.json ./
+
+--------------------
+
+failed to solve: process "/bin/sh -c pnpm install --frozen-lockfile --filter @workspace/api-server... --filter @workspace/web-dashboard..." did not complete successfully: exit code: 1
+
