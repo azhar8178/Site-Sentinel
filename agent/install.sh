@@ -11,7 +11,7 @@ API_URL="$1"
 API_KEY="$2"
 OPENSEARCH_URL="${MONITOR_OPENSEARCH_URL:-https://vpc-magento-prod-nzaysstzukhdmqqtuhh6be2use.eu-west-2.es.amazonaws.com}"
 OPENSEARCH_REGION="${MONITOR_OPENSEARCH_REGION:-eu-west-2}"
-OPENSEARCH_AUTH="${MONITOR_OPENSEARCH_AUTH:-iam}"
+OPENSEARCH_AUTH="${MONITOR_OPENSEARCH_AUTH:-none}"
 
 echo "Installing Site Monitor Agent..."
 

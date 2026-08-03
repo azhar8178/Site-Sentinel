@@ -14,7 +14,7 @@ const OPENSEARCH_URL =
   process.env.MONITOR_OPENSEARCH_URL ||
   "https://vpc-magento-prod-nzaysstzukhdmqqtuhh6be2use.eu-west-2.es.amazonaws.com";
 const OPENSEARCH_REGION = process.env.MONITOR_OPENSEARCH_REGION || "eu-west-2";
-const OPENSEARCH_AUTH = process.env.MONITOR_OPENSEARCH_AUTH || "iam";
+const OPENSEARCH_AUTH = process.env.MONITOR_OPENSEARCH_AUTH || "none";
 
 if (!API_URL || !API_KEY) {
   console.error("ERROR: MONITOR_API_URL and MONITOR_API_KEY are required.");
@@ -416,12 +416,17 @@ async function getRemoteOpenSearchStatus(endpoint) {
       return { isRunning: false, error: "Basic auth is configured but credentials are missing" };
     }
     headers.Authorization = `Basic ${Buffer.from(`${username}:${password}`).toString("base64")}`;
-  } else {
+  } else if (auth === "iam") {
     const credentials = await getAwsCredentials();
     if (!credentials) {
       return { isRunning: false, error: "AWS IAM credentials unavailable on this host" };
     }
     headers = signAwsRequest(url, region, credentials);
+  } else if (auth !== "none") {
+    return {
+      isRunning: false,
+      error: `Unsupported OpenSearch auth mode: ${OPENSEARCH_AUTH}`,
+    };
   }
 
   const response = await requestText(url.href, { headers, timeout: 7000 });
@@ -646,7 +651,7 @@ async function collect() {
   }
 }
 
-const AGENT_VERSION = "3.1.0";
+const AGENT_VERSION = "3.2.0";
 const UPDATE_CHECK_INTERVAL = 3600000;
 let lastUpdateCheck = 0;
 
