@@ -52,7 +52,7 @@ function ThemeToggle({ className }: { className?: string }) {
           isDark ? "bg-primary" : "bg-muted-foreground/30"
         )}>
           <div className={cn(
-            "absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-all duration-300",
+            "theme-toggle-knob absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-all duration-300",
             isDark ? "left-[18px]" : "left-0.5"
           )} />
         </div>

@@ -67,8 +67,8 @@ function StatusDot({ ok, text }: { ok: boolean; text?: string }) {
 function SectionHeader({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex items-center gap-3 mb-4">
-      <h3 className="text-xs font-bold uppercase tracking-widest text-gray-400">{children}</h3>
-      <div className="flex-1 border-t border-gray-100" />
+      <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">{children}</h3>
+      <div className="flex-1 border-t border-border" />
     </div>
   );
 }
@@ -99,15 +99,15 @@ function ServiceRow({
   const dot = ok === null ? "bg-gray-300" : ok ? "bg-emerald-500" : "bg-red-500";
   const text = ok === null ? "text-gray-500" : ok ? "text-emerald-700" : "text-red-700";
   return (
-    <tr className="border-b border-gray-50 last:border-0">
-      <td className="py-2.5 px-4 text-sm text-gray-800 font-medium w-1/4">{label}</td>
+    <tr className="border-b border-border/50 last:border-0">
+      <td className="py-2.5 px-4 text-sm text-foreground font-medium w-1/4">{label}</td>
       <td className="py-2.5 px-4 w-1/4">
         <span className="inline-flex items-center gap-1.5">
           <span className={`w-2 h-2 rounded-full flex-shrink-0 ${dot}`} />
           <span className={`text-sm font-medium ${text}`}>{statusLabel}</span>
         </span>
       </td>
-      <td className="py-2.5 px-4 text-sm text-gray-500">{detail ?? "—"}</td>
+      <td className="py-2.5 px-4 text-sm text-muted-foreground">{detail ?? "—"}</td>
     </tr>
   );
 }
@@ -159,11 +159,11 @@ export default function HealthReport() {
           <p className="text-muted-foreground mt-1 text-sm">System-wide status summary · {format(generatedAt, "d MMM yyyy, HH:mm")}</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => refetch()} disabled={isFetching} className="gap-2 bg-white">
+          <Button variant="outline" onClick={() => refetch()} disabled={isFetching} className="gap-2">
             <RefreshCw className={`w-4 h-4 ${isFetching ? "animate-spin" : ""}`} />
             Refresh
           </Button>
-          <Button variant="outline" onClick={() => window.print()} className="gap-2 bg-white">
+          <Button variant="outline" onClick={() => window.print()} className="gap-2">
             <Printer className="w-4 h-4" />
             Print / PDF
           </Button>
@@ -171,15 +171,15 @@ export default function HealthReport() {
       </div>
 
       {/* Report document */}
-      <div className="bg-white rounded-2xl border shadow-sm print:shadow-none print:border-none print:rounded-none" id="health-report-doc">
+      <div className="bg-card text-card-foreground rounded-2xl border shadow-sm print:shadow-none print:border-none print:rounded-none" id="health-report-doc">
 
         {/* ── Document header ── */}
-        <div className="px-10 pt-10 pb-8 border-b border-gray-100 print:px-12 print:pt-12">
+        <div className="px-10 pt-10 pb-8 border-b border-border print:px-12 print:pt-12">
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-1">System Health Report</p>
-              <h1 className="text-3xl font-display font-bold text-gray-900 leading-tight">{companyName}</h1>
-              <p className="text-sm text-gray-500 mt-2">
+              <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-1">System Health Report</p>
+              <h1 className="text-3xl font-display font-bold text-foreground leading-tight">{companyName}</h1>
+              <p className="text-sm text-muted-foreground mt-2">
                 {format(generatedAt, "EEEE, d MMMM yyyy")} &nbsp;·&nbsp; {format(generatedAt, "HH:mm")} UTC
               </p>
             </div>
@@ -192,15 +192,15 @@ export default function HealthReport() {
           </div>
 
           {/* Summary row */}
-          <div className="grid grid-cols-3 gap-px bg-gray-100 rounded-xl overflow-hidden mt-8 border border-gray-100">
+          <div className="grid grid-cols-3 gap-px bg-border rounded-xl overflow-hidden mt-8 border border-border">
             {[
               { label: "Sites Monitored", value: `${sitesUp} / ${report.sites.length} online` },
               { label: "Servers Online", value: `${serversOnline} / ${report.servers.length} online` },
               { label: "SSL Domains", value: allSsl.length > 0 ? `${allSsl.filter(e => !e.isExpired && !e.isExpiringSoon).length} / ${allSsl.length} valid` : "Not tracked" },
             ].map(item => (
-              <div key={item.label} className="bg-gray-50 px-5 py-4">
-                <p className="text-xs text-gray-400 uppercase tracking-wide font-medium">{item.label}</p>
-                <p className="text-base font-bold text-gray-800 mt-0.5">{item.value}</p>
+              <div key={item.label} className="bg-muted px-5 py-4">
+                <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium">{item.label}</p>
+                <p className="text-base font-bold text-foreground mt-0.5">{item.value}</p>
               </div>
             ))}
           </div>

@@ -132,6 +132,141 @@
   --destructive-foreground: 210 40% 98%;
 }
 
+/*
+ * Compatibility mappings for older page-level utility classes.
+ * A number of the report, analytics, alert, and server views predate the
+ * semantic color tokens above and still use Tailwind's light gray utilities.
+ * Keep those classes working in light mode while making them theme-aware here.
+ */
+.dark {
+  color-scheme: dark;
+}
+
+.dark .bg-white:not(.theme-toggle-knob) {
+  background-color: hsl(var(--card)) !important;
+}
+
+.dark .bg-gray-50,
+.dark .bg-gray-50\/50,
+.dark .bg-gray-50\/60,
+.dark .bg-gray-100,
+.dark .bg-slate-50,
+.dark .bg-slate-100 {
+  background-color: hsl(var(--muted)) !important;
+}
+
+.dark .text-gray-900,
+.dark .text-gray-800,
+.dark .text-gray-700,
+.dark .text-slate-700 {
+  color: hsl(var(--foreground)) !important;
+}
+
+.dark .text-gray-600,
+.dark .text-gray-500,
+.dark .text-gray-400,
+.dark .text-slate-600,
+.dark .text-slate-500,
+.dark .text-slate-400 {
+  color: hsl(var(--muted-foreground)) !important;
+}
+
+.dark .border-gray-100,
+.dark .border-gray-200,
+.dark .border-gray-300,
+.dark .border-slate-200,
+.dark .border-slate-300 {
+  border-color: hsl(var(--border)) !important;
+}
+
+.dark .hover\:bg-gray-50:hover,
+.dark .hover\:bg-gray-50\/50:hover,
+.dark .hover\:bg-slate-50:hover,
+.dark .hover\:bg-slate-100:hover {
+  background-color: hsl(var(--secondary)) !important;
+}
+
+.dark .bg-amber-50 {
+  background-color: hsl(var(--warning) / 0.12) !important;
+}
+
+.dark .bg-amber-100,
+.dark .bg-yellow-100,
+.dark .bg-orange-100 {
+  background-color: hsl(var(--warning) / 0.16) !important;
+}
+
+.dark .border-amber-200,
+.dark .border-amber-300 {
+  border-color: hsl(var(--warning) / 0.35) !important;
+}
+
+.dark .text-amber-800,
+.dark .text-amber-700,
+.dark .text-yellow-600,
+.dark .text-yellow-700,
+.dark .text-orange-600,
+.dark .text-orange-700 {
+  color: hsl(var(--warning)) !important;
+}
+
+.dark .bg-green-50 {
+  background-color: hsl(var(--success) / 0.12) !important;
+}
+
+.dark .bg-emerald-50,
+.dark .bg-emerald-100 {
+  background-color: hsl(var(--success) / 0.14) !important;
+}
+
+.dark .border-green-200 {
+  border-color: hsl(var(--success) / 0.35) !important;
+}
+
+.dark .border-emerald-200 {
+  border-color: hsl(var(--success) / 0.35) !important;
+}
+
+.dark .text-green-800,
+.dark .text-green-700,
+.dark .text-emerald-600,
+.dark .text-emerald-700,
+.dark .text-emerald-800 {
+  color: hsl(var(--success)) !important;
+}
+
+.dark .bg-red-50 {
+  background-color: hsl(var(--destructive) / 0.12) !important;
+}
+
+.dark .bg-red-100 {
+  background-color: hsl(var(--destructive) / 0.14) !important;
+}
+
+.dark .border-red-200 {
+  border-color: hsl(var(--destructive) / 0.35) !important;
+}
+
+.dark .text-red-700,
+.dark .text-red-600,
+.dark .text-red-800 {
+  color: hsl(var(--destructive)) !important;
+}
+
+.dark .bg-blue-50,
+.dark .bg-blue-100 {
+  background-color: hsl(var(--primary) / 0.14) !important;
+}
+
+.dark .border-blue-200 {
+  border-color: hsl(var(--primary) / 0.35) !important;
+}
+
+.dark .text-blue-600,
+.dark .text-blue-700 {
+  color: hsl(var(--primary)) !important;
+}
+
 @layer base {
   * {
     @apply border-border;
