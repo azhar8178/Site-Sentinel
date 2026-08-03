@@ -1,0 +1,51 @@
+=> CANCELED [stage-1 14/19] RUN pnpm install --frozen-lockfile --prod                                                                                                8.9s
+ => ERROR [builder 14/20] RUN pnpm install --frozen-lockfile                                                                                                          8.7s
+------
+ > [builder 14/20] RUN pnpm install --frozen-lockfile:
+1.622 Scope: all 10 workspace projects
+1.928 Lockfile is up to date, resolution step is skipped
+2.154 Progress: resolved 1, reused 0, downloaded 0, added 0
+2.413 Packages: +1120
+2.413 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+3.155 Progress: resolved 1120, reused 0, downloaded 7, added 0
+4.160 Progress: resolved 1120, reused 0, downloaded 13, added 0
+5.159 Progress: resolved 1120, reused 0, downloaded 53, added 13
+6.161 Progress: resolved 1120, reused 0, downloaded 142, added 41
+7.161 Progress: resolved 1120, reused 0, downloaded 173, added 50
+8.335  WARN  GET https://registry.npmjs.org/react-native/-/react-native-0.81.5.tgz error (ERR_PNPM_ENOSPC). Will retry in 10 seconds. 2 retries left.
+8.340  WARN  GET https://registry.npmjs.org/ansi-styles/-/ansi-styles-4.3.0.tgz error (ERR_PNPM_ENOSPC). Will retry in 10 seconds. 2 retries left.
+8.342  WARN  GET https://registry.npmjs.org/@types/yargs-parser/-/yargs-parser-21.0.3.tgz error (ERR_PNPM_ENOSPC). Will retry in 10 seconds. 2 retries left.
+8.344  WARN  GET https://registry.npmjs.org/color-convert/-/color-convert-2.0.1.tgz error (ERR_PNPM_ENOSPC). Will retry in 10 seconds. 2 retries left.
+8.345  WARN  GET https://registry.npmjs.org/color-name/-/color-name-1.1.4.tgz error (ERR_PNPM_ENOSPC). Will retry in 10 seconds. 2 retries left.
+8.346  WARN  GET https://registry.npmjs.org/supports-color/-/supports-color-7.2.0.tgz error (ERR_PNPM_ENOSPC). Will retry in 10 seconds. 2 retries left.
+8.349  WARN  GET https://registry.npmjs.org/has-flag/-/has-flag-4.0.0.tgz error (ERR_PNPM_ENOSPC). Will retry in 10 seconds. 2 retries left.
+8.353  WARN  GET https://registry.npmjs.org/@babel/core/-/core-7.29.0.tgz error (ERR_PNPM_ENOSPC). Will retry in 10 seconds. 2 retries left.
+8.356  WARN  GET https://registry.npmjs.org/@babel/helper-validator-identifier/-/helper-validator-identifier-7.28.5.tgz error (ERR_PNPM_ENOSPC). Will retry in 10 seconds. 2 retries left.
+8.356  WARN  GET https://registry.npmjs.org/@babel/code-frame/-/code-frame-7.29.0.tgz error (ERR_PNPM_ENOSPC). Will retry in 10 seconds. 2 retries left.
+8.357  WARN  GET https://registry.npmjs.org/js-tokens/-/js-tokens-4.0.0.tgz error (ERR_PNPM_ENOSPC). Will retry in 10 seconds. 2 retries left.
+8.358  WARN  GET https://registry.npmjs.org/@react-native/assets-registry/-/assets-registry-0.81.5.tgz error (ERR_PNPM_ENOSPC). Will retry in 10 seconds. 2 retries left.
+8.359  WARN  GET https://registry.npmjs.org/picocolors/-/picocolors-1.1.1.tgz error (ERR_PNPM_ENOSPC). Will retry in 10 seconds. 2 retries left.
+8.362  WARN  GET https://registry.npmjs.org/@babel/generator/-/generator-7.29.1.tgz error (ERR_PNPM_ENOSPC). Will retry in 10 seconds. 2 retries left.
+8.371  WARN  GET https://registry.npmjs.org/@babel/parser/-/parser-7.29.0.tgz error (ERR_PNPM_ENOSPC). Will retry in 10 seconds. 2 retries left.
+8.378  WARN  GET https://registry.npmjs.org/@babel/types/-/types-7.29.0.tgz error (ERR_PNPM_ENOSPC). Will retry in 10 seconds. 2 retries left.
+8.459  ERR_PNPM_ENOSPC  [importPackage /app/node_modules/.pnpm/call-bound@1.0.4/node_modules/call-bound] ENOSPC: no space left on device, mkdir '/app/node_modules/.pnpm/call-bound@1.0.4/node_modules/call-bound_tmp_6_1'
+------
+[+] up 0/1
+ ⠙ Image site-sentinel-api Building                                                                                                                                   20.8s
+Dockerfile:18
+
+--------------------
+
+  16 |     COPY artifacts/mockup-sandbox/package.json ./artifacts/mockup-sandbox/package.json
+
+  17 |     
+
+  18 | >>> RUN pnpm install --frozen-lockfile
+
+  19 |     
+
+  20 |     COPY tsconfig.base.json ./
+
+--------------------
+
+failed to solve: process "/bin/sh -c pnpm install --frozen-lockfile" did not complete successfully: exit code: 1
