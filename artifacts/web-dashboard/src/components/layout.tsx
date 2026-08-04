@@ -13,6 +13,7 @@ import {
   X,
   ClipboardList,
   BarChart2,
+  Sparkles,
   Sun,
   Moon,
 } from "lucide-react";
@@ -28,6 +29,7 @@ const NAV_ITEMS = [
   { href: "/alerts", label: "Alerts", icon: Bell },
   { href: "/health-report", label: "Health Report", icon: ClipboardList },
   { href: "/analytics", label: "Analytics", icon: BarChart2 },
+  { href: "/incident-analysis", label: "Incident Analysis", icon: Sparkles },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 

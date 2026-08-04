@@ -17,6 +17,7 @@ import Alerts from "@/pages/alerts";
 import Settings from "@/pages/settings";
 import HealthReport from "@/pages/health-report";
 import Analytics from "@/pages/analytics";
+import IncidentAnalysis from "@/pages/incident-analysis";
 import NotFound from "@/pages/not-found";
 
 const base = import.meta.env.BASE_URL.replace(/\/$/, "");
@@ -67,6 +68,7 @@ function AppRoutes() {
         <Route path="/alerts" component={Alerts} />
         <Route path="/health-report" component={HealthReport} />
         <Route path="/analytics" component={Analytics} />
+        <Route path="/incident-analysis" component={IncidentAnalysis} />
         <Route path="/settings" component={Settings} />
         <Route component={NotFound} />
       </Switch>
