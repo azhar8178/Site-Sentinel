@@ -57,6 +57,7 @@ set -e
 
 MONITOR_API_URL="\${1:?Usage: install.sh <API_URL> <API_KEY>}"
 MONITOR_API_KEY="\${2:?Usage: install.sh <API_URL> <API_KEY>}"
+MONITOR_API_URL="\${MONITOR_API_URL%/}"
 MONITOR_OPENSEARCH_URL="\${3:-https://vpc-magento-prod-nzaysstzukhdmqqtuhh6be2use.eu-west-2.es.amazonaws.com}"
 MONITOR_OPENSEARCH_REGION="\${4:-eu-west-2}"
 MONITOR_OPENSEARCH_AUTH="\${5:-none}"
@@ -67,9 +68,16 @@ echo "Installing Site Sentinel Monitor Agent..."
 sudo mkdir -p "\$INSTALL_DIR"
 
 echo "Downloading agent script..."
-sudo curl -sf "\$MONITOR_API_URL/api/agent/script" \\
+TMP_AGENT="\$(mktemp)"
+trap 'rm -f "\$TMP_AGENT"' EXIT
+sudo curl -fsS "\$MONITOR_API_URL/api/agent/script" \\
   -H "x-api-key: \$MONITOR_API_KEY" \\
-  -o "\$INSTALL_DIR/monitor-agent.js"
+  -o "\$TMP_AGENT"
+if ! sudo grep -q '^#!/usr/bin/env node$' "\$TMP_AGENT"; then
+  echo "Downloaded agent script failed validation; refusing to install it."
+  exit 1
+fi
+sudo install -m 755 "\$TMP_AGENT" "\$INSTALL_DIR/monitor-agent.js"
 
 sudo tee "\$INSTALL_DIR/.env" > /dev/null <<EOF
 MONITOR_API_URL=\$MONITOR_API_URL

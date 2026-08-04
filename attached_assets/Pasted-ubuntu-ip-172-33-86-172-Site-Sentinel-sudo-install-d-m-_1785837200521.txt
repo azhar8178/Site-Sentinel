@@ -1,0 +1,91 @@
+ubuntu@ip-172-33-86-172:~/Site-Sentinel$ sudo install -d -m 755 /opt/monitor-agent
+sudo install -m 755 /tmp/monitor-agent.js /opt/monitor-agent/monitor-agent.js
+
+sudo tee /opt/monitor-agent/.env >/dev/null <<EOF
+MONITOR_API_URL=$API_URL
+MONITOR_API_KEY=$KEY
+MONITOR_INTERVAL=30
+MONITOR_OPENSEARCH_URL=https://vpc-magento-prod-nzaysstzukhdmqqtuhh6be2use.eu-west-2.es.amazonaws.com
+MONITOR_OPENSEARCH_REGION=eu-west-2
+MONITOR_OPENSEARCH_AUTH=none
+EOF
+
+sudo chmod 600 /opt/monitor-agent/.env
+sudo systemctl reset-failed monitor-agent
+sudo systemctl restart monitor-agent
+
+sudo systemctl status monitor-agent --no-pager
+sudo journalctl -u monitor-agent -n 30 --no-pager
+● monitor-agent.service - Site Monitor Agent
+     Loaded: loaded (/etc/systemd/system/monitor-agent.service; enabled; vendor preset: enabled)
+     Active: active (running) since Tue 2026-08-04 09:49:44 UTC; 18ms ago
+   Main PID: 2440999 (node)
+      Tasks: 1 (limit: 4528)
+     Memory: 1.6M
+        CPU: 2ms
+     CGroup: /system.slice/monitor-agent.service
+             └─2440999 /usr/bin/node /opt/monitor-agent/monitor-agent.js
+
+Aug 04 09:49:44 ip-172-33-86-172 systemd[1]: Started Site Monitor Agent.
+Aug 04 09:48:59 ip-172-33-86-172 systemd[1]: monitor-agent.service: Failed to load environment files: No such file or directory
+Aug 04 09:48:59 ip-172-33-86-172 systemd[1]: monitor-agent.service: Failed to run 'start' task: No such file or directory
+Aug 04 09:48:59 ip-172-33-86-172 systemd[1]: monitor-agent.service: Failed with result 'resources'.
+Aug 04 09:48:59 ip-172-33-86-172 systemd[1]: Failed to start Site Monitor Agent.
+Aug 04 09:49:09 ip-172-33-86-172 systemd[1]: monitor-agent.service: Scheduled restart job, restart counter is at 4119.
+Aug 04 09:49:09 ip-172-33-86-172 systemd[1]: Stopped Site Monitor Agent.
+Aug 04 09:49:09 ip-172-33-86-172 systemd[1]: monitor-agent.service: Failed to load environment files: No such file or directory
+Aug 04 09:49:09 ip-172-33-86-172 systemd[1]: monitor-agent.service: Failed to run 'start' task: No such file or directory
+Aug 04 09:49:09 ip-172-33-86-172 systemd[1]: monitor-agent.service: Failed with result 'resources'.
+Aug 04 09:49:09 ip-172-33-86-172 systemd[1]: Failed to start Site Monitor Agent.
+Aug 04 09:49:19 ip-172-33-86-172 systemd[1]: monitor-agent.service: Scheduled restart job, restart counter is at 4120.
+Aug 04 09:49:19 ip-172-33-86-172 systemd[1]: Stopped Site Monitor Agent.
+Aug 04 09:49:19 ip-172-33-86-172 systemd[1]: monitor-agent.service: Failed to load environment files: No such file or directory
+Aug 04 09:49:19 ip-172-33-86-172 systemd[1]: monitor-agent.service: Failed to run 'start' task: No such file or directory
+Aug 04 09:49:19 ip-172-33-86-172 systemd[1]: monitor-agent.service: Failed with result 'resources'.
+Aug 04 09:49:19 ip-172-33-86-172 systemd[1]: Failed to start Site Monitor Agent.
+Aug 04 09:49:30 ip-172-33-86-172 systemd[1]: monitor-agent.service: Scheduled restart job, restart counter is at 4121.
+Aug 04 09:49:30 ip-172-33-86-172 systemd[1]: Stopped Site Monitor Agent.
+Aug 04 09:49:30 ip-172-33-86-172 systemd[1]: monitor-agent.service: Failed to load environment files: No such file or directory
+Aug 04 09:49:30 ip-172-33-86-172 systemd[1]: monitor-agent.service: Failed to run 'start' task: No such file or directory
+Aug 04 09:49:30 ip-172-33-86-172 systemd[1]: monitor-agent.service: Failed with result 'resources'.
+Aug 04 09:49:30 ip-172-33-86-172 systemd[1]: Failed to start Site Monitor Agent.
+Aug 04 09:49:40 ip-172-33-86-172 systemd[1]: monitor-agent.service: Scheduled restart job, restart counter is at 4122.
+Aug 04 09:49:40 ip-172-33-86-172 systemd[1]: Stopped Site Monitor Agent.
+Aug 04 09:49:40 ip-172-33-86-172 systemd[1]: monitor-agent.service: Failed to load environment files: No such file or directory
+Aug 04 09:49:40 ip-172-33-86-172 systemd[1]: monitor-agent.service: Failed to run 'start' task: No such file or directory
+Aug 04 09:49:40 ip-172-33-86-172 systemd[1]: monitor-agent.service: Failed with result 'resources'.
+Aug 04 09:49:40 ip-172-33-86-172 systemd[1]: Failed to start Site Monitor Agent.
+Aug 04 09:49:44 ip-172-33-86-172 systemd[1]: Stopped Site Monitor Agent.
+Aug 04 09:49:44 ip-172-33-86-172 systemd[1]: Started Site Monitor Agent.
+ubuntu@ip-172-33-86-172:~/Site-Sentinel$ 
+ubuntu@ip-172-33-86-172:~/Site-Sentinel$ sudo journalctl -u monitor-agent --since "2026-08-04 09:49:44" -n 30 --no-pager
+Aug 04 09:49:44 ip-172-33-86-172 systemd[1]: Stopped Site Monitor Agent.
+Aug 04 09:49:44 ip-172-33-86-172 systemd[1]: Started Site Monitor Agent.
+Aug 04 09:49:45 ip-172-33-86-172 node[2440999]: /opt/monitor-agent/monitor-agent.js:1
+Aug 04 09:49:45 ip-172-33-86-172 node[2440999]: <!DOCTYPE html>
+Aug 04 09:49:45 ip-172-33-86-172 node[2440999]: ^
+Aug 04 09:49:45 ip-172-33-86-172 node[2440999]: SyntaxError: Unexpected token '<'
+Aug 04 09:49:45 ip-172-33-86-172 node[2440999]:     at wrapSafe (node:internal/modules/cjs/loader:1692:18)
+Aug 04 09:49:45 ip-172-33-86-172 node[2440999]:     at Module._compile (node:internal/modules/cjs/loader:1735:20)
+Aug 04 09:49:45 ip-172-33-86-172 node[2440999]:     at Object..js (node:internal/modules/cjs/loader:1893:10)
+Aug 04 09:49:45 ip-172-33-86-172 node[2440999]:     at Module.load (node:internal/modules/cjs/loader:1481:32)
+Aug 04 09:49:45 ip-172-33-86-172 node[2440999]:     at Module._load (node:internal/modules/cjs/loader:1300:12)
+Aug 04 09:49:45 ip-172-33-86-172 node[2440999]:     at TracingChannel.traceSync (node:diagnostics_channel:328:14)
+Aug 04 09:49:45 ip-172-33-86-172 node[2440999]:     at wrapModuleLoad (node:internal/modules/cjs/loader:245:24)
+Aug 04 09:49:45 ip-172-33-86-172 node[2440999]:     at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:154:5)
+Aug 04 09:49:45 ip-172-33-86-172 node[2440999]:     at node:internal/main/run_main_module:33:47
+Aug 04 09:49:45 ip-172-33-86-172 node[2440999]: Node.js v24.13.0
+Aug 04 09:49:45 ip-172-33-86-172 systemd[1]: monitor-agent.service: Main process exited, code=exited, status=1/FAILURE
+Aug 04 09:49:45 ip-172-33-86-172 systemd[1]: monitor-agent.service: Failed with result 'exit-code'.
+Aug 04 09:49:55 ip-172-33-86-172 systemd[1]: monitor-agent.service: Scheduled restart job, restart counter is at 1.
+Aug 04 09:49:55 ip-172-33-86-172 systemd[1]: Stopped Site Monitor Agent.
+Aug 04 09:49:55 ip-172-33-86-172 systemd[1]: Started Site Monitor Agent.
+Aug 04 09:49:55 ip-172-33-86-172 node[2441062]: /opt/monitor-agent/monitor-agent.js:1
+Aug 04 09:49:55 ip-172-33-86-172 node[2441062]: <!DOCTYPE html>
+Aug 04 09:49:55 ip-172-33-86-172 node[2441062]: ^
+Aug 04 09:49:55 ip-172-33-86-172 node[2441062]: SyntaxError: Unexpected token '<'
+Aug 04 09:49:55 ip-172-33-86-172 node[2441062]:     at wrapSafe (node:internal/modules/cjs/loader:1692:18)
+Aug 04 09:49:55 ip-172-33-86-172 node[2441062]:     at Module._compile (node:internal/modules/cjs/loader:1735:20)
+Aug 04 09:49:55 ip-172-33-86-172 node[2441062]:     at Object..js (node:internal/modules/cjs/loader:1893:10)
+Aug 04 09:49:55 ip-172-33-86-172 node[2441062]:     at Module.load (node:internal/modules/cjs/loader:1481:32)
+Aug 04 09:49:55 ip-172-33-86-172 node[2441062]:     at Module._load (node:internal/modules/cjs/loader:1300:12)

@@ -7,7 +7,7 @@ const os = require("os");
 const { execSync } = require("child_process");
 const crypto = require("crypto");
 
-const API_URL = process.env.MONITOR_API_URL;
+const API_URL = (process.env.MONITOR_API_URL || "").replace(/\/+$/, "");
 const API_KEY = process.env.MONITOR_API_KEY;
 const INTERVAL = parseInt(process.env.MONITOR_INTERVAL || "30", 10) * 1000;
 const OPENSEARCH_URL =
