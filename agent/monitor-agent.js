@@ -569,22 +569,25 @@ function sanitizeLog(value) {
 
 function readLogCommand(command, maxChars = 12000) {
   const output = exec(command);
-  if (!output) return "";
+  if (!output || output === "-- No entries --") return "";
   return sanitizeLog(output).slice(-maxChars);
 }
 
 function getLogSnapshot() {
   const sources = {
     journal: readLogCommand(
-      "journalctl --since '5 minutes ago' --no-pager -n 160 -u nginx -u varnish -u mysql -u mariadb -u opensearch -u elasticsearch 2>/dev/null"
+      "journalctl --since '5 minutes ago' --no-pager -n 160 2>/dev/null"
     ),
     nginxError: readLogCommand("tail -n 160 /var/log/nginx/error.log 2>/dev/null"),
     varnish: readLogCommand("tail -n 160 /var/log/varnish/varnish.log 2>/dev/null"),
+    syslog: readLogCommand(
+      "sh -c 'for f in /var/log/syslog /var/log/messages /var/log/auth.log; do [ -f \"$f\" ] && tail -n 120 \"$f\"; done' 2>/dev/null"
+    ),
     phpFpm: readLogCommand(
-      "sh -c 'for f in /var/log/php*-fpm.log /var/log/php*/fpm-php*.log; do [ -f \"$f\" ] && tail -n 80 \"$f\"; done' 2>/dev/null"
+      "sh -c 'for f in /var/log/php*-fpm.log /var/log/php*/fpm-php*.log /var/log/php/*fpm*.log; do [ -f \"$f\" ] && tail -n 80 \"$f\"; done' 2>/dev/null"
     ),
     magento: readLogCommand(
-      "sh -c 'for f in /var/www/html/var/log/system.log /var/www/html/var/log/exception.log /var/www/html/var/log/debug.log; do [ -f \"$f\" ] && tail -n 120 \"$f\"; done' 2>/dev/null"
+      "sh -c 'for root in /var/www/html /var/www/* /home/*/public_html /home/*/www /srv/www/*; do for name in system exception debug; do f=\"$root/var/log/$name.log\"; [ -f \"$f\" ] && tail -n 120 \"$f\"; done; done' 2>/dev/null"
     ),
     kernel: readLogCommand(
       "journalctl -k --since '5 minutes ago' --no-pager -p warning..alert -n 120 2>/dev/null"
@@ -715,7 +718,7 @@ async function collect() {
   }
 }
 
-const AGENT_VERSION = "3.4.0";
+const AGENT_VERSION = "3.4.1";
 const UPDATE_CHECK_INTERVAL = 3600000;
 let lastUpdateCheck = 0;
 
