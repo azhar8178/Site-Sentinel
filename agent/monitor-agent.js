@@ -625,7 +625,7 @@ async function getWafStatus() {
   ]);
 
   const startTime = now - 60 * 60 * 1000;
-  const logResult = await awsJsonRequest("logs", "AWSLogs_20140328.FilterLogEvents", {
+  const logResult = await awsJsonRequest("logs", "Logs_20140328.FilterLogEvents", {
     logGroupName: WAF_LOG_GROUP,
     startTime,
     endTime: now,
@@ -914,7 +914,7 @@ async function collect() {
   }
 }
 
-const AGENT_VERSION = "3.5.2";
+const AGENT_VERSION = "3.5.3";
 const UPDATE_CHECK_INTERVAL = 3600000;
 let lastUpdateCheck = 0;
 
