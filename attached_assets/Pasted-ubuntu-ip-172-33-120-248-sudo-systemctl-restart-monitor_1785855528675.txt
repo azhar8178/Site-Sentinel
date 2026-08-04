@@ -1,0 +1,37 @@
+ubuntu@ip-172-33-120-248:~$ sudo systemctl restart monitor-agent
+ubuntu@ip-172-33-120-248:~$ sudo systemctl show monitor-agent -p MainPID -p ActiveEnterTimestamp
+sudo journalctl -u monitor-agent -n 15 --no-pager
+MainPID=4060930
+ActiveEnterTimestamp=Tue 2026-08-04 14:57:34 UTC
+Aug 04 14:56:14 ip-172-33-120-248 node[3977125]: [2026-08-04T14:56:14.859Z] CPU: 21.48% | Mem: 66.2% | Disk: 48.9% | Load: 1.36 | PHP: 11/11 | Nginx:up(?conn) | Varnish:up(80%hit)
+Aug 04 14:56:44 ip-172-33-120-248 node[3977125]: [2026-08-04T14:56:44.862Z] CPU: 8.98% | Mem: 65.3% | Disk: 48.9% | Load: 1.01 | PHP: 11/11 | Nginx:up(?conn) | Varnish:up(80%hit)
+Aug 04 14:57:14 ip-172-33-120-248 node[3977125]: [2026-08-04T14:57:14.882Z] CPU: 19.83% | Mem: 66.7% | Disk: 48.9% | Load: 0.92 | PHP: 11/11 | Nginx:up(?conn) | Varnish:up(80%hit)
+Aug 04 14:57:34 ip-172-33-120-248 systemd[1]: Stopping Site Monitor Agent...
+Aug 04 14:57:34 ip-172-33-120-248 systemd[1]: monitor-agent.service: Deactivated successfully.
+Aug 04 14:57:34 ip-172-33-120-248 systemd[1]: Stopped Site Monitor Agent.
+Aug 04 14:57:34 ip-172-33-120-248 systemd[1]: monitor-agent.service: Consumed 21.585s CPU time.
+Aug 04 14:57:34 ip-172-33-120-248 systemd[1]: Started Site Monitor Agent.
+Aug 04 14:57:34 ip-172-33-120-248 node[4060930]: Site Sentinel Monitor Agent v3.4.1
+Aug 04 14:57:34 ip-172-33-120-248 node[4060930]:   API: https://monit.lovefurniture.ie
+Aug 04 14:57:34 ip-172-33-120-248 node[4060930]:   Interval: 30s
+Aug 04 14:57:34 ip-172-33-120-248 node[4060930]:   Features: CPU, Memory, Disk, Network, Load, PHP-FPM, MySQL, Nginx, Varnish, OpenSearch, SSL
+Aug 04 14:57:34 ip-172-33-120-248 node[4060930]:   OpenSearch: https://vpc-magento-prod-nzaysstzukhdmqqtuhh6be2use.eu-west-2.es.amazonaws.com (none auth)
+Aug 04 14:57:34 ip-172-33-120-248 node[4060930]:   SSL: set MONITOR_SSL_DOMAINS=domain1.com,domain2.com to enable SSL expiry checks
+Aug 04 14:57:36 ip-172-33-120-248 node[4060930]: [2026-08-04T14:57:36.603Z] CPU: 16.46% | Mem: 65.3% | Disk: 48.9% | Load: 0.96 | PHP: 11/11 | Nginx:up(?conn) | Varnish:up(80%hit)
+ubuntu@ip-172-33-120-248:~$ sudo systemctl restart monitor-agent
+ubuntu@ip-172-33-120-248:~$ sudo journalctl -u monitor-agent -n 15 --no-pager
+Aug 04 14:57:34 ip-172-33-120-248 node[4060930]:   OpenSearch: https://vpc-magento-prod-nzaysstzukhdmqqtuhh6be2use.eu-west-2.es.amazonaws.com (none auth)
+Aug 04 14:57:34 ip-172-33-120-248 node[4060930]:   SSL: set MONITOR_SSL_DOMAINS=domain1.com,domain2.com to enable SSL expiry checks
+Aug 04 14:57:36 ip-172-33-120-248 node[4060930]: [2026-08-04T14:57:36.603Z] CPU: 16.46% | Mem: 65.3% | Disk: 48.9% | Load: 0.96 | PHP: 11/11 | Nginx:up(?conn) | Varnish:up(80%hit)
+Aug 04 14:58:06 ip-172-33-120-248 node[4060930]: [2026-08-04T14:58:06.736Z] CPU: 17.88% | Mem: 70.6% | Disk: 48.9% | Load: 1.09 | PHP: 11/11 | Nginx:up(?conn) | Varnish:up(80%hit)
+Aug 04 14:58:26 ip-172-33-120-248 systemd[1]: Stopping Site Monitor Agent...
+Aug 04 14:58:26 ip-172-33-120-248 systemd[1]: monitor-agent.service: Deactivated successfully.
+Aug 04 14:58:26 ip-172-33-120-248 systemd[1]: Stopped Site Monitor Agent.
+Aug 04 14:58:26 ip-172-33-120-248 systemd[1]: Started Site Monitor Agent.
+Aug 04 14:58:26 ip-172-33-120-248 node[4061208]: Site Sentinel Monitor Agent v3.4.1
+Aug 04 14:58:26 ip-172-33-120-248 node[4061208]:   API: https://monit.lovefurniture.ie
+Aug 04 14:58:26 ip-172-33-120-248 node[4061208]:   Interval: 30s
+Aug 04 14:58:26 ip-172-33-120-248 node[4061208]:   Features: CPU, Memory, Disk, Network, Load, PHP-FPM, MySQL, Nginx, Varnish, OpenSearch, SSL
+Aug 04 14:58:26 ip-172-33-120-248 node[4061208]:   OpenSearch: https://vpc-magento-prod-nzaysstzukhdmqqtuhh6be2use.eu-west-2.es.amazonaws.com (none auth)
+Aug 04 14:58:26 ip-172-33-120-248 node[4061208]:   SSL: set MONITOR_SSL_DOMAINS=domain1.com,domain2.com to enable SSL expiry checks
+Aug 04 14:58:28 ip-172-33-120-248 node[4061208]: [2026-08-04T14:58:28.117Z] CPU: 8.66% | Mem: 65.1% | Disk: 48.9% | Load: 0.86 | PHP: 11/11 | Nginx:up(?conn) | Varnish:up(80%hit)
