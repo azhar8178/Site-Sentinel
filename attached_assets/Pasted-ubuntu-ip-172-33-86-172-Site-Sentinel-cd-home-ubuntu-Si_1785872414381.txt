@@ -1,0 +1,154 @@
+ubuntu@ip-172-33-86-172:~/Site-Sentinel$ cd /home/ubuntu/Site-Sentinel
+
+git rev-parse --short HEAD
+sudo docker compose ps
+sudo docker compose logs --since "15 minutes ago" --tail=200 api
+curl -sS -i --max-time 10 http://127.0.0.1:8080/api/healthz
+2d887b2
+NAME                       IMAGE                COMMAND                  SERVICE    CREATED         STATUS                   PORTS
+site-sentinel-api-1        site-sentinel-api    "docker-entrypoint.s…"   api        5 minutes ago   Up 5 minutes (healthy)   127.0.0.1:8080->8080/tcp
+site-sentinel-postgres-1   postgres:16-alpine   "docker-entrypoint.s…"   postgres   4 months ago    Up 4 months (healthy)    127.0.0.1:5432->5432/tcp
+invalid value for "since": failed to parse value as time or duration: "15 minutes ago"
+HTTP/1.1 200 OK
+X-Powered-By: Express
+Access-Control-Allow-Origin: *
+Content-Type: application/json; charset=utf-8
+Content-Length: 15
+ETag: W/"f-VaSQ4oDUiZblZNAEkkN+sX+q3Sg"
+Date: Tue, 04 Aug 2026 19:37:24 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+
+{"status":"ok"}ubuntu@ip-172-33-86-172:~/Site-Sentinel$ 
+ubuntu@ip-172-33-86-172:~/Site-Sentinel$ sudo docker compose logs --since 15m --tail=200 api
+api-1  | Connected to database
+api-1  |   (already exists)
+api-1  |   FAIL: site_status enum — type "site_status" already exists
+api-1  |   FAIL: alert_type enum — type "alert_type" already exists
+api-1  |   (already exists)
+api-1  |   FAIL: user_role enum — type "user_role" already exists
+api-1  |   (already exists)
+api-1  |   OK: alert_type += cpu_high
+api-1  |   OK: alert_type += ram_high
+api-1  |   OK: alert_type += disk_high
+api-1  |   OK: alert_type += server_offline
+api-1  |   OK: alert_type += server_recovery
+api-1  |   OK: users table
+api-1  |   OK: servers table
+api-1  |   OK: server_metrics table
+api-1  |   OK: server_log_snapshots table
+api-1  |   OK: sites table
+api-1  |   OK: check_results table
+api-1  |   OK: alerts table
+api-1  |   OK: alert_config table
+api-1  |   OK: server_alert_config table
+api-1  |   OK: magento_orders table
+api-1  |   OK: magento_carts table
+api-1  |   OK: magento_sync_log table
+api-1  |   OK: magento_config table
+api-1  |   OK: google_oauth_config table
+api-1  |   OK: health_report_config table
+api-1  |   OK: google_analytics_tokens table
+api-1  |   OK: seed google_oauth_config
+api-1  |   OK: seed health_report_config
+api-1  |   OK: backfill ie_payment_gateways from legacy payment_gateways if needed
+api-1  |   OK: seed alert_config
+api-1  |   OK: seed server_alert_config
+api-1  |   OK: seed magento_config
+api-1  | Migration completed successfully
+api-1  | {"level":30,"time":1785871940285,"pid":19,"hostname":"c735dd1ce387","webDistPath":"/app/artifacts/web-dashboard/dist","msg":"Serving web dashboard"}
+api-1  | {"level":30,"time":1785871940289,"pid":19,"hostname":"c735dd1ce387","port":8080,"msg":"Server listening"}
+api-1  | {"level":30,"time":1785871940289,"pid":19,"hostname":"c735dd1ce387","intervalMs":60000,"msg":"Starting site monitoring"}
+api-1  | {"level":30,"time":1785871940291,"pid":19,"hostname":"c735dd1ce387","intervalMs":60000,"msg":"Starting server vitals monitoring"}
+api-1  | {"level":30,"time":1785871940352,"pid":19,"hostname":"c735dd1ce387","intervalMs":300000,"msg":"Starting Magento sync"}
+api-1  | {"level":30,"time":1785871940352,"pid":19,"hostname":"c735dd1ce387","count":2,"msg":"Running site checks"}
+api-1  | {"level":30,"time":1785871940453,"pid":19,"hostname":"c735dd1ce387","siteId":1,"siteName":"Love Furniture IE","isUp":true,"responseTimeMs":72,"msg":"Site check complete"}
+api-1  | {"level":30,"time":1785871940464,"pid":19,"hostname":"c735dd1ce387","siteId":2,"siteName":"Love Furniture UK","isUp":true,"responseTimeMs":47,"msg":"Site check complete"}
+api-1  | {"level":30,"time":1785871944620,"pid":19,"hostname":"c735dd1ce387","req":{"id":1,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":9,"msg":"request completed"}
+api-1  | {"level":30,"time":1785871945358,"pid":19,"hostname":"c735dd1ce387","tokenPrefix":"06tj5i6o...","msg":"Using static Magento API token"}
+api-1  | {"level":30,"time":1785871945359,"pid":19,"hostname":"c735dd1ce387","url":"https://www.lovefurniture.ie/rest/V1/orders?searchCriteria%5BpageSize%5D=100&searchCriteria%5BcurrentPage%5D=1&searchCriteria%5BsortOrders%5D%5B0%5D%5Bfield%5D=entity_id&searchCriteria%5BsortOrders%5D","apiUrl":"https://www.lovefurniture.ie/rest/V1","endpoint":"/orders?searchCriteria%5BpageSize%5D=100&searchCriteria%5BcurrentPage%5D=1&searc","msg":"Magento API request"}
+api-1  | {"level":30,"time":1785871946708,"pid":19,"hostname":"c735dd1ce387","syncType":"orders","count":65,"duration":1353,"msg":"Magento sync complete"}
+api-1  | {"level":30,"time":1785871946713,"pid":19,"hostname":"c735dd1ce387","url":"https://www.lovefurniture.ie/rest/V1/carts/search?searchCriteria%5BpageSize%5D=100&searchCriteria%5BcurrentPage%5D=1&searchCriteria%5BsortOrders%5D%5B0%5D%5Bfield%5D=entity_id&searchCriteria%5BsortOrd","apiUrl":"https://www.lovefurniture.ie/rest/V1","endpoint":"/carts/search?searchCriteria%5BpageSize%5D=100&searchCriteria%5BcurrentPage%5D=1","msg":"Magento API request"}
+api-1  | {"level":30,"time":1785871950151,"pid":19,"hostname":"c735dd1ce387","url":"https://www.lovefurniture.ie/rest/V1/carts/search?searchCriteria%5BpageSize%5D=100&searchCriteria%5BcurrentPage%5D=2&searchCriteria%5BsortOrders%5D%5B0%5D%5Bfield%5D=entity_id&searchCriteria%5BsortOrd","apiUrl":"https://www.lovefurniture.ie/rest/V1","endpoint":"/carts/search?searchCriteria%5BpageSize%5D=100&searchCriteria%5BcurrentPage%5D=2","msg":"Magento API request"}
+api-1  | {"level":30,"time":1785871953250,"pid":19,"hostname":"c735dd1ce387","url":"https://www.lovefurniture.ie/rest/V1/carts/search?searchCriteria%5BpageSize%5D=100&searchCriteria%5BcurrentPage%5D=3&searchCriteria%5BsortOrders%5D%5B0%5D%5Bfield%5D=entity_id&searchCriteria%5BsortOrd","apiUrl":"https://www.lovefurniture.ie/rest/V1","endpoint":"/carts/search?searchCriteria%5BpageSize%5D=100&searchCriteria%5BcurrentPage%5D=3","msg":"Magento API request"}
+api-1  | {"level":30,"time":1785871953717,"pid":19,"hostname":"c735dd1ce387","syncType":"carts","count":208,"duration":7005,"msg":"Magento sync complete"}
+api-1  | {"level":30,"time":1785871962683,"pid":19,"hostname":"c735dd1ce387","req":{"id":3,"method":"GET","url":"/nginx_status"},"res":{"statusCode":200},"responseTime":7,"msg":"request completed"}
+api-1  | {"level":30,"time":1785871966170,"pid":19,"hostname":"c735dd1ce387","req":{"id":2,"method":"POST","url":"/api/servers/report"},"res":{"statusCode":null},"responseTime":10000,"msg":"request aborted"}
+api-1  | {"level":30,"time":1785871972776,"pid":19,"hostname":"c735dd1ce387","req":{"id":4,"method":"POST","url":"/api/servers/report"},"res":{"statusCode":null},"responseTime":10002,"msg":"request aborted"}
+api-1  | {"level":30,"time":1785871974831,"pid":19,"hostname":"c735dd1ce387","req":{"id":5,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":1,"msg":"request completed"}
+api-1  | {"level":30,"time":1785871992691,"pid":19,"hostname":"c735dd1ce387","req":{"id":7,"method":"GET","url":"/nginx_status"},"res":{"statusCode":200},"responseTime":3,"msg":"request completed"}
+api-1  | {"level":30,"time":1785871996131,"pid":19,"hostname":"c735dd1ce387","req":{"id":6,"method":"POST","url":"/api/servers/report"},"res":{"statusCode":null},"responseTime":10001,"msg":"request aborted"}
+api-1  | {"level":40,"time":1785872000294,"pid":19,"hostname":"c735dd1ce387","msg":"Previous server vitals check still running, skipping"}
+api-1  | {"level":30,"time":1785872000308,"pid":19,"hostname":"c735dd1ce387","count":2,"msg":"Running site checks"}
+api-1  | {"level":30,"time":1785872000339,"pid":19,"hostname":"c735dd1ce387","siteId":2,"siteName":"Love Furniture UK","isUp":true,"responseTimeMs":12,"msg":"Site check complete"}
+api-1  | {"level":30,"time":1785872000359,"pid":19,"hostname":"c735dd1ce387","siteId":1,"siteName":"Love Furniture IE","isUp":true,"responseTimeMs":22,"msg":"Site check complete"}
+api-1  | {"level":30,"time":1785872002854,"pid":19,"hostname":"c735dd1ce387","req":{"id":8,"method":"POST","url":"/api/servers/report"},"res":{"statusCode":null},"responseTime":10001,"msg":"request aborted"}
+api-1  | {"level":30,"time":1785872005030,"pid":19,"hostname":"c735dd1ce387","req":{"id":9,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":0,"msg":"request completed"}
+api-1  | {"level":30,"time":1785872022701,"pid":19,"hostname":"c735dd1ce387","req":{"id":11,"method":"GET","url":"/nginx_status"},"res":{"statusCode":200},"responseTime":4,"msg":"request completed"}
+api-1  | {"level":30,"time":1785872026136,"pid":19,"hostname":"c735dd1ce387","req":{"id":10,"method":"POST","url":"/api/servers/report"},"res":{"statusCode":null},"responseTime":10000,"msg":"request aborted"}
+api-1  | {"level":30,"time":1785872028196,"pid":19,"hostname":"c735dd1ce387","req":{"id":14,"method":"GET","url":"/"},"res":{"statusCode":200},"responseTime":2,"msg":"request completed"}
+api-1  | {"level":30,"time":1785872028374,"pid":19,"hostname":"c735dd1ce387","req":{"id":13,"method":"GET","url":"/api/health-report"},"res":{"statusCode":null},"responseTime":1772,"msg":"request aborted"}
+api-1  | {"level":30,"time":1785872028441,"pid":19,"hostname":"c735dd1ce387","req":{"id":15,"method":"GET","url":"/assets/index-C9TjEUDJ.js"},"res":{"statusCode":200},"responseTime":8,"msg":"request completed"}
+api-1  | {"level":30,"time":1785872028787,"pid":19,"hostname":"c735dd1ce387","req":{"id":16,"method":"GET","url":"/assets/index-CX2E3oNh.css"},"res":{"statusCode":200},"responseTime":2,"msg":"request completed"}
+api-1  | {"level":30,"time":1785872031339,"pid":19,"hostname":"c735dd1ce387","req":{"id":18,"method":"GET","url":"/favicon.svg"},"res":{"statusCode":200},"responseTime":2,"msg":"request completed"}
+api-1  | {"level":30,"time":1785872032795,"pid":19,"hostname":"c735dd1ce387","req":{"id":12,"method":"POST","url":"/api/servers/report"},"res":{"statusCode":null},"responseTime":10001,"msg":"request aborted"}
+api-1  | {"level":30,"time":1785872035246,"pid":19,"hostname":"c735dd1ce387","req":{"id":20,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":1,"msg":"request completed"}
+api-1  | {"level":30,"time":1785872036676,"pid":19,"hostname":"c735dd1ce387","req":{"id":19,"method":"GET","url":"/api/servers"},"res":{"statusCode":null},"responseTime":1492,"msg":"request aborted"}
+api-1  | {"level":30,"time":1785872052699,"pid":19,"hostname":"c735dd1ce387","req":{"id":22,"method":"GET","url":"/nginx_status"},"res":{"statusCode":200},"responseTime":2,"msg":"request completed"}
+api-1  | {"level":30,"time":1785872056547,"pid":19,"hostname":"c735dd1ce387","req":{"id":21,"method":"POST","url":"/api/servers/report"},"res":{"statusCode":null},"responseTime":10002,"msg":"request aborted"}
+api-1  | {"level":40,"time":1785872060294,"pid":19,"hostname":"c735dd1ce387","msg":"Previous server vitals check still running, skipping"}
+api-1  | {"level":30,"time":1785872062796,"pid":19,"hostname":"c735dd1ce387","req":{"id":23,"method":"POST","url":"/api/servers/report"},"res":{"statusCode":null},"responseTime":10002,"msg":"request aborted"}
+api-1  | {"level":30,"time":1785872065447,"pid":19,"hostname":"c735dd1ce387","req":{"id":24,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":1,"msg":"request completed"}
+api-1  | {"level":30,"time":1785872068554,"pid":19,"hostname":"c735dd1ce387","req":{"id":25,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":1,"msg":"request completed"}
+api-1  | {"level":30,"time":1785872082690,"pid":19,"hostname":"c735dd1ce387","req":{"id":27,"method":"GET","url":"/nginx_status"},"res":{"statusCode":200},"responseTime":2,"msg":"request completed"}
+api-1  | {"level":30,"time":1785872086210,"pid":19,"hostname":"c735dd1ce387","req":{"id":26,"method":"POST","url":"/api/servers/report"},"res":{"statusCode":null},"responseTime":10002,"msg":"request aborted"}
+api-1  | {"level":30,"time":1785872090590,"pid":19,"hostname":"c735dd1ce387","req":{"id":17,"method":"GET","url":"/api/health-report"},"res":{"statusCode":null},"responseTime":60004,"msg":"request aborted"}
+api-1  | {"level":30,"time":1785872092785,"pid":19,"hostname":"c735dd1ce387","req":{"id":28,"method":"POST","url":"/api/servers/report"},"res":{"statusCode":null},"responseTime":10002,"msg":"request aborted"}
+api-1  | {"level":30,"time":1785872095646,"pid":19,"hostname":"c735dd1ce387","req":{"id":29,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":1,"msg":"request completed"}
+api-1  | {"level":30,"time":1785872112704,"pid":19,"hostname":"c735dd1ce387","req":{"id":31,"method":"GET","url":"/nginx_status"},"res":{"statusCode":200},"responseTime":2,"msg":"request completed"}
+api-1  | {"level":30,"time":1785872116359,"pid":19,"hostname":"c735dd1ce387","req":{"id":30,"method":"POST","url":"/api/servers/report"},"res":{"statusCode":null},"responseTime":9999,"msg":"request aborted"}
+api-1  | {"level":40,"time":1785872120294,"pid":19,"hostname":"c735dd1ce387","msg":"Previous check cycle still running, skipping"}
+api-1  | {"level":40,"time":1785872120295,"pid":19,"hostname":"c735dd1ce387","msg":"Previous server vitals check still running, skipping"}
+api-1  | {"level":30,"time":1785872122802,"pid":19,"hostname":"c735dd1ce387","req":{"id":32,"method":"POST","url":"/api/servers/report"},"res":{"statusCode":null},"responseTime":10003,"msg":"request aborted"}
+api-1  | {"level":30,"time":1785872125852,"pid":19,"hostname":"c735dd1ce387","req":{"id":33,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":1,"msg":"request completed"}
+api-1  | {"level":30,"time":1785872142707,"pid":19,"hostname":"c735dd1ce387","req":{"id":35,"method":"GET","url":"/nginx_status"},"res":{"statusCode":200},"responseTime":2,"msg":"request completed"}
+api-1  | {"level":30,"time":1785872146247,"pid":19,"hostname":"c735dd1ce387","req":{"id":34,"method":"POST","url":"/api/servers/report"},"res":{"statusCode":null},"responseTime":10000,"msg":"request aborted"}
+api-1  | {"level":30,"time":1785872152805,"pid":19,"hostname":"c735dd1ce387","req":{"id":36,"method":"POST","url":"/api/servers/report"},"res":{"statusCode":null},"responseTime":10000,"msg":"request aborted"}
+api-1  | {"level":30,"time":1785872156050,"pid":19,"hostname":"c735dd1ce387","req":{"id":37,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":1,"msg":"request completed"}
+api-1  | {"level":30,"time":1785872172703,"pid":19,"hostname":"c735dd1ce387","req":{"id":39,"method":"GET","url":"/nginx_status"},"res":{"statusCode":200},"responseTime":3,"msg":"request completed"}
+api-1  | {"level":30,"time":1785872176599,"pid":19,"hostname":"c735dd1ce387","req":{"id":38,"method":"POST","url":"/api/servers/report"},"res":{"statusCode":null},"responseTime":10000,"msg":"request aborted"}
+api-1  | {"level":40,"time":1785872180297,"pid":19,"hostname":"c735dd1ce387","msg":"Previous check cycle still running, skipping"}
+api-1  | {"level":40,"time":1785872180297,"pid":19,"hostname":"c735dd1ce387","msg":"Previous server vitals check still running, skipping"}
+api-1  | {"level":30,"time":1785872182931,"pid":19,"hostname":"c735dd1ce387","req":{"id":40,"method":"POST","url":"/api/servers/report"},"res":{"statusCode":null},"responseTime":10001,"msg":"request aborted"}
+api-1  | {"level":30,"time":1785872186248,"pid":19,"hostname":"c735dd1ce387","req":{"id":41,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":1,"msg":"request completed"}
+api-1  | {"level":30,"time":1785872202709,"pid":19,"hostname":"c735dd1ce387","req":{"id":43,"method":"GET","url":"/nginx_status"},"res":{"statusCode":200},"responseTime":3,"msg":"request completed"}
+api-1  | {"level":30,"time":1785872206275,"pid":19,"hostname":"c735dd1ce387","req":{"id":42,"method":"POST","url":"/api/servers/report"},"res":{"statusCode":null},"responseTime":10001,"msg":"request aborted"}
+api-1  | {"level":30,"time":1785872212807,"pid":19,"hostname":"c735dd1ce387","req":{"id":44,"method":"POST","url":"/api/servers/report"},"res":{"statusCode":null},"responseTime":10002,"msg":"request aborted"}
+api-1  | {"level":30,"time":1785872216446,"pid":19,"hostname":"c735dd1ce387","req":{"id":45,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":0,"msg":"request completed"}
+api-1  | {"level":30,"time":1785872232705,"pid":19,"hostname":"c735dd1ce387","req":{"id":47,"method":"GET","url":"/nginx_status"},"res":{"statusCode":200},"responseTime":1,"msg":"request completed"}
+api-1  | {"level":30,"time":1785872236291,"pid":19,"hostname":"c735dd1ce387","req":{"id":46,"method":"POST","url":"/api/servers/report"},"res":{"statusCode":null},"responseTime":10002,"msg":"request aborted"}
+api-1  | {"level":40,"time":1785872240298,"pid":19,"hostname":"c735dd1ce387","msg":"Previous check cycle still running, skipping"}
+api-1  | {"level":40,"time":1785872240298,"pid":19,"hostname":"c735dd1ce387","msg":"Previous server vitals check still running, skipping"}
+api-1  | {"level":30,"time":1785872242803,"pid":19,"hostname":"c735dd1ce387","req":{"id":48,"method":"POST","url":"/api/servers/report"},"res":{"statusCode":null},"responseTime":10001,"msg":"request aborted"}
+api-1  | {"level":30,"time":1785872244350,"pid":19,"hostname":"c735dd1ce387","req":{"id":49,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":1,"msg":"request completed"}
+api-1  | {"level":30,"time":1785872246652,"pid":19,"hostname":"c735dd1ce387","req":{"id":50,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":1,"msg":"request completed"}
+api-1  | {"level":30,"time":1785872262716,"pid":19,"hostname":"c735dd1ce387","req":{"id":52,"method":"GET","url":"/nginx_status"},"res":{"statusCode":200},"responseTime":4,"msg":"request completed"}
+api-1  | {"level":30,"time":1785872266332,"pid":19,"hostname":"c735dd1ce387","req":{"id":51,"method":"POST","url":"/api/servers/report"},"res":{"statusCode":null},"responseTime":10000,"msg":"request aborted"}
+api-1  | {"level":30,"time":1785872272805,"pid":19,"hostname":"c735dd1ce387","req":{"id":53,"method":"POST","url":"/api/servers/report"},"res":{"statusCode":null},"responseTime":10000,"msg":"request aborted"}
+api-1  | {"level":30,"time":1785872276848,"pid":19,"hostname":"c735dd1ce387","req":{"id":54,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":1,"msg":"request completed"}
+api-1  | {"level":30,"time":1785872292720,"pid":19,"hostname":"c735dd1ce387","req":{"id":56,"method":"GET","url":"/nginx_status"},"res":{"statusCode":200},"responseTime":4,"msg":"request completed"}
+api-1  | {"level":30,"time":1785872296304,"pid":19,"hostname":"c735dd1ce387","req":{"id":55,"method":"POST","url":"/api/servers/report"},"res":{"statusCode":null},"responseTime":10001,"msg":"request aborted"}
+api-1  | {"level":40,"time":1785872300299,"pid":19,"hostname":"c735dd1ce387","msg":"Previous check cycle still running, skipping"}
+api-1  | {"level":40,"time":1785872300300,"pid":19,"hostname":"c735dd1ce387","msg":"Previous server vitals check still running, skipping"}
+api-1  | {"level":30,"time":1785872302808,"pid":19,"hostname":"c735dd1ce387","req":{"id":57,"method":"POST","url":"/api/servers/report"},"res":{"statusCode":null},"responseTime":10000,"msg":"request aborted"}
+api-1  | {"level":30,"time":1785872307038,"pid":19,"hostname":"c735dd1ce387","req":{"id":58,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":0,"msg":"request completed"}
+api-1  | {"level":30,"time":1785872322721,"pid":19,"hostname":"c735dd1ce387","req":{"id":60,"method":"GET","url":"/nginx_status"},"res":{"statusCode":200},"responseTime":2,"msg":"request completed"}
+api-1  | {"level":30,"time":1785872326399,"pid":19,"hostname":"c735dd1ce387","req":{"id":59,"method":"POST","url":"/api/servers/report"},"res":{"statusCode":null},"responseTime":10002,"msg":"request aborted"}
+api-1  | {"level":30,"time":1785872332868,"pid":19,"hostname":"c735dd1ce387","req":{"id":61,"method":"POST","url":"/api/servers/report"},"res":{"statusCode":null},"responseTime":10001,"msg":"request aborted"}
+api-1  | {"level":30,"time":1785872337242,"pid":19,"hostname":"c735dd1ce387","req":{"id":63,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":0,"msg":"request completed"}
+api-1  | {"level":30,"time":1785872352725,"pid":19,"hostname":"c735dd1ce387","req":{"id":65,"method":"GET","url":"/nginx_status"},"res":{"statusCode":200},"responseTime":1,"msg":"request completed"}
+api-1  | {"level":30,"time":1785872356425,"pid":19,"hostname":"c735dd1ce387","req":{"id":64,"method":"POST","url":"/api/servers/report"},"res":{"statusCode":null},"responseTime":10001,"msg":"request aborted"}
+api-1  | {"level":40,"time":1785872360302,"pid":19,"hostname":"c735dd1ce387","msg":"Previous check cycle still running, skipping"}
+api-1  | {"level":40,"time":1785872360302,"pid":19,"hostname":"c735dd1ce387","msg":"Previous server vitals check still running, skipping"}
+api-1  | {"level":30,"time":1785872362820,"pid":19,"hostname":"c735dd1ce387","req":{"id":66,"method":"POST","url":"/api/servers/report"},"res":{"statusCode":null},"responseTime":10003,"msg":"request aborted"}
+api-1  | {"level":30,"time":1785872367449,"pid":19,"hostname":"c735dd1ce387","req":{"id":67,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":1,"msg":"request completed"}
