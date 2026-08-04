@@ -407,7 +407,10 @@ reportRouter.post("/servers/report", async (req, res, next) => {
     const varnish = b.varnish && typeof b.varnish === "object" ? b.varnish : null;
     const elasticsearch = b.elasticsearch && typeof b.elasticsearch === "object" ? b.elasticsearch : null;
     const sslExpiry = Array.isArray(b.sslExpiry) ? b.sslExpiry : null;
-    const waf = b.waf && typeof b.waf === "object" ? b.waf : null;
+    const rawWaf = b.waf && typeof b.waf === "object" ? b.waf : null;
+    const waf = rawWaf
+      ? Object.fromEntries(Object.entries(rawWaf).filter(([key]) => key !== "events"))
+      : null;
     const rawLogSnapshot = b.logSnapshot && typeof b.logSnapshot === "object" ? b.logSnapshot : null;
     const serializedLogSnapshot = rawLogSnapshot ? JSON.stringify(rawLogSnapshot) : "";
     const logSnapshot = rawLogSnapshot && serializedLogSnapshot.length <= 100_000 ? rawLogSnapshot : null;
@@ -453,7 +456,11 @@ reportRouter.post("/servers/report", async (req, res, next) => {
       ));
     }
 
-    const wafEvents = waf && Array.isArray(waf.events) ? waf.events.slice(0, 200) : [];
+    const wafEvents = Array.isArray(b.wafEvents)
+      ? b.wafEvents.slice(0, 200)
+      : rawWaf && Array.isArray(rawWaf.events)
+        ? rawWaf.events.slice(0, 200)
+        : [];
     if (wafEvents.length > 0) {
       const parsedEvents = wafEvents
         .filter((event: any) => event && typeof event.eventId === "string" && typeof event.action === "string")

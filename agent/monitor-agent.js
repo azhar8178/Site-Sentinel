@@ -38,6 +38,7 @@ let prevNet = null;
 let lastLogSnapshotAt = 0;
 let lastWafCollectionAt = 0;
 let cachedWaf = null;
+let pendingWafEvents = [];
 
 function readFile(path) {
   try {
@@ -600,6 +601,7 @@ async function getWafStatus() {
       error: list.error || "Configured WAF Web ACL was not found",
       events: [],
     };
+    pendingWafEvents = [];
     lastWafCollectionAt = now;
     return cachedWaf;
   }
@@ -677,6 +679,7 @@ async function getWafStatus() {
     events,
     ...(logResult.error ? { error: logResult.error } : {}),
   };
+  pendingWafEvents = events;
   lastWafCollectionAt = now;
   return cachedWaf;
 }
@@ -851,7 +854,10 @@ async function collect() {
   const varnish = getVarnishStats();
   const elasticsearch = await getElasticsearchStatus();
   const sslExpiry = getSslExpiry();
-  const waf = await getWafStatus();
+  const wafSnapshot = await getWafStatus();
+  const wafEvents = pendingWafEvents;
+  pendingWafEvents = [];
+  const { events: _wafEvents, ...waf } = wafSnapshot || {};
 
   const data = {
     cpuPercent: cpu,
@@ -875,6 +881,7 @@ async function collect() {
     elasticsearch,
     sslExpiry,
     waf,
+    ...(wafEvents.length > 0 ? { wafEvents } : {}),
   };
 
   if (Date.now() - lastLogSnapshotAt >= 5 * 60 * 1000) {
@@ -899,7 +906,7 @@ async function collect() {
   }
 }
 
-const AGENT_VERSION = "3.5.0";
+const AGENT_VERSION = "3.5.1";
 const UPDATE_CHECK_INTERVAL = 3600000;
 let lastUpdateCheck = 0;
 
