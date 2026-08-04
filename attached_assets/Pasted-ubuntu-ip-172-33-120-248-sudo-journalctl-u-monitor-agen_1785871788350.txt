@@ -1,0 +1,30 @@
+ubuntu@ip-172-33-120-248:~$ sudo journalctl -u monitor-agent --since "2026-08-04 19:25:03" --no-pager
+Aug 04 19:25:03 ip-172-33-120-248 systemd[1]: Stopping Site Monitor Agent...
+Aug 04 19:25:03 ip-172-33-120-248 systemd[1]: monitor-agent.service: Deactivated successfully.
+Aug 04 19:25:03 ip-172-33-120-248 systemd[1]: Stopped Site Monitor Agent.
+Aug 04 19:25:03 ip-172-33-120-248 systemd[1]: monitor-agent.service: Consumed 1min 10.747s CPU time.
+Aug 04 19:25:03 ip-172-33-120-248 systemd[1]: Started Site Monitor Agent.
+Aug 04 19:25:03 ip-172-33-120-248 node[126216]: Site Sentinel Monitor Agent v3.5.1
+Aug 04 19:25:03 ip-172-33-120-248 node[126216]:   API: https://monit.lovefurniture.ie
+Aug 04 19:25:03 ip-172-33-120-248 node[126216]:   Interval: 30s
+Aug 04 19:25:03 ip-172-33-120-248 node[126216]:   Features: CPU, Memory, Disk, Network, Load, PHP-FPM, MySQL, Nginx, Varnish, OpenSearch, SSL, AWS WAF
+Aug 04 19:25:03 ip-172-33-120-248 node[126216]:   OpenSearch: https://vpc-magento-prod-nzaysstzukhdmqqtuhh6be2use.eu-west-2.es.amazonaws.com (none auth)
+Aug 04 19:25:03 ip-172-33-120-248 node[126216]:   SSL domains: www.lovefurniture.ie,www.lovefurniture.co.uk
+Aug 04 19:25:15 ip-172-33-120-248 node[126216]: Report timeout
+Aug 04 19:25:15 ip-172-33-120-248 node[126216]: Report error: socket hang up
+Aug 04 19:25:45 ip-172-33-120-248 node[126216]: Report timeout
+Aug 04 19:25:45 ip-172-33-120-248 node[126216]: Report error: socket hang up
+Aug 04 19:26:15 ip-172-33-120-248 node[126216]: Report timeout
+Aug 04 19:26:15 ip-172-33-120-248 node[126216]: Report error: socket hang up
+Aug 04 19:26:45 ip-172-33-120-248 node[126216]: Report timeout
+Aug 04 19:26:45 ip-172-33-120-248 node[126216]: Report error: socket hang up
+Aug 04 19:27:15 ip-172-33-120-248 node[126216]: Report timeout
+Aug 04 19:27:15 ip-172-33-120-248 node[126216]: Report error: socket hang up
+Aug 04 19:27:45 ip-172-33-120-248 node[126216]: Report timeout
+Aug 04 19:27:45 ip-172-33-120-248 node[126216]: Report error: socket hang up
+Aug 04 19:28:15 ip-172-33-120-248 node[126216]: Report timeout
+Aug 04 19:28:15 ip-172-33-120-248 node[126216]: Report error: socket hang up
+Aug 04 19:28:45 ip-172-33-120-248 node[126216]: Report timeout
+Aug 04 19:28:45 ip-172-33-120-248 node[126216]: Report error: socket hang up
+Aug 04 19:29:16 ip-172-33-120-248 node[126216]: Report timeout
+Aug 04 19:29:16 ip-172-33-120-248 node[126216]: Report error: socket hang up
