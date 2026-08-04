@@ -1,6 +1,6 @@
 import { db } from "@workspace/db";
-import { serversTable, serverMetricsTable, alertsTable, alertConfigTable, serverAlertConfigTable } from "@workspace/db/schema";
-import { eq, desc } from "drizzle-orm";
+import { serversTable, serverMetricsTable, serverLogSnapshotsTable, alertsTable, alertConfigTable, serverAlertConfigTable } from "@workspace/db/schema";
+import { eq, desc, gte, and } from "drizzle-orm";
 import { logger } from "../lib/logger";
 import { sendAlertEmail } from "./email";
 import { sendSlackAlert } from "./slack";
@@ -91,6 +91,59 @@ function formatServerWhatsAppAlert(
   return `${status}: Server ${serverName}\n\nHostname: ${hostname}\nType: ${alertType}\nDetails: ${details}\nTime: ${new Date().toISOString()}`;
 }
 
+/** Capture a bounded before-window of server telemetry and sanitized logs for incident diagnosis. */
+async function captureIncidentTimeline(serverId: number): Promise<object | null> {
+  try {
+    const windowStart = new Date(Date.now() - 20 * 60 * 1000); // last 20 minutes
+    const [metrics, logSnapshots] = await Promise.all([
+      db
+        .select()
+        .from(serverMetricsTable)
+        .where(and(eq(serverMetricsTable.serverId, serverId), gte(serverMetricsTable.recordedAt, windowStart)))
+        .orderBy(desc(serverMetricsTable.recordedAt))
+        .limit(30),
+      db
+        .select()
+        .from(serverLogSnapshotsTable)
+        .where(and(eq(serverLogSnapshotsTable.serverId, serverId), gte(serverLogSnapshotsTable.recordedAt, windowStart)))
+        .orderBy(desc(serverLogSnapshotsTable.recordedAt))
+        .limit(3),
+    ]);
+
+    if (metrics.length === 0 && logSnapshots.length === 0) return null;
+
+    // Strip heavy per-row process lists to keep timeline compact; keep key vitals
+    const compactMetrics = metrics.reverse().map((m) => ({
+      recordedAt: m.recordedAt,
+      cpuPercent: m.cpuPercent,
+      memPct: m.memTotalBytes > 0 ? Math.round((m.memUsedBytes / m.memTotalBytes) * 1000) / 10 : 0,
+      diskPct: m.diskTotalBytes > 0 ? Math.round((m.diskUsedBytes / m.diskTotalBytes) * 1000) / 10 : 0,
+      loadAvg1m: m.loadAvg1m,
+      loadAvg5m: m.loadAvg5m,
+      connectionCount: m.connectionCount,
+      httpConnectionCount: m.httpConnectionCount,
+      phpFpm: m.phpFpm,
+      mysql: m.mysql,
+      nginx: m.nginx,
+      varnish: m.varnish,
+      elasticsearch: m.elasticsearch,
+    }));
+
+    return {
+      capturedAt: new Date().toISOString(),
+      windowMinutes: 20,
+      metrics: compactMetrics,
+      logSnapshots: logSnapshots.reverse().map((s) => ({
+        recordedAt: s.recordedAt,
+        logs: s.logs,
+      })),
+    };
+  } catch (err) {
+    logger.error({ err, serverId }, "Failed to capture incident timeline");
+    return null;
+  }
+}
+
 async function dispatchServerAlert(
   serverId: number,
   serverName: string,
@@ -100,13 +153,18 @@ async function dispatchServerAlert(
   details: string,
   isRecovery: boolean
 ) {
-  const config = await getAlertConfig();
+  const [config, incidentTimeline] = await Promise.all([
+    getAlertConfig(),
+    captureIncidentTimeline(serverId),
+  ]);
+
   if (!config || !config.isEnabled) {
     await db.insert(alertsTable).values({
       serverId,
       alertType: dbAlertType,
       message: `Server ${serverName}: ${displayType} - ${details}`,
       emailSent: false,
+      incidentTimeline,
     });
     return;
   }
@@ -145,6 +203,7 @@ async function dispatchServerAlert(
     alertType: dbAlertType,
     message: `Server ${serverName}: ${displayType} - ${details}`,
     emailSent,
+    incidentTimeline,
   });
 
   logger.info({ serverId, serverName, alertType: dbAlertType, isRecovery }, "Server alert dispatched");

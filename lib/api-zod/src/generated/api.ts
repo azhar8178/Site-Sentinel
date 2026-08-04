@@ -136,6 +136,22 @@ export const GetCheckHistoryResponse = zod.object({
 });
 
 /**
+ * @summary Run AI analysis on the incident timeline captured with an alert
+ */
+export const AnalyzeAlertIncidentParams = zod.object({
+  alertId: zod.coerce.number(),
+});
+
+export const AnalyzeAlertIncidentResponse = zod.object({
+  analysis: zod
+    .string()
+    .describe("Markdown-formatted AI analysis of the incident"),
+  generatedAt: zod.date(),
+  snapshotCount: zod.number(),
+  metricsCount: zod.number(),
+});
+
+/**
  * @summary List alerts
  */
 export const listAlertsQueryLimitDefault = 50;
@@ -171,6 +187,11 @@ export const ListAlertsResponse = zod.object({
       responseTimeMs: zod.number().nullish(),
       statusCode: zod.number().nullish(),
       emailSent: zod.boolean(),
+      hasTimeline: zod
+        .boolean()
+        .describe(
+          "Whether this alert has a captured incident timeline available for AI analysis",
+        ),
       createdAt: zod.date(),
     }),
   ),

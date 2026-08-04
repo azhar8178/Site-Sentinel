@@ -157,6 +157,31 @@ paths:
               schema:
                 $ref: "#/components/schemas/CheckHistoryResponse"
 
+  /alerts/{alertId}/incident-analysis:
+    post:
+      operationId: analyzeAlertIncident
+      tags: [alerts]
+      summary: Run AI analysis on the incident timeline captured with an alert
+      parameters:
+        - name: alertId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: AI incident analysis
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AlertIncidentAnalysis"
+        "400":
+          description: Alert has no timeline
+        "404":
+          description: Alert not found
+        "503":
+          description: AI analysis is not configured
+
   /alerts:
     get:
       operationId: listAlerts
@@ -891,6 +916,9 @@ components:
           nullable: true
         emailSent:
           type: boolean
+        hasTimeline:
+          type: boolean
+          description: Whether this alert has a captured incident timeline available for AI analysis
         createdAt:
           type: string
           format: date-time
@@ -903,7 +931,27 @@ components:
         - alertType
         - message
         - emailSent
+        - hasTimeline
         - createdAt
+
+    AlertIncidentAnalysis:
+      type: object
+      properties:
+        analysis:
+          type: string
+          description: Markdown-formatted AI analysis of the incident
+        generatedAt:
+          type: string
+          format: date-time
+        snapshotCount:
+          type: integer
+        metricsCount:
+          type: integer
+      required:
+        - analysis
+        - generatedAt
+        - snapshotCount
+        - metricsCount
 
     AlertListResponse:
       type: object

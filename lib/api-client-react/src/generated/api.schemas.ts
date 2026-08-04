@@ -82,7 +82,17 @@ export interface AlertResponse {
   responseTimeMs?: number | null;
   statusCode?: number | null;
   emailSent: boolean;
+  /** Whether this alert has a captured incident timeline available for AI analysis */
+  hasTimeline: boolean;
   createdAt: string;
+}
+
+export interface AlertIncidentAnalysis {
+  /** Markdown-formatted AI analysis of the incident */
+  analysis: string;
+  generatedAt: string;
+  snapshotCount: number;
+  metricsCount: number;
 }
 
 export interface AlertListResponse {

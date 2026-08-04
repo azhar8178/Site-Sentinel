@@ -18,6 +18,7 @@ import type {
 
 import type {
   AlertConfigResponse,
+  AlertIncidentAnalysis,
   AlertListResponse,
   CheckHistoryResponse,
   CheckResultResponse,
@@ -571,6 +572,93 @@ export function useGetCheckHistory<
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
+
+/**
+ * @summary Run AI analysis on the incident timeline captured with an alert
+ */
+export const getAnalyzeAlertIncidentUrl = (alertId: number) => {
+  return `/api/alerts/${alertId}/incident-analysis`;
+};
+
+export const analyzeAlertIncident = async (
+  alertId: number,
+  options?: RequestInit,
+): Promise<AlertIncidentAnalysis> => {
+  return customFetch<AlertIncidentAnalysis>(
+    getAnalyzeAlertIncidentUrl(alertId),
+    {
+      ...options,
+      method: "POST",
+    },
+  );
+};
+
+export const getAnalyzeAlertIncidentMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof analyzeAlertIncident>>,
+    TError,
+    { alertId: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof analyzeAlertIncident>>,
+  TError,
+  { alertId: number },
+  TContext
+> => {
+  const mutationKey = ["analyzeAlertIncident"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof analyzeAlertIncident>>,
+    { alertId: number }
+  > = (props) => {
+    const { alertId } = props ?? {};
+
+    return analyzeAlertIncident(alertId, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AnalyzeAlertIncidentMutationResult = NonNullable<
+  Awaited<ReturnType<typeof analyzeAlertIncident>>
+>;
+
+export type AnalyzeAlertIncidentMutationError = ErrorType<void>;
+
+/**
+ * @summary Run AI analysis on the incident timeline captured with an alert
+ */
+export const useAnalyzeAlertIncident = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof analyzeAlertIncident>>,
+    TError,
+    { alertId: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof analyzeAlertIncident>>,
+  TError,
+  { alertId: number },
+  TContext
+> => {
+  return useMutation(getAnalyzeAlertIncidentMutationOptions(options));
+};
 
 /**
  * @summary List alerts

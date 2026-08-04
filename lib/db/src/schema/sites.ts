@@ -1,4 +1,4 @@
-import { pgTable, serial, text, integer, boolean, timestamp, real, pgEnum } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, integer, boolean, timestamp, real, pgEnum, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { relations } from "drizzle-orm";
@@ -60,6 +60,8 @@ export const alertsTable = pgTable("alerts", {
   responseTimeMs: integer("response_time_ms"),
   statusCode: integer("status_code"),
   emailSent: boolean("email_sent").notNull().default(false),
+  /** Bounded snapshot of metrics + sanitized logs captured when this alert fired */
+  incidentTimeline: jsonb("incident_timeline"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

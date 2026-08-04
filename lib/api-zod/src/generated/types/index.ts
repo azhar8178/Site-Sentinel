@@ -7,6 +7,7 @@
  */
 
 export * from "./alertConfigResponse";
+export * from "./alertIncidentAnalysis";
 export * from "./alertListResponse";
 export * from "./alertResponse";
 export * from "./alertResponseAlertType";
