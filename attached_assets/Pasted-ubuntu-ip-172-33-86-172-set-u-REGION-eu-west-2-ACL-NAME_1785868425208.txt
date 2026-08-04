@@ -1,0 +1,124 @@
+ubuntu@ip-172-33-86-172:~$ set -u
+
+REGION="eu-west-2"
+ACL_NAME="CreatedByALB-magento-prod-ALB"
+LOG_GROUP="aws-waf-logs-magento-prod"
+
+echo "=== WAF Web ACL ==="
+aws wafv2 list-web-acls \
+  --scope REGIONAL \
+  --region "$REGION" \
+  --query "WebACLs[?Name=='$ACL_NAME'].[Name,Id,ARN]" \
+  --output table
+
+ACL_ID=$(aws wafv2 list-web-acls \
+  --scope REGIONAL \
+  --region "$REGION" \
+  --query "WebACLs[?Name=='$ACL_NAME'].Id | [0]" \
+  --output text)
+
+ACL_ARN=$(aws wafv2 list-web-acls \
+  --scope REGIONAL \
+  --region "$REGION" \
+  --query "WebACLs[?Name=='$ACL_NAME'].ARN | [0]" \
+  --output text)
+
+echo
+echo "=== WAF configuration ==="
+aws wafv2 get-web-acl \
+  --name "$ACL_NAME" \
+  --scope REGIONAL \
+  --id "$ACL_ID" \
+  --region "$REGION" \
+  --query "WebACL.[Name,Id,ARN,DefaultAction,Capacity]" \
+  --output json
+
+echo
+echo "=== ALB association ==="
+aws wafv2 list-resources-for-web-acl \
+  --web-acl-arn "$ACL_ARN" \
+  --output tablereams[].{name:logStreamName,lastEvent:lastEventTimestamp}" \storedBytes:storedBytes}" \
+=== WAF Web ACL ===
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+|                                                                                             ListWebACLs                                                                                            |
++-------------------------------+---------------------------------------+----------------------------------------------------------------------------------------------------------------------------+
+|  CreatedByALB-magento-prod-ALB|  3d32df2e-a6f0-4a05-b742-1d8ba4942d93 |  arn:aws:wafv2:eu-west-2:913938730038:regional/webacl/CreatedByALB-magento-prod-ALB/3d32df2e-a6f0-4a05-b742-1d8ba4942d93   |
++-------------------------------+---------------------------------------+----------------------------------------------------------------------------------------------------------------------------+
+
+=== WAF configuration ===
+[
+    "CreatedByALB-magento-prod-ALB",
+    "3d32df2e-a6f0-4a05-b742-1d8ba4942d93",
+    "arn:aws:wafv2:eu-west-2:913938730038:regional/webacl/CreatedByALB-magento-prod-ALB/3d32df2e-a6f0-4a05-b742-1d8ba4942d93",
+    {
+        "Allow": {}
+    },
+    1429
+]
+
+=== ALB association ===
+{
+    "ResourceArns": [
+        "arn:aws:elasticloadbalancing:eu-west-2:913938730038:loadbalancer/app/magento-prod-ALB/7b7c2589c0f6b41b"
+    ]
+}
+
+=== WAF logging configuration ===
+{
+    "LoggingConfiguration": {
+        "ResourceArn": "arn:aws:wafv2:eu-west-2:913938730038:regional/webacl/CreatedByALB-magento-prod-ALB/3d32df2e-a6f0-4a05-b742-1d8ba4942d93",
+        "LogDestinationConfigs": [
+            "arn:aws:logs:eu-west-2:913938730038:log-group:aws-waf-logs-magento-prod"
+        ],
+        "ManagedByFirewallManager": false,
+        "LoggingFilter": {
+            "Filters": [
+                {
+                    "Behavior": "KEEP",
+                    "Requirement": "MEETS_ALL",
+                    "Conditions": [
+                        {
+                            "ActionCondition": {
+                                "Action": "BLOCK"
+                            }
+                        },
+                        {
+                            "ActionCondition": {
+                                "Action": "COUNT"
+                            }
+                        },
+                        {
+                            "ActionCondition": {
+                                "Action": "CHALLENGE"
+                            }
+                        },
+                        {
+                            "ActionCondition": {
+                                "Action": "CAPTCHA"
+                            }
+                        }
+                    ]
+                }
+            ],
+            "DefaultBehavior": "KEEP"
+        }
+    }
+}
+
+=== CloudWatch log group ===
+----------------------------------------------------------------------------------------------------------------------------------------
+|                                                           DescribeLogGroups                                                          |
++----------------------------------------------------------------------------+----------------------------+------------+---------------+
+|                                     arn                                    |           name             | retention  |  storedBytes  |
++----------------------------------------------------------------------------+----------------------------+------------+---------------+
+|  arn:aws:logs:eu-west-2:913938730038:log-group:aws-waf-logs-magento-prod:* |  aws-waf-logs-magento-prod |  7         |  0            |
++----------------------------------------------------------------------------+----------------------------+------------+---------------+
+
+=== CloudWatch log streams ===
+----------------------------------------------------------------
+|                      DescribeLogStreams                      |
++----------------+---------------------------------------------+
+|    lastEvent   |                    name                     |
++----------------+---------------------------------------------+
+|  1785867059553 |  eu-west-2_CreatedByALB-magento-prod-ALB_0  |
++----------------+---------------------------------------------+
