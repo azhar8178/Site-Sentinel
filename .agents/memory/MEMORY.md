@@ -1,3 +1,4 @@
 - [Docker build dependencies](docker-build-dependencies.md) — production images must filter workspace installs to the API/dashboard and exclude mobile tooling.
 - [Dashboard theme tokens](dashboard-theme-tokens.md) — dark mode must normalize legacy light utility classes and prefer semantic color tokens for new surfaces.
 - [AWS OpenSearch monitoring](aws-opensearch-monitoring.md) — managed OpenSearch domains need a remote IAM/SigV4 health check from the monitored EC2 host, not localhost Elasticsearch probing.
+- [Production deployment path](production-deployment-path.md) — live monit.lovefurniture.ie runs Docker Compose from the Site-Sentinel checkout on the monitoring host.
