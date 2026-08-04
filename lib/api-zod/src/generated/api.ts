@@ -473,6 +473,44 @@ export const ListServersResponseItem = zod.object({
           topRules: zod
             .array(zod.record(zod.string(), zod.unknown()))
             .optional(),
+          topCountries: zod
+            .array(
+              zod.object({
+                name: zod.string(),
+                hits: zod.number(),
+              }),
+            )
+            .optional(),
+          topPaths: zod
+            .array(
+              zod.object({
+                name: zod.string(),
+                hits: zod.number(),
+              }),
+            )
+            .optional(),
+          actionBreakdown: zod
+            .array(
+              zod.object({
+                name: zod.string(),
+                hits: zod.number(),
+              }),
+            )
+            .optional(),
+          botTraffic: zod
+            .object({
+              total: zod.number(),
+              bots: zod.number(),
+              human: zod.number(),
+              rate: zod.number(),
+              topTypes: zod.array(
+                zod.object({
+                  name: zod.string(),
+                  hits: zod.number(),
+                }),
+              ),
+            })
+            .optional(),
         })
         .nullish(),
       recordedAt: zod.date(),
@@ -552,6 +590,44 @@ export const GetServerResponse = zod.object({
           topRules: zod
             .array(zod.record(zod.string(), zod.unknown()))
             .optional(),
+          topCountries: zod
+            .array(
+              zod.object({
+                name: zod.string(),
+                hits: zod.number(),
+              }),
+            )
+            .optional(),
+          topPaths: zod
+            .array(
+              zod.object({
+                name: zod.string(),
+                hits: zod.number(),
+              }),
+            )
+            .optional(),
+          actionBreakdown: zod
+            .array(
+              zod.object({
+                name: zod.string(),
+                hits: zod.number(),
+              }),
+            )
+            .optional(),
+          botTraffic: zod
+            .object({
+              total: zod.number(),
+              bots: zod.number(),
+              human: zod.number(),
+              rate: zod.number(),
+              topTypes: zod.array(
+                zod.object({
+                  name: zod.string(),
+                  hits: zod.number(),
+                }),
+              ),
+            })
+            .optional(),
         })
         .nullish(),
       recordedAt: zod.date(),
@@ -626,6 +702,44 @@ export const UpdateServerResponse = zod.object({
           captcha: zod.number().optional(),
           topRules: zod
             .array(zod.record(zod.string(), zod.unknown()))
+            .optional(),
+          topCountries: zod
+            .array(
+              zod.object({
+                name: zod.string(),
+                hits: zod.number(),
+              }),
+            )
+            .optional(),
+          topPaths: zod
+            .array(
+              zod.object({
+                name: zod.string(),
+                hits: zod.number(),
+              }),
+            )
+            .optional(),
+          actionBreakdown: zod
+            .array(
+              zod.object({
+                name: zod.string(),
+                hits: zod.number(),
+              }),
+            )
+            .optional(),
+          botTraffic: zod
+            .object({
+              total: zod.number(),
+              bots: zod.number(),
+              human: zod.number(),
+              rate: zod.number(),
+              topTypes: zod.array(
+                zod.object({
+                  name: zod.string(),
+                  hits: zod.number(),
+                }),
+              ),
+            })
             .optional(),
         })
         .nullish(),
@@ -716,6 +830,44 @@ export const GetServerMetricsResponseItem = zod.object({
       challenge: zod.number().optional(),
       captcha: zod.number().optional(),
       topRules: zod.array(zod.record(zod.string(), zod.unknown())).optional(),
+      topCountries: zod
+        .array(
+          zod.object({
+            name: zod.string(),
+            hits: zod.number(),
+          }),
+        )
+        .optional(),
+      topPaths: zod
+        .array(
+          zod.object({
+            name: zod.string(),
+            hits: zod.number(),
+          }),
+        )
+        .optional(),
+      actionBreakdown: zod
+        .array(
+          zod.object({
+            name: zod.string(),
+            hits: zod.number(),
+          }),
+        )
+        .optional(),
+      botTraffic: zod
+        .object({
+          total: zod.number(),
+          bots: zod.number(),
+          human: zod.number(),
+          rate: zod.number(),
+          topTypes: zod.array(
+            zod.object({
+              name: zod.string(),
+              hits: zod.number(),
+            }),
+          ),
+        })
+        .optional(),
     })
     .nullish(),
   recordedAt: zod.date(),

@@ -5,6 +5,10 @@
  * Site monitoring and alerting API
  * OpenAPI spec version: 0.1.0
  */
+import type { ServerWafSummaryActionBreakdownItem } from "./serverWafSummaryActionBreakdownItem";
+import type { ServerWafSummaryBotTraffic } from "./serverWafSummaryBotTraffic";
+import type { ServerWafSummaryTopCountriesItem } from "./serverWafSummaryTopCountriesItem";
+import type { ServerWafSummaryTopPathsItem } from "./serverWafSummaryTopPathsItem";
 import type { ServerWafSummaryTopRulesItem } from "./serverWafSummaryTopRulesItem";
 
 export interface ServerWafSummary {
@@ -27,4 +31,8 @@ export interface ServerWafSummary {
   challenge?: number;
   captcha?: number;
   topRules?: ServerWafSummaryTopRulesItem[];
+  topCountries?: ServerWafSummaryTopCountriesItem[];
+  topPaths?: ServerWafSummaryTopPathsItem[];
+  actionBreakdown?: ServerWafSummaryActionBreakdownItem[];
+  botTraffic?: ServerWafSummaryBotTraffic;
 }

@@ -1331,6 +1331,71 @@ components:
           items:
             type: object
             additionalProperties: true
+        topCountries:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              hits:
+                type: integer
+            required:
+              - name
+              - hits
+        topPaths:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              hits:
+                type: integer
+            required:
+              - name
+              - hits
+        actionBreakdown:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              hits:
+                type: integer
+            required:
+              - name
+              - hits
+        botTraffic:
+          type: object
+          properties:
+            total:
+              type: integer
+            bots:
+              type: integer
+            human:
+              type: integer
+            rate:
+              type: number
+            topTypes:
+              type: array
+              items:
+                type: object
+                properties:
+                  name:
+                    type: string
+                  hits:
+                    type: integer
+                required:
+                  - name
+                  - hits
+          required:
+            - total
+            - bots
+            - human
+            - rate
+            - topTypes
 
     ServerWafEvent:
       type: object

@@ -199,6 +199,34 @@ export type ServerMetricSslExpiryItem = { [key: string]: unknown };
 
 export type ServerWafSummaryTopRulesItem = { [key: string]: unknown };
 
+export type ServerWafSummaryTopCountriesItem = {
+  name: string;
+  hits: number;
+};
+
+export type ServerWafSummaryTopPathsItem = {
+  name: string;
+  hits: number;
+};
+
+export type ServerWafSummaryActionBreakdownItem = {
+  name: string;
+  hits: number;
+};
+
+export type ServerWafSummaryBotTrafficTopTypesItem = {
+  name: string;
+  hits: number;
+};
+
+export type ServerWafSummaryBotTraffic = {
+  total: number;
+  bots: number;
+  human: number;
+  rate: number;
+  topTypes: ServerWafSummaryBotTrafficTopTypesItem[];
+};
+
 export interface ServerWafSummary {
   isRunning?: boolean;
   status?: string;
@@ -219,6 +247,10 @@ export interface ServerWafSummary {
   challenge?: number;
   captcha?: number;
   topRules?: ServerWafSummaryTopRulesItem[];
+  topCountries?: ServerWafSummaryTopCountriesItem[];
+  topPaths?: ServerWafSummaryTopPathsItem[];
+  actionBreakdown?: ServerWafSummaryActionBreakdownItem[];
+  botTraffic?: ServerWafSummaryBotTraffic;
 }
 
 export interface ServerMetric {

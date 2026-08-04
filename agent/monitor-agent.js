@@ -538,6 +538,61 @@ function redactWafUri(uri) {
   return path.slice(0, 512) || "/";
 }
 
+function getWafUserAgent(request) {
+  if (!Array.isArray(request?.headers)) return "";
+  const header = request.headers.find(
+    (item) => String(item?.name || "").toLowerCase() === "user-agent"
+  );
+  return typeof header?.value === "string" ? header.value : "";
+}
+
+function classifyWafBot(parsed, request) {
+  const labels = Array.isArray(parsed?.labels)
+    ? parsed.labels.map((label) => String(label?.name || label || "").toLowerCase())
+    : [];
+  const ruleNames = [
+    parsed?.terminatingRuleId,
+    parsed?.terminatingRuleType,
+    ...(Array.isArray(parsed?.ruleGroupList)
+      ? parsed.ruleGroupList.flatMap((group) => [
+          group?.name,
+          group?.terminatingRule?.ruleId,
+          group?.terminatingRule?.action,
+        ])
+      : []),
+  ]
+    .filter(Boolean)
+    .map((value) => String(value).toLowerCase());
+  const userAgent = getWafUserAgent(request).toLowerCase();
+
+  const botLabel = labels.find((label) => label.includes("bot"));
+  if (botLabel) {
+    const namedBot = botLabel.match(/bot:name:([^:]+)/)?.[1];
+    return { botDetected: true, botType: namedBot ? `WAF: ${namedBot}` : "WAF bot control" };
+  }
+
+  if (ruleNames.some((value) => value.includes("botcontrol") || value.includes("bot-control"))) {
+    return { botDetected: true, botType: "WAF bot control" };
+  }
+
+  if (ruleNames.some((value) => value.includes("knownbot") || value.includes("known-bot"))) {
+    return { botDetected: true, botType: "Known bot" };
+  }
+
+  if (/(bot|crawler|spider|slurp|headless|lighthouse|facebookexternalhit|bingpreview|curl\/|wget\/|python-requests|go-http-client)/i.test(userAgent)) {
+    return { botDetected: true, botType: "User-agent bot" };
+  }
+
+  return { botDetected: false, botType: null };
+}
+
+function topWafEntries(counts, limit = 10) {
+  return Object.entries(counts)
+    .sort(([, a], [, b]) => b - a)
+    .slice(0, limit)
+    .map(([name, hits]) => ({ name, hits }));
+}
+
 async function awsJsonRequest(service, target, body) {
   const credentials = await getAwsCredentials();
   if (!credentials) return { error: "AWS IAM credentials unavailable on this host" };
@@ -629,7 +684,7 @@ async function getWafStatus() {
     logGroupName: WAF_LOG_GROUP,
     startTime,
     endTime: now,
-    limit: 200,
+    limit: 1000,
   });
 
   const events = (logResult.events || []).map((entry) => {
@@ -639,6 +694,7 @@ async function getWafStatus() {
     } catch {}
     const request = parsed.httpRequest || {};
     const action = String(parsed.action || "UNKNOWN").toUpperCase();
+    const bot = classifyWafBot(parsed, request);
     return {
       eventId: wafEventId({ ...parsed, timestamp: entry.timestamp, message: entry.message }),
       action,
@@ -648,6 +704,8 @@ async function getWafStatus() {
       country: request.country || null,
       method: request.httpMethod || null,
       uri: redactWafUri(request.uri),
+      botDetected: bot.botDetected,
+      botType: bot.botType,
       eventAt: new Date(parsed.timestamp || entry.timestamp || now).toISOString(),
     };
   });
@@ -662,9 +720,23 @@ async function getWafStatus() {
     return result;
   }, { total: 0, blocked: 0, allowed: 0, count: 0, challenge: 0, captcha: 0 });
   const rules = {};
+  const countries = {};
+  const paths = {};
+  const actions = {};
+  const botTypes = {};
   for (const event of events) {
     if (event.rule) rules[event.rule] = (rules[event.rule] || 0) + 1;
+    const country = event.country || "Unknown";
+    countries[country] = (countries[country] || 0) + 1;
+    const path = event.uri || "/";
+    paths[path] = (paths[path] || 0) + 1;
+    actions[event.action] = (actions[event.action] || 0) + 1;
+    if (event.botDetected) {
+      const botType = event.botType || "Other bot";
+      botTypes[botType] = (botTypes[botType] || 0) + 1;
+    }
   }
+  const botCount = events.filter((event) => event.botDetected).length;
 
   cachedWaf = {
     isRunning: true,
@@ -680,14 +752,21 @@ async function getWafStatus() {
     windowStart: new Date(startTime).toISOString(),
     windowEnd: new Date(now).toISOString(),
     ...counts,
-    topRules: Object.entries(rules)
-      .sort(([, a], [, b]) => b - a)
-      .slice(0, 10)
-      .map(([rule, hits]) => ({ rule, hits })),
+    topRules: topWafEntries(rules).map(({ name, hits }) => ({ rule: name, hits })),
+    topCountries: topWafEntries(countries),
+    topPaths: topWafEntries(paths),
+    actionBreakdown: topWafEntries(actions),
+    botTraffic: {
+      total: events.length,
+      bots: botCount,
+      human: Math.max(0, events.length - botCount),
+      rate: events.length ? Math.round((botCount / events.length) * 1000) / 10 : 0,
+      topTypes: topWafEntries(botTypes),
+    },
     events,
     ...(logResult.error ? { error: logResult.error } : {}),
   };
-  pendingWafEvents = events;
+  pendingWafEvents = events.slice(0, 200);
   lastWafCollectionAt = now;
   return cachedWaf;
 }
@@ -914,7 +993,7 @@ async function collect() {
   }
 }
 
-const AGENT_VERSION = "3.5.3";
+const AGENT_VERSION = "3.5.4";
 const UPDATE_CHECK_INTERVAL = 3600000;
 let lastUpdateCheck = 0;
 
