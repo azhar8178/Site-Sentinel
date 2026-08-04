@@ -208,7 +208,7 @@ function ServerDetailModal({
               )}
 
               {latest && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-4">
                   <div className="rounded-xl border border-border bg-muted/30 p-4">
                     <div className="flex items-start justify-between gap-3 mb-4">
                       <div className="flex items-center gap-2">
@@ -358,7 +358,7 @@ function ServerDetailModal({
                   )}
 
                   {(varnishData.length > 0 || openSearchData.length > 0) && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-4">
                       {varnishData.length > 0 && (
                         <div className="bg-muted/30 rounded-xl p-4 border border-border">
                           <div className="flex items-center gap-2 mb-3">
