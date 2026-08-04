@@ -1,0 +1,74 @@
+ubuntu@ip-172-33-86-172:~/Site-Sentinel$ cd /home/ubuntu/Site-Sentinel
+
+sudo docker compose exec -T postgres \
+  psql -U monitor -d site_monitor -c "
+SELECT
+  count(*) AS oauth_rows,
+  count(*) FILTER (WHERE client_id <> '') AS rows_with_client_id,
+  count(*) FILTER (WHERE client_secret <> '') AS rows_with_client_secret,
+  max(updated_at) AS last_oauth_update
+FROM google_oauth_config;
+
+SELECT
+  count(*) AS token_rows,
+  count(*) FILTER (WHERE refresh_token IS NOT NULL AND refresh_token <> '') AS refresh_token_rows,
+  max(created_at) AS last_token_created,
+  max(ga_property_id) AS selected_property
+FROM google_analytics_tokens;
+
+SELECT
+  count(*) AS monitored_servers,
+  (SELECT count(*) FROM server_metrics) AS metric_rows
+FROM servers;
+"
+ oauth_rows | rows_with_client_id | rows_with_client_secret |     last_oauth_update      
+------------+---------------------+-------------------------+----------------------------
+          1 |                   0 |                       0 | 2026-08-04 20:51:58.191045
+(1 row)
+
+ token_rows | refresh_token_rows | last_token_created | selected_property 
+------------+--------------------+--------------------+-------------------
+          0 |                  0 |                    | 
+(1 row)
+
+ monitored_servers | metric_rows 
+-------------------+-------------
+                 1 |      369026
+(1 row)
+
+ubuntu@ip-172-33-86-172:~/Site-Sentinel$ cd /home/ubuntu/Site-Sentinel
+
+sudo docker compose exec -T postgres \
+  psql -U monitor -d site_monitor -P pager=off -x \
+  -c "
+SELECT
+  id,
+  length(client_id) AS client_id_length,
+  substr(md5(client_id), 1, 12) AS client_id_fingerprint,
+  length(client_secret) AS client_secret_length,
+  substr(md5(client_secret), 1, 12) AS client_secret_fingerprint,
+  updated_at
+FROM google_oauth_config
+ORDER BY id DESC;
+" \
+  -c "
+SELECT
+  id,
+  length(access_token) AS access_token_length,
+  length(refresh_token) AS refresh_token_length,
+  expires_at,
+  ga_property_id,
+  email,
+  created_at
+FROM google_analytics_tokens
+ORDER BY id DESC;
+"
+-[ RECORD 1 ]-------------+---------------------------
+id                        | 1
+client_id_length          | 0
+client_id_fingerprint     | d41d8cd98f00
+client_secret_length      | 0
+client_secret_fingerprint | d41d8cd98f00
+updated_at                | 2026-08-04 20:51:58.191045
+
+(0 rows)
