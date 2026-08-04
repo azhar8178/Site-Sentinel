@@ -173,6 +173,20 @@ export interface SuccessResponse {
   success: boolean;
 }
 
+export type ServerMetricTopProcessesItem = { [key: string]: unknown };
+
+export type ServerMetricPhpFpm = { [key: string]: unknown } | null;
+
+export type ServerMetricMysql = { [key: string]: unknown } | null;
+
+export type ServerMetricNginx = { [key: string]: unknown } | null;
+
+export type ServerMetricVarnish = { [key: string]: unknown } | null;
+
+export type ServerMetricElasticsearch = { [key: string]: unknown } | null;
+
+export type ServerMetricSslExpiryItem = { [key: string]: unknown };
+
 export interface ServerMetric {
   id: number;
   serverId: number;
@@ -186,6 +200,16 @@ export interface ServerMetric {
   loadAvg1m: number;
   loadAvg5m: number;
   loadAvg15m: number;
+  processCount?: number | null;
+  connectionCount?: number | null;
+  httpConnectionCount?: number | null;
+  topProcesses?: ServerMetricTopProcessesItem[] | null;
+  phpFpm?: ServerMetricPhpFpm;
+  mysql?: ServerMetricMysql;
+  nginx?: ServerMetricNginx;
+  varnish?: ServerMetricVarnish;
+  elasticsearch?: ServerMetricElasticsearch;
+  sslExpiry?: ServerMetricSslExpiryItem[] | null;
   recordedAt: string;
 }
 

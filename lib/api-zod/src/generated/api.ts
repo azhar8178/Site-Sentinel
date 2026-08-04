@@ -417,6 +417,18 @@ export const ListServersResponseItem = zod.object({
       loadAvg1m: zod.number(),
       loadAvg5m: zod.number(),
       loadAvg15m: zod.number(),
+      processCount: zod.number().nullish(),
+      connectionCount: zod.number().nullish(),
+      httpConnectionCount: zod.number().nullish(),
+      topProcesses: zod
+        .array(zod.record(zod.string(), zod.unknown()))
+        .nullish(),
+      phpFpm: zod.record(zod.string(), zod.unknown()).nullish(),
+      mysql: zod.record(zod.string(), zod.unknown()).nullish(),
+      nginx: zod.record(zod.string(), zod.unknown()).nullish(),
+      varnish: zod.record(zod.string(), zod.unknown()).nullish(),
+      elasticsearch: zod.record(zod.string(), zod.unknown()).nullish(),
+      sslExpiry: zod.array(zod.record(zod.string(), zod.unknown())).nullish(),
       recordedAt: zod.date(),
     })
     .nullish(),
@@ -459,6 +471,18 @@ export const GetServerResponse = zod.object({
       loadAvg1m: zod.number(),
       loadAvg5m: zod.number(),
       loadAvg15m: zod.number(),
+      processCount: zod.number().nullish(),
+      connectionCount: zod.number().nullish(),
+      httpConnectionCount: zod.number().nullish(),
+      topProcesses: zod
+        .array(zod.record(zod.string(), zod.unknown()))
+        .nullish(),
+      phpFpm: zod.record(zod.string(), zod.unknown()).nullish(),
+      mysql: zod.record(zod.string(), zod.unknown()).nullish(),
+      nginx: zod.record(zod.string(), zod.unknown()).nullish(),
+      varnish: zod.record(zod.string(), zod.unknown()).nullish(),
+      elasticsearch: zod.record(zod.string(), zod.unknown()).nullish(),
+      sslExpiry: zod.array(zod.record(zod.string(), zod.unknown())).nullish(),
       recordedAt: zod.date(),
     })
     .nullish(),
@@ -497,6 +521,18 @@ export const UpdateServerResponse = zod.object({
       loadAvg1m: zod.number(),
       loadAvg5m: zod.number(),
       loadAvg15m: zod.number(),
+      processCount: zod.number().nullish(),
+      connectionCount: zod.number().nullish(),
+      httpConnectionCount: zod.number().nullish(),
+      topProcesses: zod
+        .array(zod.record(zod.string(), zod.unknown()))
+        .nullish(),
+      phpFpm: zod.record(zod.string(), zod.unknown()).nullish(),
+      mysql: zod.record(zod.string(), zod.unknown()).nullish(),
+      nginx: zod.record(zod.string(), zod.unknown()).nullish(),
+      varnish: zod.record(zod.string(), zod.unknown()).nullish(),
+      elasticsearch: zod.record(zod.string(), zod.unknown()).nullish(),
+      sslExpiry: zod.array(zod.record(zod.string(), zod.unknown())).nullish(),
       recordedAt: zod.date(),
     })
     .nullish(),
@@ -553,6 +589,16 @@ export const GetServerMetricsResponseItem = zod.object({
   loadAvg1m: zod.number(),
   loadAvg5m: zod.number(),
   loadAvg15m: zod.number(),
+  processCount: zod.number().nullish(),
+  connectionCount: zod.number().nullish(),
+  httpConnectionCount: zod.number().nullish(),
+  topProcesses: zod.array(zod.record(zod.string(), zod.unknown())).nullish(),
+  phpFpm: zod.record(zod.string(), zod.unknown()).nullish(),
+  mysql: zod.record(zod.string(), zod.unknown()).nullish(),
+  nginx: zod.record(zod.string(), zod.unknown()).nullish(),
+  varnish: zod.record(zod.string(), zod.unknown()).nullish(),
+  elasticsearch: zod.record(zod.string(), zod.unknown()).nullish(),
+  sslExpiry: zod.array(zod.record(zod.string(), zod.unknown())).nullish(),
   recordedAt: zod.date(),
 });
 export const GetServerMetricsResponse = zod.array(GetServerMetricsResponseItem);

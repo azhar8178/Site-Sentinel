@@ -11,6 +11,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import {
   Server as ServerIcon, Cpu, HardDrive, MemoryStick, Trash2,
   Activity, Plus, X, Copy, Check, Edit2, Save, KeyRound, RefreshCw,
+  Gauge, Search, CircleCheck, CircleX, CircleAlert,
 } from "lucide-react";
 import { formatBytes } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
@@ -85,11 +86,41 @@ function ServerDetailModal({
 
   const latest = metrics && metrics.length > 0 ? metrics[metrics.length - 1] : null;
   const latestProcesses: any[] = (latest as any)?.topProcesses || [];
+  const varnishData = (metrics ?? [])
+    .filter((m: any) => m.varnish)
+    .map((m: any) => ({
+      time: new Date(m.recordedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      hitRate: m.varnish?.hitRate ?? null,
+      hits: m.varnish?.cacheHits ?? 0,
+      misses: m.varnish?.cacheMisses ?? 0,
+      requests: m.varnish?.clientRequests ?? 0,
+    }));
+  const openSearchData = (metrics ?? [])
+    .filter((m: any) => m.elasticsearch)
+    .map((m: any) => ({
+      time: new Date(m.recordedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      nodes: m.elasticsearch?.numberOfNodes ?? 0,
+      dataNodes: m.elasticsearch?.numberOfDataNodes ?? 0,
+      shards: m.elasticsearch?.activeShards ?? 0,
+      status: m.elasticsearch?.status ?? null,
+    }));
+  const latestVarnish = (latest as any)?.varnish;
+  const latestOpenSearch = (latest as any)?.elasticsearch;
+  const openSearchStatus = latestOpenSearch?.status;
+  const serviceStatus = (running: boolean | undefined, label: string) => {
+    if (running === true) {
+      return <span className="inline-flex items-center gap-1 text-xs font-medium text-success"><CircleCheck className="w-3.5 h-3.5" /> {label}</span>;
+    }
+    if (running === false) {
+      return <span className="inline-flex items-center gap-1 text-xs font-medium text-destructive"><CircleX className="w-3.5 h-3.5" /> Unavailable</span>;
+    }
+    return <span className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground"><CircleAlert className="w-3.5 h-3.5" /> No data</span>;
+  };
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-white rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-auto shadow-2xl" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between p-6 border-b sticky top-0 bg-white z-10">
+      <div className="bg-card text-card-foreground rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-auto shadow-2xl" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between p-6 border-b border-border sticky top-0 bg-card z-10">
           {editing ? (
             <div className="flex-1 flex items-center gap-3 mr-4">
               <div className="flex-1 space-y-2">
@@ -176,6 +207,99 @@ function ServerDetailModal({
                 </div>
               )}
 
+              {latest && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="rounded-xl border border-border bg-muted/30 p-4">
+                    <div className="flex items-start justify-between gap-3 mb-4">
+                      <div className="flex items-center gap-2">
+                        <div className="rounded-lg bg-amber-500/10 p-2 text-amber-600">
+                          <Gauge className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <h3 className="font-semibold">Varnish Cache</h3>
+                          <p className="text-xs text-muted-foreground">Cache performance and requests</p>
+                        </div>
+                      </div>
+                      {serviceStatus(latestVarnish?.isRunning, latestVarnish?.isRunning ? "Running" : "Varnish")}
+                    </div>
+                    {latestVarnish ? (
+                      <>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <p className="text-xs text-muted-foreground">Hit rate</p>
+                            <p className="text-xl font-bold">{latestVarnish.hitRate != null ? `${latestVarnish.hitRate}%` : "—"}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground">Client requests</p>
+                            <p className="text-xl font-bold">{latestVarnish.clientRequests?.toLocaleString() ?? "—"}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground">Cache hits</p>
+                            <p className="font-semibold">{latestVarnish.cacheHits?.toLocaleString() ?? "—"}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground">Cache misses</p>
+                            <p className="font-semibold">{latestVarnish.cacheMisses?.toLocaleString() ?? "—"}</p>
+                          </div>
+                        </div>
+                        {latestVarnish.isRunning && latestVarnish.hitRate == null && (
+                          <p className="text-xs text-muted-foreground mt-3">Varnish is running, but varnishstat did not return cache counters.</p>
+                        )}
+                      </>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">No Varnish telemetry has been reported yet.</p>
+                    )}
+                  </div>
+
+                  <div className="rounded-xl border border-border bg-muted/30 p-4">
+                    <div className="flex items-start justify-between gap-3 mb-4">
+                      <div className="flex items-center gap-2">
+                        <div className="rounded-lg bg-cyan-500/10 p-2 text-cyan-600">
+                          <Search className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <h3 className="font-semibold">OpenSearch</h3>
+                          <p className="text-xs text-muted-foreground">Cluster health and shard status</p>
+                        </div>
+                      </div>
+                      {serviceStatus(
+                        latestOpenSearch?.isRunning,
+                        openSearchStatus ? openSearchStatus[0].toUpperCase() + openSearchStatus.slice(1) : "OpenSearch"
+                      )}
+                    </div>
+                    {latestOpenSearch ? (
+                      <>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <p className="text-xs text-muted-foreground">Cluster status</p>
+                            <p className={`text-xl font-bold ${openSearchStatus === "red" ? "text-destructive" : openSearchStatus === "yellow" ? "text-warning" : ""}`}>
+                              {openSearchStatus ? openSearchStatus[0].toUpperCase() + openSearchStatus.slice(1) : "—"}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground">Nodes</p>
+                            <p className="text-xl font-bold">{latestOpenSearch.numberOfNodes ?? "—"}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground">Data nodes</p>
+                            <p className="font-semibold">{latestOpenSearch.numberOfDataNodes ?? "—"}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground">Active shards</p>
+                            <p className="font-semibold">{latestOpenSearch.activeShards ?? "—"}</p>
+                          </div>
+                        </div>
+                        {latestOpenSearch.error && (
+                          <p className="text-xs text-destructive mt-3">{latestOpenSearch.error}</p>
+                        )}
+                      </>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">No OpenSearch telemetry has been reported yet.</p>
+                    )}
+                  </div>
+                </div>
+              )}
+
               {cpuData.length > 0 ? (
                 <>
                   {["cpu", "mem", "disk"].map(metric => (
@@ -231,6 +355,51 @@ function ServerDetailModal({
                         </div>
                       )}
                     </>
+                  )}
+
+                  {(varnishData.length > 0 || openSearchData.length > 0) && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {varnishData.length > 0 && (
+                        <div className="bg-muted/30 rounded-xl p-4 border border-border">
+                          <div className="flex items-center gap-2 mb-3">
+                            <Gauge className="w-4 h-4 text-amber-600" />
+                            <p className="text-sm font-semibold">Varnish Hit Rate</p>
+                          </div>
+                          <div className="h-[150px]">
+                            <ResponsiveContainer width="100%" height="100%">
+                              <LineChart data={varnishData}>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                                <XAxis dataKey="time" tick={{ fontSize: 10, fill: "#64748b" }} axisLine={false} tickLine={false} />
+                                <YAxis domain={[0, 100]} tick={{ fontSize: 10, fill: "#64748b" }} axisLine={false} tickLine={false} unit="%" />
+                                <Tooltip contentStyle={{ borderRadius: "8px", border: "none", boxShadow: "0 2px 10px rgba(0,0,0,0.1)" }} />
+                                <Line type="monotone" dataKey="hitRate" name="Hit rate" stroke="#f59e0b" strokeWidth={2} dot={false} connectNulls />
+                              </LineChart>
+                            </ResponsiveContainer>
+                          </div>
+                        </div>
+                      )}
+
+                      {openSearchData.length > 0 && (
+                        <div className="bg-muted/30 rounded-xl p-4 border border-border">
+                          <div className="flex items-center gap-2 mb-3">
+                            <Search className="w-4 h-4 text-cyan-600" />
+                            <p className="text-sm font-semibold">OpenSearch Cluster</p>
+                          </div>
+                          <div className="h-[150px]">
+                            <ResponsiveContainer width="100%" height="100%">
+                              <LineChart data={openSearchData}>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                                <XAxis dataKey="time" tick={{ fontSize: 10, fill: "#64748b" }} axisLine={false} tickLine={false} />
+                                <YAxis tick={{ fontSize: 10, fill: "#64748b" }} axisLine={false} tickLine={false} />
+                                <Tooltip contentStyle={{ borderRadius: "8px", border: "none", boxShadow: "0 2px 10px rgba(0,0,0,0.1)" }} />
+                                <Line type="monotone" dataKey="nodes" name="Nodes" stroke="#06b6d4" strokeWidth={2} dot={false} />
+                                <Line type="monotone" dataKey="shards" name="Active shards" stroke="#8b5cf6" strokeWidth={2} dot={false} />
+                              </LineChart>
+                            </ResponsiveContainer>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   )}
 
                   {latestProcesses.length > 0 && (

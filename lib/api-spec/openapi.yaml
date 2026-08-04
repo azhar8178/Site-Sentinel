@@ -1073,6 +1073,47 @@ components:
           type: number
         loadAvg15m:
           type: number
+        processCount:
+          type: integer
+          nullable: true
+        connectionCount:
+          type: integer
+          nullable: true
+        httpConnectionCount:
+          type: integer
+          nullable: true
+        topProcesses:
+          type: array
+          nullable: true
+          items:
+            type: object
+            additionalProperties: true
+        phpFpm:
+          type: object
+          nullable: true
+          additionalProperties: true
+        mysql:
+          type: object
+          nullable: true
+          additionalProperties: true
+        nginx:
+          type: object
+          nullable: true
+          additionalProperties: true
+        varnish:
+          type: object
+          nullable: true
+          additionalProperties: true
+        elasticsearch:
+          type: object
+          nullable: true
+          additionalProperties: true
+        sslExpiry:
+          type: array
+          nullable: true
+          items:
+            type: object
+            additionalProperties: true
         recordedAt:
           type: string
           format: date-time

@@ -5,6 +5,13 @@
  * Site monitoring and alerting API
  * OpenAPI spec version: 0.1.0
  */
+import type { ServerMetricElasticsearch } from "./serverMetricElasticsearch";
+import type { ServerMetricMysql } from "./serverMetricMysql";
+import type { ServerMetricNginx } from "./serverMetricNginx";
+import type { ServerMetricPhpFpm } from "./serverMetricPhpFpm";
+import type { ServerMetricSslExpiryItem } from "./serverMetricSslExpiryItem";
+import type { ServerMetricTopProcessesItem } from "./serverMetricTopProcessesItem";
+import type { ServerMetricVarnish } from "./serverMetricVarnish";
 
 export interface ServerMetric {
   id: number;
@@ -19,5 +26,15 @@ export interface ServerMetric {
   loadAvg1m: number;
   loadAvg5m: number;
   loadAvg15m: number;
+  processCount?: number | null;
+  connectionCount?: number | null;
+  httpConnectionCount?: number | null;
+  topProcesses?: ServerMetricTopProcessesItem[] | null;
+  phpFpm?: ServerMetricPhpFpm;
+  mysql?: ServerMetricMysql;
+  nginx?: ServerMetricNginx;
+  varnish?: ServerMetricVarnish;
+  elasticsearch?: ServerMetricElasticsearch;
+  sslExpiry?: ServerMetricSslExpiryItem[] | null;
   recordedAt: Date;
 }
