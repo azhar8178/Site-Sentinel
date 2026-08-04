@@ -6,3 +6,4 @@
 - [Production reconciliation access](production-reconciliation-access.md) — production checkout cleanup needs a durable SSH access path; ephemeral diagnostic keys may disappear before follow-up verification.
 - [Incident log safety](incident-log-safety.md) — incident analysis must use allowlisted, redacted, size-capped snapshots rather than arbitrary remote log access.
 - [Agent restart requirement](agent-restart-requirement.md) — replacing the agent file does not reload an active Node process; updates must explicitly restart the systemd service.
+- [Production deploy recovery](production-deploy-recovery.md) — API image rebuild, database schema push, and host-agent restart are separate production steps.
