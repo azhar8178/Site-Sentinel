@@ -15,6 +15,9 @@ const OPENSEARCH_URL =
   "https://vpc-magento-prod-nzaysstzukhdmqqtuhh6be2use.eu-west-2.es.amazonaws.com";
 const OPENSEARCH_REGION = process.env.MONITOR_OPENSEARCH_REGION || "eu-west-2";
 const OPENSEARCH_AUTH = process.env.MONITOR_OPENSEARCH_AUTH || "none";
+const SSL_DOMAINS =
+  process.env.MONITOR_SSL_DOMAINS ||
+  "www.lovefurniture.ie,www.lovefurniture.co.uk";
 
 if (!API_URL || !API_KEY) {
   console.error("ERROR: MONITOR_API_URL and MONITOR_API_KEY are required.");
@@ -500,13 +503,10 @@ async function getElasticsearchStatus() {
 }
 
 function getSslExpiry() {
-  const domainsEnv = process.env.MONITOR_SSL_DOMAINS || "";
-  const domains = domainsEnv
+  const domains = SSL_DOMAINS
     .split(",")
     .map((d) => d.trim())
-    .filter(Boolean);
-
-  if (domains.length === 0) return null;
+    .filter((d) => /^[a-z0-9.-]+$/i.test(d));
 
   const results = [];
   for (const domain of domains) {
@@ -718,7 +718,7 @@ async function collect() {
   }
 }
 
-const AGENT_VERSION = "3.4.1";
+const AGENT_VERSION = "3.4.2";
 const UPDATE_CHECK_INTERVAL = 3600000;
 let lastUpdateCheck = 0;
 
@@ -758,11 +758,7 @@ console.log(
   `  Features: CPU, Memory, Disk, Network, Load, PHP-FPM, MySQL, Nginx, Varnish, OpenSearch, SSL`
 );
 console.log(`  OpenSearch: ${OPENSEARCH_URL} (${OPENSEARCH_AUTH} auth)`);
-if (process.env.MONITOR_SSL_DOMAINS) {
-  console.log(`  SSL domains: ${process.env.MONITOR_SSL_DOMAINS}`);
-} else {
-  console.log(`  SSL: set MONITOR_SSL_DOMAINS=domain1.com,domain2.com to enable SSL expiry checks`);
-}
+console.log(`  SSL domains: ${SSL_DOMAINS}`);
 
 getCpuUsage();
 
