@@ -1,0 +1,76 @@
+api-1  |   OK: alert_type += server_recovery
+api-1  |   OK: users table
+api-1  |   OK: servers table
+api-1  |   OK: server_metrics table
+api-1  |   OK: server_log_snapshots table
+api-1  |   OK: sites table
+api-1  |   OK: check_results table
+api-1  |   OK: alerts table
+api-1  |   OK: alert_config table
+api-1  |   OK: server_alert_config table
+api-1  |   OK: magento_orders table
+api-1  |   OK: magento_carts table
+api-1  |   OK: magento_sync_log table
+api-1  |   OK: magento_config table
+api-1  |   OK: google_oauth_config table
+api-1  |   OK: health_report_config table
+api-1  |   OK: google_analytics_tokens table
+api-1  |   OK: seed google_oauth_config
+api-1  |   OK: seed health_report_config
+api-1  |   OK: backfill ie_payment_gateways from legacy payment_gateways if needed
+api-1  |   OK: seed alert_config
+api-1  |   OK: seed server_alert_config
+api-1  |   OK: seed magento_config
+api-1  | Migration completed successfully
+api-1  | {"level":30,"time":1785873619083,"pid":20,"hostname":"358dd72c1258","webDistPath":"/app/artifacts/web-dashboard/dist","msg":"Serving web dashboard"}
+api-1  | {"level":30,"time":1785873619086,"pid":20,"hostname":"358dd72c1258","port":8080,"msg":"Server listening"}
+api-1  | {"level":30,"time":1785873619086,"pid":20,"hostname":"358dd72c1258","intervalMs":60000,"msg":"Starting site monitoring"}
+api-1  | {"level":30,"time":1785873619086,"pid":20,"hostname":"358dd72c1258","intervalMs":60000,"msg":"Starting server vitals monitoring"}
+api-1  | {"level":30,"time":1785873619120,"pid":20,"hostname":"358dd72c1258","intervalMs":300000,"msg":"Starting Magento sync"}
+api-1  | {"level":30,"time":1785873619126,"pid":20,"hostname":"358dd72c1258","count":2,"msg":"Running site checks"}
+api-1  | {"level":30,"time":1785873619220,"pid":20,"hostname":"358dd72c1258","siteId":2,"siteName":"Love Furniture UK","isUp":true,"responseTimeMs":62,"msg":"Site check complete"}
+api-1  | {"level":30,"time":1785873619227,"pid":20,"hostname":"358dd72c1258","siteId":1,"siteName":"Love Furniture IE","isUp":true,"responseTimeMs":47,"msg":"Site check complete"}
+api-1  | {"level":30,"time":1785873623835,"pid":20,"hostname":"358dd72c1258","req":{"id":1,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":5,"msg":"request completed"}
+api-1  | {"level":30,"time":1785873624125,"pid":20,"hostname":"358dd72c1258","tokenPrefix":"06tj5i6o...","msg":"Using static Magento API token"}
+api-1  | {"level":30,"time":1785873624126,"pid":20,"hostname":"358dd72c1258","url":"https://www.lovefurniture.ie/rest/V1/orders?searchCriteria%5BpageSize%5D=100&searchCriteria%5BcurrentPage%5D=1&searchCriteria%5BsortOrders%5D%5B0%5D%5Bfield%5D=entity_id&searchCriteria%5BsortOrders%5D","apiUrl":"https://www.lovefurniture.ie/rest/V1","endpoint":"/orders?searchCriteria%5BpageSize%5D=100&searchCriteria%5BcurrentPage%5D=1&searc","msg":"Magento API request"}
+api-1  | {"level":30,"time":1785873625424,"pid":20,"hostname":"358dd72c1258","syncType":"orders","count":64,"duration":1300,"msg":"Magento sync complete"}
+api-1  | {"level":30,"time":1785873625427,"pid":20,"hostname":"358dd72c1258","url":"https://www.lovefurniture.ie/rest/V1/carts/search?searchCriteria%5BpageSize%5D=100&searchCriteria%5BcurrentPage%5D=1&searchCriteria%5BsortOrders%5D%5B0%5D%5Bfield%5D=entity_id&searchCriteria%5BsortOrd","apiUrl":"https://www.lovefurniture.ie/rest/V1","endpoint":"/carts/search?searchCriteria%5BpageSize%5D=100&searchCriteria%5BcurrentPage%5D=1","msg":"Magento API request"}
+api-1  | {"level":30,"time":1785873628461,"pid":20,"hostname":"358dd72c1258","url":"https://www.lovefurniture.ie/rest/V1/carts/search?searchCriteria%5BpageSize%5D=100&searchCriteria%5BcurrentPage%5D=2&searchCriteria%5BsortOrders%5D%5B0%5D%5Bfield%5D=entity_id&searchCriteria%5BsortOrd","apiUrl":"https://www.lovefurniture.ie/rest/V1","endpoint":"/carts/search?searchCriteria%5BpageSize%5D=100&searchCriteria%5BcurrentPage%5D=2","msg":"Magento API request"}
+api-1  | {"level":30,"time":1785873631670,"pid":20,"hostname":"358dd72c1258","url":"https://www.lovefurniture.ie/rest/V1/carts/search?searchCriteria%5BpageSize%5D=100&searchCriteria%5BcurrentPage%5D=3&searchCriteria%5BsortOrders%5D%5B0%5D%5Bfield%5D=entity_id&searchCriteria%5BsortOrd","apiUrl":"https://www.lovefurniture.ie/rest/V1","endpoint":"/carts/search?searchCriteria%5BpageSize%5D=100&searchCriteria%5BcurrentPage%5D=3","msg":"Magento API request"}
+api-1  | {"level":30,"time":1785873632062,"pid":20,"hostname":"358dd72c1258","syncType":"carts","count":206,"duration":6636,"msg":"Magento sync complete"}
+api-1  | {"level":30,"time":1785873637179,"pid":20,"hostname":"358dd72c1258","req":{"id":2,"method":"POST","url":"/api/servers/report"},"res":{"statusCode":200},"responseTime":15,"msg":"request completed"}
+api-1  | {"level":30,"time":1785873642816,"pid":20,"hostname":"358dd72c1258","req":{"id":3,"method":"GET","url":"/nginx_status"},"res":{"statusCode":200},"responseTime":4,"msg":"request completed"}
+api-1  | {"level":30,"time":1785873642879,"pid":20,"hostname":"358dd72c1258","req":{"id":4,"method":"POST","url":"/api/servers/report"},"res":{"statusCode":401},"responseTime":2,"msg":"request completed"}
+api-1  | {"level":30,"time":1785873653968,"pid":20,"hostname":"358dd72c1258","req":{"id":5,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":0,"msg":"request completed"}
+api-1  | {"level":30,"time":1785873667062,"pid":20,"hostname":"358dd72c1258","req":{"id":6,"method":"POST","url":"/api/servers/report"},"res":{"statusCode":200},"responseTime":15,"msg":"request completed"}
+api-1  | {"level":30,"time":1785873672815,"pid":20,"hostname":"358dd72c1258","req":{"id":7,"method":"GET","url":"/nginx_status"},"res":{"statusCode":200},"responseTime":2,"msg":"request completed"}
+api-1  | {"level":30,"time":1785873672877,"pid":20,"hostname":"358dd72c1258","req":{"id":8,"method":"POST","url":"/api/servers/report"},"res":{"statusCode":401},"responseTime":2,"msg":"request completed"}
+api-1  | {"level":30,"time":1785873679088,"pid":20,"hostname":"358dd72c1258","count":2,"msg":"Running site checks"}
+api-1  | {"level":30,"time":1785873679113,"pid":20,"hostname":"358dd72c1258","siteId":2,"siteName":"Love Furniture UK","isUp":true,"responseTimeMs":13,"msg":"Site check complete"}
+api-1  | {"level":30,"time":1785873679141,"pid":20,"hostname":"358dd72c1258","siteId":1,"siteName":"Love Furniture IE","isUp":true,"responseTimeMs":16,"msg":"Site check complete"}
+api-1  | {"level":30,"time":1785873684097,"pid":20,"hostname":"358dd72c1258","req":{"id":9,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":0,"msg":"request completed"}
+api-1  | {"level":30,"time":1785873697044,"pid":20,"hostname":"358dd72c1258","req":{"id":10,"method":"POST","url":"/api/servers/report"},"res":{"statusCode":200},"responseTime":15,"msg":"request completed"}
+api-1  | {"level":30,"time":1785873702822,"pid":20,"hostname":"358dd72c1258","req":{"id":11,"method":"GET","url":"/nginx_status"},"res":{"statusCode":200},"responseTime":1,"msg":"request completed"}
+api-1  | {"level":30,"time":1785873702888,"pid":20,"hostname":"358dd72c1258","req":{"id":12,"method":"POST","url":"/api/servers/report"},"res":{"statusCode":401},"responseTime":2,"msg":"request completed"}
+api-1  | {"level":30,"time":1785873714241,"pid":20,"hostname":"358dd72c1258","req":{"id":13,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":0,"msg":"request completed"}
+api-1  | {"level":30,"time":1785873727087,"pid":20,"hostname":"358dd72c1258","req":{"id":14,"method":"POST","url":"/api/servers/report"},"res":{"statusCode":200},"responseTime":16,"msg":"request completed"}
+api-1  | {"level":30,"time":1785873732848,"pid":20,"hostname":"358dd72c1258","req":{"id":15,"method":"GET","url":"/nginx_status"},"res":{"statusCode":200},"responseTime":18,"msg":"request completed"}
+api-1  | {"level":30,"time":1785873733024,"pid":20,"hostname":"358dd72c1258","req":{"id":16,"method":"POST","url":"/api/servers/report"},"res":{"statusCode":401},"responseTime":2,"msg":"request completed"}
+api-1  | {"level":30,"time":1785873739089,"pid":20,"hostname":"358dd72c1258","count":2,"msg":"Running site checks"}
+api-1  | {"level":30,"time":1785873739112,"pid":20,"hostname":"358dd72c1258","siteId":2,"siteName":"Love Furniture UK","isUp":true,"responseTimeMs":11,"msg":"Site check complete"}
+api-1  | {"level":30,"time":1785873739141,"pid":20,"hostname":"358dd72c1258","siteId":1,"siteName":"Love Furniture IE","isUp":true,"responseTimeMs":15,"msg":"Site check complete"}
+api-1  | {"level":30,"time":1785873744369,"pid":20,"hostname":"358dd72c1258","req":{"id":17,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":1,"msg":"request completed"}
+api-1  | {"level":30,"time":1785873757086,"pid":20,"hostname":"358dd72c1258","req":{"id":18,"method":"POST","url":"/api/servers/report"},"res":{"statusCode":200},"responseTime":16,"msg":"request completed"}
+api-1  | {"level":30,"time":1785873762831,"pid":20,"hostname":"358dd72c1258","req":{"id":19,"method":"GET","url":"/nginx_status"},"res":{"statusCode":200},"responseTime":2,"msg":"request completed"}
+api-1  | {"level":30,"time":1785873762897,"pid":20,"hostname":"358dd72c1258","req":{"id":20,"method":"POST","url":"/api/servers/report"},"res":{"statusCode":401},"responseTime":2,"msg":"request completed"}
+api-1  | {"level":30,"time":1785873774514,"pid":20,"hostname":"358dd72c1258","req":{"id":21,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":0,"msg":"request completed"}
+api-1  | {"level":30,"time":1785873787071,"pid":20,"hostname":"358dd72c1258","req":{"id":22,"method":"POST","url":"/api/servers/report"},"res":{"statusCode":200},"responseTime":18,"msg":"request completed"}
+api-1  | {"level":30,"time":1785873792834,"pid":20,"hostname":"358dd72c1258","req":{"id":23,"method":"GET","url":"/nginx_status"},"res":{"statusCode":200},"responseTime":1,"msg":"request completed"}
+api-1  | {"level":30,"time":1785873792898,"pid":20,"hostname":"358dd72c1258","req":{"id":24,"method":"POST","url":"/api/servers/report"},"res":{"statusCode":401},"responseTime":2,"msg":"request completed"}
+status=running exit=0 error= restarts=0
+ubuntu@ip-172-33-86-172:~/Site-Sentinel$ 
+ubuntu@ip-172-33-86-172:~/Site-Sentinel$ 
+ubuntu@ip-172-33-86-172:~/Site-Sentinel$ cd /home/ubuntu/Site-Sentinel
+
+curl -fsS http://127.0.0.1:8080/api/agent/version
+{"version":"3.5.2","hash":"c5f1f235529d"}ubuntu@ip-172-33-86-172:~/Site-Sentinel$ 

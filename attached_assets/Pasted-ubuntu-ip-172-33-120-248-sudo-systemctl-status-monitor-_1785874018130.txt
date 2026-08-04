@@ -1,0 +1,25 @@
+ubuntu@ip-172-33-120-248:~$ sudo systemctl status monitor-agent --no-pager
+
+sudo journalctl -u monitor-agent --since "15 minutes ago" --no-pager | \
+  grep -Ei 'version|report|WAF|AWS|400|401|error|failed'
+● monitor-agent.service - Site Monitor Agent
+     Loaded: loaded (/etc/systemd/system/monitor-agent.service; enabled; vendor preset: enabled)
+     Active: active (running) since Tue 2026-08-04 19:25:03 UTC; 41min ago
+   Main PID: 126216 (node)
+      Tasks: 11 (limit: 18716)
+     Memory: 19.3M
+        CPU: 13.739s
+     CGroup: /system.slice/monitor-agent.service
+             └─126216 /usr/bin/node /opt/monitor-agent/monitor-agent.js
+
+Aug 04 20:01:37 ip-172-33-120-248 node[126216]: [2026-08-04T20:01:37.045Z] CPU: 21.61% | Mem: 61.1% | Disk: 49.2% | Load: 2.14 | PHP: 11/11 | Nginx:up(?conn) …h:up(81%hit)
+Aug 04 20:02:07 ip-172-33-120-248 node[126216]: [2026-08-04T20:02:07.087Z] CPU: 25.68% | Mem: 65.1% | Disk: 49.2% | Load: 1.83 | PHP: 11/11 | Nginx:up(?conn) …h:up(81%hit)
+Aug 04 20:02:37 ip-172-33-120-248 node[126216]: [2026-08-04T20:02:37.086Z] CPU: 21.54% | Mem: 61.1% | Disk: 49.2% | Load: 1.57 | PHP: 11/11 | Nginx:up(?conn) …h:up(81%hit)
+Aug 04 20:03:07 ip-172-33-120-248 node[126216]: [2026-08-04T20:03:07.072Z] CPU: 25.97% | Mem: 66.4% | Disk: 49.2% | Load: 1.73 | PHP: 11/11 | Nginx:up(?conn) …h:up(81%hit)
+Aug 04 20:03:37 ip-172-33-120-248 node[126216]: [2026-08-04T20:03:37.126Z] CPU: 20.18% | Mem: 61.4% | Disk: 49.2% | Load: 1.87 | PHP: 11/11 | Nginx:up(?conn) …h:up(81%hit)
+Aug 04 20:04:07 ip-172-33-120-248 node[126216]: [2026-08-04T20:04:07.157Z] CPU: 32.19% | Mem: 68.1% | Disk: 49.2% | Load: 2 | PHP: 11/11 | Nginx:up(?conn) | V…h:up(81%hit)
+Aug 04 20:04:37 ip-172-33-120-248 node[126216]: [2026-08-04T20:04:37.134Z] CPU: 26.44% | Mem: 61.2% | Disk: 49.2% | Load: 1.87 | PHP: 11/11 | Nginx:up(?conn) …h:up(81%hit)
+Aug 04 20:05:07 ip-172-33-120-248 node[126216]: [2026-08-04T20:05:07.267Z] CPU: 28.41% | Mem: 70.7% | Disk: 49.2% | Load: 2.09 | PHP: 12/12 | Nginx:up(?conn) …h:up(81%hit)
+Aug 04 20:05:37 ip-172-33-120-248 node[126216]: [2026-08-04T20:05:37.360Z] CPU: 22.07% | Mem: 62.9% | Disk: 49.2% | Load: 2.15 | PHP: 11/11 | Nginx:up(?conn) …h:up(81%hit)
+Aug 04 20:06:07 ip-172-33-120-248 node[126216]: [2026-08-04T20:06:07.169Z] CPU: 23.64% | Mem: 70.3% | Disk: 49.2% | Load: 2.64 | PHP: 11/11 | Nginx:up(?conn) …h:up(81%hit)
+Hint: Some lines were ellipsized, use -l to show in full.
