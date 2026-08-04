@@ -1,0 +1,92 @@
+ubuntu@ip-172-33-86-172:~/Site-Sentinel$ KEY=$(
+  grep -hoE 'sm_[a-f0-9]{48}' \
+    /home/ubuntu/.bash_history \
+    /root/.bash_history \
+    /home/ubuntu/Site-Sentinel/.env \
+    /home/ubuntu/Site-Sentinel/.env.* \
+    2>/dev/null | head -n 1
+)
+
+if [ -z "$KEY" ]; then
+  echo "Existing API key was not found locally."
+else
+  echo "Existing API key was found locally."
+fi
+Existing API key was found locally.
+ubuntu@ip-172-33-86-172:~/Site-Sentinel$ read -rp "Site Sentinel URL, e.g. https://monitor.example.com: " API_URL
+
+if [ -z "$KEY" ]; then
+  echo "No existing key available; nothing was changed."
+  exit 1
+fi
+
+HTTP_CODE=$(
+  curl -sS \
+    -o /tmp/monitor-agent.js \
+    -w '%{http_code}' \
+    "$API_URL/api/agent/script" \
+    -H "x-api-key: $KEY"
+)
+
+echo "API response: HTTP $HTTP_CODE"
+Site Sentinel URL, e.g. https://monitor.example.com: https://monit.lovefurniture.ie/
+API response: HTTP 200
+ubuntu@ip-172-33-86-172:~/Site-Sentinel$ sudo install -d -m 755 /opt/monitor-agent
+sudo install -m 755 /tmp/monitor-agent.js /opt/monitor-agent/monitor-agent.js
+
+sudo tee /opt/monitor-agent/.env >/dev/null <<EOF
+MONITOR_API_URL=$API_URL
+MONITOR_API_KEY=$KEY
+MONITOR_INTERVAL=30
+MONITOR_OPENSEARCH_URL=https://vpc-magento-prod-nzaysstzukhdmqqtuhh6be2use.eu-west-2.es.amazonaws.com
+MONITOR_OPENSEARCH_REGION=eu-west-2
+MONITOR_OPENSEARCH_AUTH=none
+EOF
+
+sudo chmod 600 /opt/monitor-agent/.env
+sudo systemctl reset-failed monitor-agent
+sudo systemctl restart monitor-agent
+
+sudo systemctl status monitor-agent --no-pager
+sudo journalctl -u monitor-agent -n 30 --no-pager
+● monitor-agent.service - Site Monitor Agent
+     Loaded: loaded (/etc/systemd/system/monitor-agent.service; enabled; vendor preset: enabled)
+     Active: active (running) since Tue 2026-08-04 09:49:44 UTC; 18ms ago
+   Main PID: 2440999 (node)
+      Tasks: 1 (limit: 4528)
+     Memory: 1.6M
+        CPU: 2ms
+     CGroup: /system.slice/monitor-agent.service
+             └─2440999 /usr/bin/node /opt/monitor-agent/monitor-agent.js
+
+Aug 04 09:49:44 ip-172-33-86-172 systemd[1]: Started Site Monitor Agent.
+Aug 04 09:48:59 ip-172-33-86-172 systemd[1]: monitor-agent.service: Failed to load environment files: No such file or directory
+Aug 04 09:48:59 ip-172-33-86-172 systemd[1]: monitor-agent.service: Failed to run 'start' task: No such file or directory
+Aug 04 09:48:59 ip-172-33-86-172 systemd[1]: monitor-agent.service: Failed with result 'resources'.
+Aug 04 09:48:59 ip-172-33-86-172 systemd[1]: Failed to start Site Monitor Agent.
+Aug 04 09:49:09 ip-172-33-86-172 systemd[1]: monitor-agent.service: Scheduled restart job, restart counter is at 4119.
+Aug 04 09:49:09 ip-172-33-86-172 systemd[1]: Stopped Site Monitor Agent.
+Aug 04 09:49:09 ip-172-33-86-172 systemd[1]: monitor-agent.service: Failed to load environment files: No such file or directory
+Aug 04 09:49:09 ip-172-33-86-172 systemd[1]: monitor-agent.service: Failed to run 'start' task: No such file or directory
+Aug 04 09:49:09 ip-172-33-86-172 systemd[1]: monitor-agent.service: Failed with result 'resources'.
+Aug 04 09:49:09 ip-172-33-86-172 systemd[1]: Failed to start Site Monitor Agent.
+Aug 04 09:49:19 ip-172-33-86-172 systemd[1]: monitor-agent.service: Scheduled restart job, restart counter is at 4120.
+Aug 04 09:49:19 ip-172-33-86-172 systemd[1]: Stopped Site Monitor Agent.
+Aug 04 09:49:19 ip-172-33-86-172 systemd[1]: monitor-agent.service: Failed to load environment files: No such file or directory
+Aug 04 09:49:19 ip-172-33-86-172 systemd[1]: monitor-agent.service: Failed to run 'start' task: No such file or directory
+Aug 04 09:49:19 ip-172-33-86-172 systemd[1]: monitor-agent.service: Failed with result 'resources'.
+Aug 04 09:49:19 ip-172-33-86-172 systemd[1]: Failed to start Site Monitor Agent.
+Aug 04 09:49:30 ip-172-33-86-172 systemd[1]: monitor-agent.service: Scheduled restart job, restart counter is at 4121.
+Aug 04 09:49:30 ip-172-33-86-172 systemd[1]: Stopped Site Monitor Agent.
+Aug 04 09:49:30 ip-172-33-86-172 systemd[1]: monitor-agent.service: Failed to load environment files: No such file or directory
+Aug 04 09:49:30 ip-172-33-86-172 systemd[1]: monitor-agent.service: Failed to run 'start' task: No such file or directory
+Aug 04 09:49:30 ip-172-33-86-172 systemd[1]: monitor-agent.service: Failed with result 'resources'.
+Aug 04 09:49:30 ip-172-33-86-172 systemd[1]: Failed to start Site Monitor Agent.
+Aug 04 09:49:40 ip-172-33-86-172 systemd[1]: monitor-agent.service: Scheduled restart job, restart counter is at 4122.
+Aug 04 09:49:40 ip-172-33-86-172 systemd[1]: Stopped Site Monitor Agent.
+Aug 04 09:49:40 ip-172-33-86-172 systemd[1]: monitor-agent.service: Failed to load environment files: No such file or directory
+Aug 04 09:49:40 ip-172-33-86-172 systemd[1]: monitor-agent.service: Failed to run 'start' task: No such file or directory
+Aug 04 09:49:40 ip-172-33-86-172 systemd[1]: monitor-agent.service: Failed with result 'resources'.
+Aug 04 09:49:40 ip-172-33-86-172 systemd[1]: Failed to start Site Monitor Agent.
+Aug 04 09:49:44 ip-172-33-86-172 systemd[1]: Stopped Site Monitor Agent.
+Aug 04 09:49:44 ip-172-33-86-172 systemd[1]: Started Site Monitor Agent.
