@@ -1,0 +1,25 @@
+ubuntu@ip-172-33-86-172:~/Site-Sentinel$ sudo journalctl -u monitor-agent -n 80 --no-pager | grep -Ei 'WAF|AWS|report|error|failed'
+Aug 04 14:13:51 ip-172-33-86-172 node[2504008]:   OpenSearch: https://vpc-magento-prod-nzaysstzukhdmqqtuhh6be2use.eu-west-2.es.amazonaws.com (none auth)
+Aug 04 14:13:52 ip-172-33-86-172 node[2504008]: Report failed: HTTP 401 - {"error":"Invalid API key"}
+Aug 04 14:14:22 ip-172-33-86-172 node[2504008]: Report failed: HTTP 401 - {"error":"Invalid API key"}
+Aug 04 14:14:52 ip-172-33-86-172 node[2504008]: Report failed: HTTP 401 - {"error":"Invalid API key"}
+Aug 04 19:11:11 ip-172-33-86-172 node[2567777]:   Features: CPU, Memory, Disk, Network, Load, PHP-FPM, MySQL, Nginx, Varnish, OpenSearch, SSL, AWS WAF
+Aug 04 19:11:11 ip-172-33-86-172 node[2567777]:   OpenSearch: https://vpc-magento-prod-nzaysstzukhdmqqtuhh6be2use.eu-west-2.es.amazonaws.com (none auth)
+Aug 04 19:11:22 ip-172-33-86-172 node[2567777]: Report timeout
+Aug 04 19:11:22 ip-172-33-86-172 node[2567777]: Report error: socket hang up
+Aug 04 19:11:52 ip-172-33-86-172 node[2567777]: Report timeout
+Aug 04 19:11:52 ip-172-33-86-172 node[2567777]: Report error: socket hang up
+Aug 04 19:12:22 ip-172-33-86-172 node[2567777]: Report timeout
+Aug 04 19:12:22 ip-172-33-86-172 node[2567777]: Report error: socket hang up
+Aug 04 19:12:52 ip-172-33-86-172 node[2567777]: Report timeout
+Aug 04 19:12:52 ip-172-33-86-172 node[2567777]: Report error: socket hang up
+Aug 04 19:13:22 ip-172-33-86-172 node[2567777]: Report timeout
+Aug 04 19:13:22 ip-172-33-86-172 node[2567777]: Report error: socket hang up
+Aug 04 19:13:52 ip-172-33-86-172 node[2567777]: Report timeout
+Aug 04 19:13:52 ip-172-33-86-172 node[2567777]: Report error: socket hang up
+Aug 04 19:14:22 ip-172-33-86-172 node[2567777]: Report timeout
+Aug 04 19:14:22 ip-172-33-86-172 node[2567777]: Report error: socket hang up
+Aug 04 19:14:52 ip-172-33-86-172 node[2567777]: Report timeout
+Aug 04 19:14:52 ip-172-33-86-172 node[2567777]: Report error: socket hang up
+Aug 04 19:15:22 ip-172-33-86-172 node[2567777]: Report timeout
+Aug 04 19:15:22 ip-172-33-86-172 node[2567777]: Report error: socket hang up
