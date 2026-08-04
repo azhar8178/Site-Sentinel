@@ -1,0 +1,73 @@
+ubuntu@ip-172-33-120-248:~$ API_URL=$(sudo sed -n 's/^MONITOR_API_URL=//p' /opt/monitor-agent/.env)
+API_KEY=$(sudo sed -n 's/^MONITOR_API_KEY=//p' /opt/monitor-agent/.env)
+TMP_AGENT=$(mktemp)
+
+curl -fsS "${API_URL%/}/api/agent/script" \
+  -H "x-api-key: ${API_KEY}" \
+  -o "$TMP_AGENT"
+
+grep -q '^#!/usr/bin/env node$' "$TMP_AGENT"
+
+sudo install -m 755 "$TMP_AGENT" /opt/monitor-agent/monitor-agent.js
+rm -f "$TMP_AGENT"
+
+sudo systemctl restart monitor-agent
+ubuntu@ip-172-33-120-248:~$ sudo systemctl status monitor-agent --no-pager
+sudo journalctl -u monitor-agent -n 40 --no-pager
+● monitor-agent.service - Site Monitor Agent
+     Loaded: loaded (/etc/systemd/system/monitor-agent.service; enabled; vendor preset: enabled)
+     Active: active (running) since Tue 2026-08-04 19:25:03 UTC; 8s ago
+   Main PID: 126216 (node)
+      Tasks: 11 (limit: 18716)
+     Memory: 12.9M
+        CPU: 461ms
+     CGroup: /system.slice/monitor-agent.service
+             └─126216 /usr/bin/node /opt/monitor-agent/monitor-agent.js
+
+Aug 04 19:25:03 ip-172-33-120-248 systemd[1]: Started Site Monitor Agent.
+Aug 04 19:25:03 ip-172-33-120-248 node[126216]: Site Sentinel Monitor Agent v3.5.1
+Aug 04 19:25:03 ip-172-33-120-248 node[126216]:   API: https://monit.lovefurniture.ie
+Aug 04 19:25:03 ip-172-33-120-248 node[126216]:   Interval: 30s
+Aug 04 19:25:03 ip-172-33-120-248 node[126216]:   Features: CPU, Memory, Disk, Network, Load, PHP-FPM, MySQL, Nginx, Varnish, OpenSearch, SSL, AWS WAF
+Aug 04 19:25:03 ip-172-33-120-248 node[126216]:   OpenSearch: https://vpc-magento-prod-nzaysstzukhdmqqtuhh6be2use.eu-west-2.es.amazonaws.com (none auth)
+Aug 04 19:25:03 ip-172-33-120-248 node[126216]:   SSL domains: www.lovefurniture.ie,www.lovefurniture.co.uk
+Aug 04 19:17:46 ip-172-33-120-248 node[4061208]: Report error: socket hang up
+Aug 04 19:18:16 ip-172-33-120-248 node[4061208]: Report timeout
+Aug 04 19:18:16 ip-172-33-120-248 node[4061208]: Report error: socket hang up
+Aug 04 19:18:46 ip-172-33-120-248 node[4061208]: Report timeout
+Aug 04 19:18:46 ip-172-33-120-248 node[4061208]: Report error: socket hang up
+Aug 04 19:19:16 ip-172-33-120-248 node[4061208]: Report timeout
+Aug 04 19:19:16 ip-172-33-120-248 node[4061208]: Report error: socket hang up
+Aug 04 19:19:46 ip-172-33-120-248 node[4061208]: Report timeout
+Aug 04 19:19:46 ip-172-33-120-248 node[4061208]: Report error: socket hang up
+Aug 04 19:20:17 ip-172-33-120-248 node[4061208]: Report timeout
+Aug 04 19:20:17 ip-172-33-120-248 node[4061208]: Report error: socket hang up
+Aug 04 19:20:46 ip-172-33-120-248 node[4061208]: Report timeout
+Aug 04 19:20:46 ip-172-33-120-248 node[4061208]: Report error: socket hang up
+Aug 04 19:21:16 ip-172-33-120-248 node[4061208]: Report timeout
+Aug 04 19:21:16 ip-172-33-120-248 node[4061208]: Report error: socket hang up
+Aug 04 19:21:47 ip-172-33-120-248 node[4061208]: Report timeout
+Aug 04 19:21:47 ip-172-33-120-248 node[4061208]: Report error: socket hang up
+Aug 04 19:22:17 ip-172-33-120-248 node[4061208]: Report timeout
+Aug 04 19:22:17 ip-172-33-120-248 node[4061208]: Report error: socket hang up
+Aug 04 19:22:47 ip-172-33-120-248 node[4061208]: Report timeout
+Aug 04 19:22:47 ip-172-33-120-248 node[4061208]: Report error: socket hang up
+Aug 04 19:23:17 ip-172-33-120-248 node[4061208]: Report timeout
+Aug 04 19:23:17 ip-172-33-120-248 node[4061208]: Report error: socket hang up
+Aug 04 19:23:47 ip-172-33-120-248 node[4061208]: Report timeout
+Aug 04 19:23:47 ip-172-33-120-248 node[4061208]: Report error: socket hang up
+Aug 04 19:24:17 ip-172-33-120-248 node[4061208]: Report timeout
+Aug 04 19:24:17 ip-172-33-120-248 node[4061208]: Report error: socket hang up
+Aug 04 19:24:47 ip-172-33-120-248 node[4061208]: Report timeout
+Aug 04 19:24:47 ip-172-33-120-248 node[4061208]: Report error: socket hang up
+Aug 04 19:25:03 ip-172-33-120-248 systemd[1]: Stopping Site Monitor Agent...
+Aug 04 19:25:03 ip-172-33-120-248 systemd[1]: monitor-agent.service: Deactivated successfully.
+Aug 04 19:25:03 ip-172-33-120-248 systemd[1]: Stopped Site Monitor Agent.
+Aug 04 19:25:03 ip-172-33-120-248 systemd[1]: monitor-agent.service: Consumed 1min 10.747s CPU time.
+Aug 04 19:25:03 ip-172-33-120-248 systemd[1]: Started Site Monitor Agent.
+Aug 04 19:25:03 ip-172-33-120-248 node[126216]: Site Sentinel Monitor Agent v3.5.1
+Aug 04 19:25:03 ip-172-33-120-248 node[126216]:   API: https://monit.lovefurniture.ie
+Aug 04 19:25:03 ip-172-33-120-248 node[126216]:   Interval: 30s
+Aug 04 19:25:03 ip-172-33-120-248 node[126216]:   Features: CPU, Memory, Disk, Network, Load, PHP-FPM, MySQL, Nginx, Varnish, OpenSearch, SSL, AWS WAF
+Aug 04 19:25:03 ip-172-33-120-248 node[126216]:   OpenSearch: https://vpc-magento-prod-nzaysstzukhdmqqtuhh6be2use.eu-west-2.es.amazonaws.com (none auth)
+Aug 04 19:25:03 ip-172-33-120-248 node[126216]:   SSL domains: www.lovefurniture.ie,www.lovefurniture.co.uk
