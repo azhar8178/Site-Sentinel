@@ -47,7 +47,20 @@ const webDistPath = resolve(process.cwd(), "artifacts", "web-dashboard", "dist")
 
 if (existsSync(webDistPath)) {
   logger.info({ webDistPath }, "Serving web dashboard");
-  app.use(express.static(webDistPath));
+  app.use((req, res, next) => {
+    const requestPath = req.path;
+    const isSensitivePath =
+      /(^|\/)\.(?:env|git|svn|hg)(?:$|\/)/i.test(requestPath) ||
+      /\.(?:env|ini|conf|config|log|sql|bak|old|swp)$/i.test(requestPath);
+
+    if (isSensitivePath) {
+      res.status(404).json({ error: "Not found" });
+      return;
+    }
+
+    next();
+  });
+  app.use(express.static(webDistPath, { dotfiles: "deny" }));
   app.get("/{*splat}", (req, res, next) => {
     if (req.path.startsWith("/api")) return next();
     res.sendFile(resolve(webDistPath, "index.html"));
