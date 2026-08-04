@@ -1,0 +1,33 @@
+ubuntu@ip-172-33-120-248:~$ sudo systemctl status varnish --no-pager -l
+● varnish.service - Varnish Cache, a high-performance HTTP accelerator
+     Loaded: loaded (/lib/systemd/system/varnish.service; enabled; vendor preset: enabled)
+    Drop-In: /etc/systemd/system/varnish.service.d
+             └─override.conf
+     Active: active (running) since Mon 2026-08-03 15:37:35 UTC; 20h ago
+       Docs: https://www.varnish-cache.org/docs/
+             man:varnishd
+   Main PID: 2669207 (varnishd)
+      Tasks: 217 (limit: 18716)
+     Memory: 4.0G
+        CPU: 1h 10min 32.856s
+     CGroup: /system.slice/varnish.service
+             ├─2669207 /usr/sbin/varnishd -j unix,user=vcache -F -a :80 -a :8080 -T localhost:6082 -f /etc/varnish/default.vcl -S /etc/varnish/secret -s malloc,4G
+             └─2669232 /usr/sbin/varnishd -j unix,user=vcache -F -a :80 -a :8080 -T localhost:6082 -f /etc/varnish/default.vcl -S /etc/varnish/secret -s malloc,4G
+
+Aug 04 07:36:02 ip-172-33-120-248 varnishd[2669207]: CLI telnet 127.0.0.1 54406 127.0.0.1 6082 Rd ping
+Aug 04 07:36:02 ip-172-33-120-248 varnishd[2669207]: CLI telnet 127.0.0.1 54406 127.0.0.1 6082 Wr 200 PONG 1785828962 1.0
+Aug 04 07:36:02 ip-172-33-120-248 varnishd[2669207]: CLI telnet 127.0.0.1 54406 127.0.0.1 6082 Rd ban req.url == /beds/ottoman-beds && req.http.host == www.lovefurniture.ie
+Aug 04 07:36:02 ip-172-33-120-248 varnishd[2669207]: CLI telnet 127.0.0.1 54406 127.0.0.1 6082 Wr 200
+Aug 04 07:36:02 ip-172-33-120-248 varnishd[2669207]: CLI telnet 127.0.0.1 54408 127.0.0.1 6082 Rd auth 78dbed1e9d6842e42eec14e0185d6646e6e4f0f84540614c42e70ff8c868fbe5
+Aug 04 07:36:02 ip-172-33-120-248 varnishd[2669207]: CLI telnet 127.0.0.1 54408 127.0.0.1 6082 Wr 200 -----------------------------
+                                                     Varnish Cache CLI 1.0
+                                                     -----------------------------
+                                                     Linux,6.8.0-1050-aws,x86_64,-junix,-smalloc,-sdefault,-hcritbit
+                                                     varnish-6.6.1 revision e6a8c860944c4f6a7e1af9f40674ea78bbdcdc66
+                                                     
+                                                     Type 'help' for command list.
+                                                     Type 'quit' to close CLI session.
+Aug 04 07:36:02 ip-172-33-120-248 varnishd[2669207]: CLI telnet 127.0.0.1 54408 127.0.0.1 6082 Rd ping
+Aug 04 07:36:02 ip-172-33-120-248 varnishd[2669207]: CLI telnet 127.0.0.1 54408 127.0.0.1 6082 Wr 200 PONG 1785828962 1.0
+Aug 04 07:36:02 ip-172-33-120-248 varnishd[2669207]: CLI telnet 127.0.0.1 54408 127.0.0.1 6082 Rd ban req.url == /beds/ottoman-beds && req.http.host == www.lovefurniture.co.uk
+Aug 04 07:36:02 ip-172-33-120-248 varnishd[2669207]: CLI telnet 127.0.0.1 54408 127.0.0.1 6082 Wr 200

@@ -238,19 +238,28 @@ function getVarnishStats() {
     exec("pidof varnishd 2>/dev/null | head -c1")
   );
 
-  const statsOutput = exec(
-    "varnishstat -1 -f MAIN.cache_hit,MAIN.cache_miss,MAIN.client_req 2>/dev/null || varnishstat -1 2>/dev/null | grep -E 'cache_hit|cache_miss|client_req' 2>/dev/null"
-  );
+  // Read the complete stats report. Some Varnish 6.x installations do not
+  // return output for the comma-separated -f form, even though varnishstat -1
+  // exposes all counters correctly.
+  const statsOutput = exec("varnishstat -1 2>/dev/null");
 
   if (!statsOutput) return { isRunning };
 
-  const hitMatch = statsOutput.match(/MAIN\.cache_hit\s+(\d+)/);
-  const missMatch = statsOutput.match(/MAIN\.cache_miss\s+(\d+)/);
-  const reqMatch = statsOutput.match(/MAIN\.client_req\s+(\d+)/);
+  const readCounter = (name) => {
+    const match = statsOutput.match(new RegExp(`^MAIN\\.${name}\\s+(\\d+)`, "m"));
+    return match ? parseInt(match[1], 10) : null;
+  };
 
-  const hits = hitMatch ? parseInt(hitMatch[1], 10) : null;
-  const misses = missMatch ? parseInt(missMatch[1], 10) : null;
-  const clientReqs = reqMatch ? parseInt(reqMatch[1], 10) : null;
+  const hits = readCounter("cache_hit");
+  const misses = readCounter("cache_miss");
+  const clientReqs = readCounter("client_req");
+
+  if (hits === null && misses === null && clientReqs === null) {
+    return {
+      isRunning,
+      error: "Varnish is running but returned no cache counters",
+    };
+  }
 
   let hitRate = null;
   if (hits !== null && misses !== null && hits + misses > 0) {
@@ -651,7 +660,7 @@ async function collect() {
   }
 }
 
-const AGENT_VERSION = "3.3.0";
+const AGENT_VERSION = "3.3.1";
 const UPDATE_CHECK_INTERVAL = 3600000;
 let lastUpdateCheck = 0;
 

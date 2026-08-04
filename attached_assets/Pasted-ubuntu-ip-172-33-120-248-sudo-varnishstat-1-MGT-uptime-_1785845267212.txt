@@ -1,0 +1,351 @@
+ubuntu@ip-172-33-120-248:~$ sudo varnishstat -1
+MGT.uptime               73801         1.00 Management process uptime
+MGT.child_start              1         0.00 Child process started
+MGT.child_exit               0         0.00 Child process normal exit
+MGT.child_stop               0         0.00 Child process unexpected exit
+MGT.child_died               0         0.00 Child process died (signal)
+MGT.child_dump               0         0.00 Child process core dumped
+MGT.child_panic              0         0.00 Child process panic
+MAIN.summs             2169170        29.39 stat summ operations
+MAIN.uptime              73802         1.00 Child process uptime
+MAIN.sess_conn          126172         1.71 Sessions accepted
+MAIN.sess_fail               0         0.00 Session accept failures
+MAIN.sess_fail_econnaborted            0         0.00 Session accept failures: connection aborted
+MAIN.sess_fail_eintr                   0         0.00 Session accept failures: interrupted system call
+MAIN.sess_fail_emfile                  0         0.00 Session accept failures: too many open files
+MAIN.sess_fail_ebadf                   0         0.00 Session accept failures: bad file descriptor
+MAIN.sess_fail_enomem                  0         0.00 Session accept failures: not enough memory
+MAIN.sess_fail_other                   0         0.00 Session accept failures: other
+MAIN.client_req_400                    0         0.00 Client requests received, subject to 400 errors
+MAIN.client_req_417                    0         0.00 Client requests received, subject to 417 errors
+MAIN.client_req                  1358532        18.41 Good client requests received
+MAIN.esi_req                      130293         1.77 ESI subrequests
+MAIN.cache_hit                   1127908        15.28 Cache hits
+MAIN.cache_hit_grace                1889         0.03 Cache grace hits
+MAIN.cache_hitpass                     0         0.00 Cache hits for pass.
+MAIN.cache_hitmiss                 10359         0.14 Cache hits for miss.
+MAIN.cache_miss                   290093         3.93 Cache misses
+MAIN.beresp_uncacheable           195305         2.65 Uncacheable backend responses
+MAIN.beresp_shortlived                 0         0.00 Shortlived objects
+MAIN.backend_conn                   4690         0.06 Backend conn. success
+MAIN.backend_unhealthy                 0         0.00 Backend conn. not attempted
+MAIN.backend_busy                      0         0.00 Backend conn. too many
+MAIN.backend_fail                      0         0.00 Backend conn. failures
+MAIN.backend_reuse                338578         4.59 Backend conn. reuses
+MAIN.backend_recycle              340318         4.61 Backend conn. recycles
+MAIN.backend_retry                     0         0.00 Backend conn. retry
+MAIN.fetch_head                        3         0.00 Fetch no body (HEAD)
+MAIN.fetch_length                 140204         1.90 Fetch with Length
+MAIN.fetch_chunked                203062         2.75 Fetch chunked
+MAIN.fetch_eof                         0         0.00 Fetch EOF
+MAIN.fetch_bad                         0         0.00 Fetch bad T-E
+MAIN.fetch_none                        0         0.00 Fetch no body
+MAIN.fetch_1xx                         0         0.00 Fetch no body (1xx)
+MAIN.fetch_204                         0         0.00 Fetch no body (204)
+MAIN.fetch_304                         4         0.00 Fetch no body (304)
+MAIN.fetch_failed                      0         0.00 Fetch failed (all causes)
+MAIN.fetch_no_thread                   0         0.00 Fetch failed (no thread)
+MAIN.pools                             2          .   Number of thread pools
+MAIN.threads                         200          .   Total number of threads
+MAIN.threads_limited                   0         0.00 Threads hit max
+MAIN.threads_created                 200         0.00 Threads created
+MAIN.threads_destroyed                 0         0.00 Threads destroyed
+MAIN.threads_failed                    0         0.00 Thread creation failed
+MAIN.thread_queue_len                  0          .   Length of session queue
+MAIN.busy_sleep                      199         0.00 Number of requests sent to sleep on busy objhdr
+MAIN.busy_wakeup                     199         0.00 Number of requests woken after sleep on busy objhdr
+MAIN.busy_killed                       0         0.00 Number of requests killed after sleep on busy objhdr
+MAIN.sess_queued                       0         0.00 Sessions queued for thread
+MAIN.sess_dropped                      0         0.00 Sessions dropped for thread
+MAIN.req_dropped                       0         0.00 Requests dropped
+MAIN.n_object                      49112          .   object structs made
+MAIN.n_vampireobject                   0          .   unresurrected objects
+MAIN.n_objectcore                  49204          .   objectcore structs made
+MAIN.n_objecthead                  49031          .   objecthead structs made
+MAIN.n_backend                         3          .   Number of backends
+MAIN.n_expired                    128286         1.74 Number of expired objects
+MAIN.n_lru_nuked                       0         0.00 Number of LRU nuked objects
+MAIN.n_lru_moved                  973540        13.19 Number of LRU moved objects
+MAIN.n_lru_limited                     0         0.00 Reached nuke_limit
+MAIN.losthdr                           0         0.00 HTTP header overflows
+MAIN.s_sess                       126172         1.71 Total sessions seen
+MAIN.n_pipe                            0          .   Number of ongoing pipe sessions
+MAIN.pipe_limited                      0         0.00 Pipes hit pipe_sess_max
+MAIN.s_pipe                            0         0.00 Total pipe sessions seen
+MAIN.s_pass                        51851         0.70 Total pass-ed requests seen
+MAIN.s_fetch                      343273         4.65 Total backend fetches initiated
+MAIN.s_bgfetch                      1329         0.02 Total backend background fetches initiated
+MAIN.s_synth                       18812         0.25 Total synthetic responses made
+MAIN.s_req_hdrbytes           1708682151     23152.25 Request header bytes
+MAIN.s_req_bodybytes            20353563       275.79 Request body bytes
+MAIN.s_resp_hdrbytes          1629701524     22082.08 Response header bytes
+MAIN.s_resp_bodybytes        21615268160    292881.88 Response body bytes
+MAIN.s_pipe_hdrbytes                   0         0.00 Pipe request header bytes
+MAIN.s_pipe_in                         0         0.00 Piped bytes from client
+MAIN.s_pipe_out                        0         0.00 Piped bytes to client
+MAIN.sess_closed                    5473         0.07 Session Closed
+MAIN.sess_closed_err                  25         0.00 Session Closed with error
+MAIN.sess_readahead                    0         0.00 Session Read Ahead
+MAIN.sess_herd                    706812         9.58 Session herd
+MAIN.sc_rem_close                  29049         0.39 Session OK  REM_CLOSE
+MAIN.sc_req_close                   5263         0.07 Session OK  REQ_CLOSE
+MAIN.sc_req_http10                    11         0.00 Session Err REQ_HTTP10
+MAIN.sc_rx_bad                         0         0.00 Session Err RX_BAD
+MAIN.sc_rx_body                        0         0.00 Session Err RX_BODY
+MAIN.sc_rx_junk                        0         0.00 Session Err RX_JUNK
+MAIN.sc_rx_overflow                    0         0.00 Session Err RX_OVERFLOW
+MAIN.sc_rx_timeout                    12         0.00 Session Err RX_TIMEOUT
+MAIN.sc_rx_close_idle              91785         1.24 Session Err RX_CLOSE_IDLE
+MAIN.sc_tx_pipe                        0         0.00 Session OK  TX_PIPE
+MAIN.sc_tx_error                       1         0.00 Session Err TX_ERROR
+MAIN.sc_tx_eof                         0         0.00 Session OK  TX_EOF
+MAIN.sc_resp_close                     0         0.00 Session OK  RESP_CLOSE
+MAIN.sc_overload                       0         0.00 Session Err OVERLOAD
+MAIN.sc_pipe_overflow                  0         0.00 Session Err PIPE_OVERFLOW
+MAIN.sc_range_short                    0         0.00 Session Err RANGE_SHORT
+MAIN.sc_req_http20                     1         0.00 Session Err REQ_HTTP20
+MAIN.sc_vcl_failure                    0         0.00 Session Err VCL_FAILURE
+MAIN.client_resp_500                   0         0.00 Delivery failed due to insufficient workspace.
+MAIN.ws_backend_overflow               0         0.00 workspace_backend overflows
+MAIN.ws_client_overflow                0         0.00 workspace_client overflows
+MAIN.ws_thread_overflow                0         0.00 workspace_thread overflows
+MAIN.ws_session_overflow               0         0.00 workspace_session overflows
+MAIN.shm_records               143003207      1937.66 SHM records
+MAIN.shm_writes                  4260959        57.74 SHM writes
+MAIN.shm_flushes                  515531         6.99 SHM flushes due to overflow
+MAIN.shm_cont                      58324         0.79 SHM MTX contention
+MAIN.shm_cycles                       78         0.00 SHM cycles through buffer
+MAIN.backend_req                  343259         4.65 Backend requests made
+MAIN.n_vcl                             3          .   Number of loaded VCLs in total
+MAIN.n_vcl_avail                       3          .   Number of VCLs available
+MAIN.n_vcl_discard                     0          .   Number of discarded VCLs
+MAIN.vcl_fail                          0         0.00 VCL failures
+MAIN.bans                          16227          .   Count of bans
+MAIN.bans_completed                16224          .   Number of bans marked 'completed'
+MAIN.bans_obj                      16224          .   Number of bans using obj.*
+MAIN.bans_req                          3          .   Number of bans using req.*
+MAIN.bans_added                    16315         0.22 Bans added
+MAIN.bans_deleted                     88         0.00 Bans deleted
+MAIN.bans_tested                   79490         1.08 Bans tested against objects (lookup)
+MAIN.bans_obj_killed                9937         0.13 Objects killed by bans (lookup)
+MAIN.bans_lurker_tested        755280608     10233.88 Bans tested against objects (lurker)
+MAIN.bans_tests_tested           4833290        65.49 Ban tests tested against objects (lookup)
+MAIN.bans_lurker_tests_tested    755280608     10233.88 Ban tests tested against objects (lurker)
+MAIN.bans_lurker_obj_killed          94498         1.28 Objects killed by bans (lurker)
+MAIN.bans_lurker_obj_killed_cutoff            0         0.00 Objects killed by bans for cutoff (lurker)
+MAIN.bans_dups                              336         0.00 Bans superseded by other bans
+MAIN.bans_lurker_contention                   0         0.00 Lurker gave way for lookup
+MAIN.bans_persisted_bytes               5029388          .   Bytes used by the persisted ban lists
+MAIN.bans_persisted_fragmentation       4769493          .   Extra bytes in persisted ban lists due to fragmentation
+MAIN.n_purges                                 0         0.00 Number of purge operations executed
+MAIN.n_obj_purged                             0         0.00 Number of purged objects
+MAIN.exp_mailed                          405446         5.49 Number of objects mailed to expiry thread
+MAIN.exp_received                        405446         5.49 Number of objects received by expiry thread
+MAIN.hcb_nolock                         1419516        19.23 HCB Lookups without lock
+MAIN.hcb_lock                            259650         3.52 HCB Lookups with lock
+MAIN.hcb_insert                          259649         3.52 HCB Inserts
+MAIN.esi_errors                               0         0.00 ESI parse errors (unlock)
+MAIN.esi_warnings                             0         0.00 ESI parse warnings (unlock)
+MAIN.vmods                                    2          .   Loaded VMODs
+MAIN.n_gzip                              248428         3.37 Gzip operations
+MAIN.n_gunzip                            141492         1.92 Gunzip operations
+MAIN.n_test_gunzip                        67254         0.91 Test gunzip operations
+LCK.backend.creat                             3         0.00 Created locks
+LCK.backend.destroy                           0         0.00 Destroyed locks
+LCK.backend.locks                        686548         9.30 Lock Operations
+LCK.backend.dbg_busy                          0         0.00 Contended lock operations
+LCK.backend.dbg_try_fail                      0         0.00 Contended trylock operations
+LCK.ban.creat                                 1         0.00 Created locks
+LCK.ban.destroy                               0         0.00 Destroyed locks
+LCK.ban.locks                        1000845271     13561.22 Lock Operations
+LCK.ban.dbg_busy                              0         0.00 Contended lock operations
+LCK.ban.dbg_try_fail                          0         0.00 Contended trylock operations
+LCK.busyobj.creat                        389320         5.28 Created locks
+LCK.busyobj.destroy                      389239         5.27 Destroyed locks
+LCK.busyobj.locks                       5611937        76.04 Lock Operations
+LCK.busyobj.dbg_busy                          0         0.00 Contended lock operations
+LCK.busyobj.dbg_try_fail                      0         0.00 Contended trylock operations
+LCK.cli.creat                                 1         0.00 Created locks
+LCK.cli.destroy                               0         0.00 Destroyed locks
+LCK.cli.locks                             24627         0.33 Lock Operations
+LCK.cli.dbg_busy                              0         0.00 Contended lock operations
+LCK.cli.dbg_try_fail                          0         0.00 Contended trylock operations
+LCK.exp.creat                                 1         0.00 Created locks
+LCK.exp.destroy                               0         0.00 Destroyed locks
+LCK.exp.locks                           1891921        25.64 Lock Operations
+LCK.exp.dbg_busy                              0         0.00 Contended lock operations
+LCK.exp.dbg_try_fail                          0         0.00 Contended trylock operations
+LCK.hcb.creat                                 1         0.00 Created locks
+LCK.hcb.destroy                               0         0.00 Destroyed locks
+LCK.hcb.locks                            471120         6.38 Lock Operations
+LCK.hcb.dbg_busy                              0         0.00 Contended lock operations
+LCK.hcb.dbg_try_fail                          0         0.00 Contended trylock operations
+LCK.lru.creat                                 2         0.00 Created locks
+LCK.lru.destroy                               0         0.00 Destroyed locks
+LCK.lru.locks                           1507272        20.42 Lock Operations
+LCK.lru.dbg_busy                              0         0.00 Contended lock operations
+LCK.lru.dbg_try_fail                          0         0.00 Contended trylock operations
+LCK.mempool.creat                             5         0.00 Created locks
+LCK.mempool.destroy                           0         0.00 Destroyed locks
+LCK.mempool.locks                       3240760        43.91 Lock Operations
+LCK.mempool.dbg_busy                          0         0.00 Contended lock operations
+LCK.mempool.dbg_try_fail                      0         0.00 Contended trylock operations
+LCK.objhdr.creat                         259739         3.52 Created locks
+LCK.objhdr.destroy                       210713         2.86 Destroyed locks
+LCK.objhdr.locks                      925225956     12536.60 Lock Operations
+LCK.objhdr.dbg_busy                           0         0.00 Contended lock operations
+LCK.objhdr.dbg_try_fail                       0         0.00 Contended trylock operations
+LCK.perpool.creat                             2         0.00 Created locks
+LCK.perpool.destroy                           0         0.00 Destroyed locks
+LCK.perpool.locks                       3254312        44.10 Lock Operations
+LCK.perpool.dbg_busy                          0         0.00 Contended lock operations
+LCK.perpool.dbg_try_fail                      0         0.00 Contended trylock operations
+LCK.pipestat.creat                            1         0.00 Created locks
+LCK.pipestat.destroy                          0         0.00 Destroyed locks
+LCK.pipestat.locks                            0         0.00 Lock Operations
+LCK.pipestat.dbg_busy                         0         0.00 Contended lock operations
+LCK.pipestat.dbg_try_fail                     0         0.00 Contended trylock operations
+LCK.probe.creat                               1         0.00 Created locks
+LCK.probe.destroy                             0         0.00 Destroyed locks
+LCK.probe.locks                               1         0.00 Lock Operations
+LCK.probe.dbg_busy                            0         0.00 Contended lock operations
+LCK.probe.dbg_try_fail                        0         0.00 Contended trylock operations
+LCK.sess.creat                           126156         1.71 Created locks
+LCK.sess.destroy                         126148         1.71 Destroyed locks
+LCK.sess.locks                           838379        11.36 Lock Operations
+LCK.sess.dbg_busy                             0         0.00 Contended lock operations
+LCK.sess.dbg_try_fail                         0         0.00 Contended trylock operations
+LCK.conn_pool.creat                           4         0.00 Created locks
+LCK.conn_pool.destroy                         2         0.00 Destroyed locks
+LCK.conn_pool.locks                     1365054        18.50 Lock Operations
+LCK.conn_pool.dbg_busy                        0         0.00 Contended lock operations
+LCK.conn_pool.dbg_try_fail                    0         0.00 Contended trylock operations
+LCK.vbe.creat                                 1         0.00 Created locks
+LCK.vbe.destroy                               0         0.00 Destroyed locks
+LCK.vbe.locks                             24620         0.33 Lock Operations
+LCK.vbe.dbg_busy                              0         0.00 Contended lock operations
+LCK.vbe.dbg_try_fail                          0         0.00 Contended trylock operations
+LCK.vcapace.creat                             1         0.00 Created locks
+LCK.vcapace.destroy                           0         0.00 Destroyed locks
+LCK.vcapace.locks                             0         0.00 Lock Operations
+LCK.vcapace.dbg_busy                          0         0.00 Contended lock operations
+LCK.vcapace.dbg_try_fail                      0         0.00 Contended trylock operations
+LCK.vcl.creat                                 1         0.00 Created locks
+LCK.vcl.destroy                               0         0.00 Destroyed locks
+LCK.vcl.locks                            966929        13.10 Lock Operations
+LCK.vcl.dbg_busy                              0         0.00 Contended lock operations
+LCK.vcl.dbg_try_fail                          0         0.00 Contended trylock operations
+LCK.vxid.creat                                1         0.00 Created locks
+LCK.vxid.destroy                              0         0.00 Destroyed locks
+LCK.vxid.locks                              116         0.00 Lock Operations
+LCK.vxid.dbg_busy                             0         0.00 Contended lock operations
+LCK.vxid.dbg_try_fail                         0         0.00 Contended trylock operations
+LCK.waiter.creat                              2         0.00 Created locks
+LCK.waiter.destroy                            0         0.00 Destroyed locks
+LCK.waiter.locks                        3123570        42.32 Lock Operations
+LCK.waiter.dbg_busy                           0         0.00 Contended lock operations
+LCK.waiter.dbg_try_fail                       0         0.00 Contended trylock operations
+LCK.wq.creat                                  1         0.00 Created locks
+LCK.wq.destroy                                0         0.00 Destroyed locks
+LCK.wq.locks                              73999         1.00 Lock Operations
+LCK.wq.dbg_busy                               0         0.00 Contended lock operations
+LCK.wq.dbg_try_fail                           0         0.00 Contended trylock operations
+LCK.wstat.creat                               1         0.00 Created locks
+LCK.wstat.destroy                             0         0.00 Destroyed locks
+LCK.wstat.locks                         1564416        21.20 Lock Operations
+LCK.wstat.dbg_busy                            0         0.00 Contended lock operations
+LCK.wstat.dbg_try_fail                        0         0.00 Contended trylock operations
+MEMPOOL.busyobj.live                          2          .   In use
+MEMPOOL.busyobj.pool                         10          .   In Pool
+MEMPOOL.busyobj.sz_wanted                 65536          .   Size requested
+MEMPOOL.busyobj.sz_actual                 65504          .   Size allocated
+MEMPOOL.busyobj.allocs                   343275         4.65 Allocations
+MEMPOOL.busyobj.frees                    343273         4.65 Frees
+MEMPOOL.busyobj.recycle                  343067         4.65 Recycled from pool
+MEMPOOL.busyobj.timeout                   40433         0.55 Timed out from pool
+MEMPOOL.busyobj.toosmall                      0         0.00 Too small to recycle
+MEMPOOL.busyobj.surplus                       0         0.00 Too many for pool
+MEMPOOL.busyobj.randry                      208         0.00 Pool ran dry
+MEMPOOL.req0.live                             1          .   In use
+MEMPOOL.req0.pool                            10          .   In Pool
+MEMPOOL.req0.sz_wanted                    65536          .   Size requested
+MEMPOOL.req0.sz_actual                    65504          .   Size allocated
+MEMPOOL.req0.allocs                      428611         5.81 Allocations
+MEMPOOL.req0.frees                       428610         5.81 Frees
+MEMPOOL.req0.recycle                     425030         5.76 Recycled from pool
+MEMPOOL.req0.timeout                      32986         0.45 Timed out from pool
+MEMPOOL.req0.toosmall                         0         0.00 Too small to recycle
+MEMPOOL.req0.surplus                          0         0.00 Too many for pool
+MEMPOOL.req0.randry                        3581         0.05 Pool ran dry
+MEMPOOL.sess0.live                            4          .   In use
+MEMPOOL.sess0.pool                           10          .   In Pool
+MEMPOOL.sess0.sz_wanted                     768          .   Size requested
+MEMPOOL.sess0.sz_actual                     736          .   Size allocated
+MEMPOOL.sess0.allocs                      63077         0.85 Allocations
+MEMPOOL.sess0.frees                       63073         0.85 Frees
+MEMPOOL.sess0.recycle                     60294         0.82 Recycled from pool
+MEMPOOL.sess0.timeout                     34705         0.47 Timed out from pool
+MEMPOOL.sess0.toosmall                        0         0.00 Too small to recycle
+MEMPOOL.sess0.surplus                         0         0.00 Too many for pool
+MEMPOOL.sess0.randry                       2783         0.04 Pool ran dry
+LCK.sma.creat                                 2         0.00 Created locks
+LCK.sma.destroy                               0         0.00 Destroyed locks
+LCK.sma.locks                           2749687        37.26 Lock Operations
+LCK.sma.dbg_busy                              0         0.00 Contended lock operations
+LCK.sma.dbg_try_fail                          0         0.00 Contended trylock operations
+SMA.s0.c_req                             882777        11.96 Allocator requests
+SMA.s0.c_fail                                 0         0.00 Allocator failures
+SMA.s0.c_bytes                      10999492186    149040.57 Bytes allocated
+SMA.s0.c_freed                       8514456616    115368.91 Bytes freed
+SMA.s0.g_alloc                           168069          .   Allocations outstanding
+SMA.s0.g_bytes                       2485035570          .   Bytes outstanding
+SMA.s0.g_space                       1809931726          .   Bytes available
+SMA.Transient.c_req                      579616         7.85 Allocator requests
+SMA.Transient.c_fail                          0         0.00 Allocator failures
+SMA.Transient.c_bytes                2422477160     32824.00 Bytes allocated
+SMA.Transient.c_freed                2412800024     32692.88 Bytes freed
+SMA.Transient.g_alloc                      7029          .   Allocations outstanding
+SMA.Transient.g_bytes                   9677136          .   Bytes outstanding
+SMA.Transient.g_space                         0          .   Bytes available
+MEMPOOL.req1.live                             1          .   In use
+MEMPOOL.req1.pool                            12          .   In Pool
+MEMPOOL.req1.sz_wanted                    65536          .   Size requested
+MEMPOOL.req1.sz_actual                    65504          .   Size allocated
+MEMPOOL.req1.allocs                      442835         6.00 Allocations
+MEMPOOL.req1.frees                       442834         6.00 Frees
+MEMPOOL.req1.recycle                     439205         5.95 Recycled from pool
+MEMPOOL.req1.timeout                      33767         0.46 Timed out from pool
+MEMPOOL.req1.toosmall                         0         0.00 Too small to recycle
+MEMPOOL.req1.surplus                          0         0.00 Too many for pool
+MEMPOOL.req1.randry                        3630         0.05 Pool ran dry
+MEMPOOL.sess1.live                            4          .   In use
+MEMPOOL.sess1.pool                           10          .   In Pool
+MEMPOOL.sess1.sz_wanted                     768          .   Size requested
+MEMPOOL.sess1.sz_actual                     736          .   Size allocated
+MEMPOOL.sess1.allocs                      63095         0.85 Allocations
+MEMPOOL.sess1.frees                       63091         0.85 Frees
+MEMPOOL.sess1.recycle                     60230         0.82 Recycled from pool
+MEMPOOL.sess1.timeout                     34750         0.47 Timed out from pool
+MEMPOOL.sess1.toosmall                        0         0.00 Too small to recycle
+MEMPOOL.sess1.surplus                         0         0.00 Too many for pool
+MEMPOOL.sess1.randry                       2865         0.04 Pool ran dry
+VBE.odoofix1.default.happy                    0          .   Happy health probes
+VBE.odoofix1.default.bereq_hdrbytes     86211035      1168.14 Request header bytes
+VBE.odoofix1.default.bereq_bodybytes       673081         9.12 Request body bytes
+VBE.odoofix1.default.beresp_hdrbytes    294629195      3992.16 Response header bytes
+VBE.odoofix1.default.beresp_bodybytes   1920340530     26020.17 Response body bytes
+VBE.odoofix1.default.pipe_hdrbytes               0         0.00 Pipe request header bytes
+VBE.odoofix1.default.pipe_out                    0         0.00 Piped bytes to backend
+VBE.odoofix1.default.pipe_in                     0         0.00 Piped bytes from backend
+VBE.odoofix1.default.conn                        2          .   Concurrent connections used
+VBE.odoofix1.default.req                     77742         1.05 Backend requests sent
+VBE.odoofix1.default.unhealthy                   0         0.00 Fetches not attempted due to backend being unhealthy
+VBE.odoofix1.default.busy                        0         0.00 Fetches not attempted due to backend being busy
+VBE.odoofix1.default.fail                        0         0.00 Connections failed
+VBE.odoofix1.default.fail_eacces                 0         0.00 Connections failed with EACCES or EPERM
+VBE.odoofix1.default.fail_eaddrnotavail            0         0.00 Connections failed with EADDRNOTAVAIL
+VBE.odoofix1.default.fail_econnrefused             0         0.00 Connections failed with ECONNREFUSED
+VBE.odoofix1.default.fail_enetunreach              0         0.00 Connections failed with ENETUNREACH
+VBE.odoofix1.default.fail_etimedout                0         0.00 Connections failed ETIMEDOUT
+VBE.odoofix1.default.fail_other                    0         0.00 Connections failed for other reason
+VBE.odoofix1.default.helddown                      0         0.00 Connection opens not attempted
