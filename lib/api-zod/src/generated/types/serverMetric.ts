@@ -12,6 +12,7 @@ import type { ServerMetricPhpFpm } from "./serverMetricPhpFpm";
 import type { ServerMetricSslExpiryItem } from "./serverMetricSslExpiryItem";
 import type { ServerMetricTopProcessesItem } from "./serverMetricTopProcessesItem";
 import type { ServerMetricVarnish } from "./serverMetricVarnish";
+import type { ServerWafSummary } from "./serverWafSummary";
 
 export interface ServerMetric {
   id: number;
@@ -36,5 +37,6 @@ export interface ServerMetric {
   varnish?: ServerMetricVarnish;
   elasticsearch?: ServerMetricElasticsearch;
   sslExpiry?: ServerMetricSslExpiryItem[] | null;
+  waf?: ServerWafSummary | null;
   recordedAt: Date;
 }

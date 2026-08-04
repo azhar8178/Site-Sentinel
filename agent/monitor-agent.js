@@ -18,6 +18,13 @@ const OPENSEARCH_AUTH = process.env.MONITOR_OPENSEARCH_AUTH || "none";
 const SSL_DOMAINS =
   process.env.MONITOR_SSL_DOMAINS ||
   "www.lovefurniture.ie,www.lovefurniture.co.uk";
+const WAF_REGION = process.env.MONITOR_WAF_REGION || "eu-west-2";
+const WAF_WEB_ACL_NAME =
+  process.env.MONITOR_WAF_WEB_ACL_NAME || "CreatedByALB-magento-prod-ALB";
+const WAF_LOG_GROUP =
+  process.env.MONITOR_WAF_LOG_GROUP || "aws-waf-logs-magento-prod";
+const WAF_COLLECTION_INTERVAL =
+  parseInt(process.env.MONITOR_WAF_INTERVAL || "300", 10) * 1000;
 
 if (!API_URL || !API_KEY) {
   console.error("ERROR: MONITOR_API_URL and MONITOR_API_KEY are required.");
@@ -29,6 +36,8 @@ if (!API_URL || !API_KEY) {
 let prevCpu = null;
 let prevNet = null;
 let lastLogSnapshotAt = 0;
+let lastWafCollectionAt = 0;
+let cachedWaf = null;
 
 function readFile(path) {
   try {
@@ -310,6 +319,7 @@ function requestText(urlString, options = {}) {
       req.destroy();
       resolve({ statusCode: 0, body: "", error: "request timed out" });
     });
+    if (options.body) req.write(options.body);
     req.end();
   });
 }
@@ -320,8 +330,11 @@ function awsEncode(value) {
   );
 }
 
-function signAwsRequest(url, region, credentials) {
-  const service = "es";
+function signAwsRequest(url, region, credentials, options = {}) {
+  const service = options.service || "es";
+  const method = options.method || "GET";
+  const body = options.body || "";
+  const extraHeaders = options.headers || {};
   const now = new Date();
   const amzDate = now.toISOString().replace(/[:-]|\.\d{3}/g, "");
   const dateStamp = amzDate.slice(0, 8);
@@ -336,15 +349,22 @@ function signAwsRequest(url, region, credentials) {
     .map(([key, value]) => `${awsEncode(key)}=${awsEncode(value)}`)
     .join("&");
   const sessionToken = credentials.Token || credentials.SessionToken;
-  const signedHeaders = sessionToken
-    ? "host;x-amz-date;x-amz-security-token"
-    : "host;x-amz-date";
-  const canonicalHeaders = sessionToken
-    ? `host:${host}\nx-amz-date:${amzDate}\nx-amz-security-token:${sessionToken}\n`
-    : `host:${host}\nx-amz-date:${amzDate}\n`;
-  const payloadHash = crypto.createHash("sha256").update("").digest("hex");
+  const headers = {
+    host,
+    "x-amz-date": amzDate,
+    ...(sessionToken ? { "x-amz-security-token": sessionToken } : {}),
+    ...Object.fromEntries(
+      Object.entries(extraHeaders).map(([key, value]) => [key.toLowerCase(), value])
+    ),
+  };
+  const signedHeaderNames = Object.keys(headers).sort();
+  const signedHeaders = signedHeaderNames.join(";");
+  const canonicalHeaders = signedHeaderNames
+    .map((key) => `${key}:${String(headers[key]).trim()}\n`)
+    .join("");
+  const payloadHash = crypto.createHash("sha256").update(body).digest("hex");
   const canonicalRequest = [
-    "GET",
+    method,
     canonicalUri,
     canonicalQuery,
     canonicalHeaders,
@@ -373,6 +393,7 @@ function signAwsRequest(url, region, credentials) {
     Host: host,
     "X-Amz-Date": amzDate,
     ...(sessionToken ? { "X-Amz-Security-Token": sessionToken } : {}),
+    ...extraHeaders,
     Authorization: `AWS4-HMAC-SHA256 Credential=${credentials.AccessKeyId}/${credentialScope}, SignedHeaders=${signedHeaders}, Signature=${signature}`,
   };
 }
@@ -500,6 +521,164 @@ async function getElasticsearchStatus() {
   } catch {
     return { isRunning };
   }
+}
+
+function wafEventId(event) {
+  return event.eventId || crypto
+    .createHash("sha256")
+    .update(`${event.timestamp || ""}:${event.message || ""}`)
+    .digest("hex")
+    .slice(0, 32);
+}
+
+function redactWafUri(uri) {
+  if (typeof uri !== "string") return null;
+  const path = uri.split("?")[0];
+  return path.slice(0, 512) || "/";
+}
+
+async function awsJsonRequest(service, target, body) {
+  const credentials = await getAwsCredentials();
+  if (!credentials) return { error: "AWS IAM credentials unavailable on this host" };
+
+  const url = new URL(`https://${service}.${WAF_REGION}.amazonaws.com/`);
+  const payload = JSON.stringify(body);
+  const headers = {
+    "Content-Type": "application/x-amz-json-1.1",
+    "X-Amz-Target": target,
+  };
+  const signed = signAwsRequest(url, WAF_REGION, credentials, {
+    service,
+    method: "POST",
+    body: payload,
+    headers,
+  });
+  const response = await requestText(url.href, {
+    method: "POST",
+    headers: { ...signed, ...headers, "Content-Length": String(Buffer.byteLength(payload)) },
+    body: payload,
+    timeout: 10000,
+  });
+  if (response.statusCode < 200 || response.statusCode >= 300) {
+    return {
+      error: response.statusCode
+        ? `${service} request returned HTTP ${response.statusCode}`
+        : response.error || `${service} request failed`,
+    };
+  }
+  try {
+    return JSON.parse(response.body);
+  } catch {
+    return { error: `${service} returned invalid JSON` };
+  }
+}
+
+async function getWafStatus() {
+  const now = Date.now();
+  if (cachedWaf && now - lastWafCollectionAt < WAF_COLLECTION_INTERVAL) {
+    return cachedWaf;
+  }
+
+  const list = await awsJsonRequest("wafv2", "AWSWAF_20190729.ListWebACLs", {
+    Scope: "REGIONAL",
+    Limit: 100,
+  });
+  const acl = (list.WebACLs || []).find((item) => item.Name === WAF_WEB_ACL_NAME);
+  if (!acl) {
+    cachedWaf = {
+      isRunning: false,
+      status: "error",
+      region: WAF_REGION,
+      webAclName: WAF_WEB_ACL_NAME,
+      loggingEnabled: false,
+      total: 0,
+      blocked: 0,
+      allowed: 0,
+      count: 0,
+      challenge: 0,
+      captcha: 0,
+      error: list.error || "Configured WAF Web ACL was not found",
+      events: [],
+    };
+    lastWafCollectionAt = now;
+    return cachedWaf;
+  }
+
+  const [resources, logging] = await Promise.all([
+    awsJsonRequest("wafv2", "AWSWAF_20190729.ListResourcesForWebACL", {
+      WebACLArn: acl.ARN,
+      ResourceType: "APPLICATION_LOAD_BALANCER",
+    }),
+    awsJsonRequest("wafv2", "AWSWAF_20190729.GetLoggingConfiguration", {
+      ResourceArn: acl.ARN,
+    }),
+  ]);
+
+  const startTime = now - 60 * 60 * 1000;
+  const logResult = await awsJsonRequest("logs", "AWSLogs_20140328.FilterLogEvents", {
+    logGroupName: WAF_LOG_GROUP,
+    startTime,
+    endTime: now,
+    limit: 200,
+  });
+
+  const events = (logResult.events || []).map((entry) => {
+    let parsed = {};
+    try {
+      parsed = JSON.parse(entry.message || "{}");
+    } catch {}
+    const request = parsed.httpRequest || {};
+    const action = String(parsed.action || "UNKNOWN").toUpperCase();
+    return {
+      eventId: wafEventId({ ...parsed, timestamp: entry.timestamp, message: entry.message }),
+      action,
+      rule: parsed.terminatingRuleId || parsed.ruleGroupList?.[0]?.name || null,
+      ruleType: parsed.terminatingRuleType || null,
+      clientIp: request.clientIp || null,
+      country: request.country || null,
+      method: request.httpMethod || null,
+      uri: redactWafUri(request.uri),
+      eventAt: new Date(parsed.timestamp || entry.timestamp || now).toISOString(),
+    };
+  });
+
+  const counts = events.reduce((result, event) => {
+    result.total += 1;
+    if (event.action === "BLOCK") result.blocked += 1;
+    else if (event.action === "ALLOW") result.allowed += 1;
+    else if (event.action === "COUNT") result.count += 1;
+    else if (event.action === "CHALLENGE") result.challenge += 1;
+    else if (event.action === "CAPTCHA") result.captcha += 1;
+    return result;
+  }, { total: 0, blocked: 0, allowed: 0, count: 0, challenge: 0, captcha: 0 });
+  const rules = {};
+  for (const event of events) {
+    if (event.rule) rules[event.rule] = (rules[event.rule] || 0) + 1;
+  }
+
+  cachedWaf = {
+    isRunning: true,
+    status: logResult.error ? "warning" : "healthy",
+    region: WAF_REGION,
+    webAclName: acl.Name,
+    webAclId: acl.Id,
+    webAclArn: acl.ARN,
+    protectedResources: resources.ResourceArns || [],
+    loggingEnabled: Boolean(logging.LoggingConfiguration),
+    logGroup: WAF_LOG_GROUP,
+    lastEventAt: events.length ? events[0].eventAt : null,
+    windowStart: new Date(startTime).toISOString(),
+    windowEnd: new Date(now).toISOString(),
+    ...counts,
+    topRules: Object.entries(rules)
+      .sort(([, a], [, b]) => b - a)
+      .slice(0, 10)
+      .map(([rule, hits]) => ({ rule, hits })),
+    events,
+    ...(logResult.error ? { error: logResult.error } : {}),
+  };
+  lastWafCollectionAt = now;
+  return cachedWaf;
 }
 
 function getSslExpiry() {
@@ -672,6 +851,7 @@ async function collect() {
   const varnish = getVarnishStats();
   const elasticsearch = await getElasticsearchStatus();
   const sslExpiry = getSslExpiry();
+  const waf = await getWafStatus();
 
   const data = {
     cpuPercent: cpu,
@@ -694,6 +874,7 @@ async function collect() {
     varnish,
     elasticsearch,
     sslExpiry,
+    waf,
   };
 
   if (Date.now() - lastLogSnapshotAt >= 5 * 60 * 1000) {
@@ -718,7 +899,7 @@ async function collect() {
   }
 }
 
-const AGENT_VERSION = "3.4.2";
+const AGENT_VERSION = "3.5.0";
 const UPDATE_CHECK_INTERVAL = 3600000;
 let lastUpdateCheck = 0;
 
@@ -755,7 +936,7 @@ console.log(`Site Sentinel Monitor Agent v${AGENT_VERSION}`);
 console.log(`  API: ${API_URL}`);
 console.log(`  Interval: ${INTERVAL / 1000}s`);
 console.log(
-  `  Features: CPU, Memory, Disk, Network, Load, PHP-FPM, MySQL, Nginx, Varnish, OpenSearch, SSL`
+  `  Features: CPU, Memory, Disk, Network, Load, PHP-FPM, MySQL, Nginx, Varnish, OpenSearch, SSL, AWS WAF`
 );
 console.log(`  OpenSearch: ${OPENSEARCH_URL} (${OPENSEARCH_AUTH} auth)`);
 console.log(`  SSL domains: ${SSL_DOMAINS}`);

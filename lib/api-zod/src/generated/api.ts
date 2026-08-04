@@ -450,6 +450,31 @@ export const ListServersResponseItem = zod.object({
       varnish: zod.record(zod.string(), zod.unknown()).nullish(),
       elasticsearch: zod.record(zod.string(), zod.unknown()).nullish(),
       sslExpiry: zod.array(zod.record(zod.string(), zod.unknown())).nullish(),
+      waf: zod
+        .object({
+          isRunning: zod.boolean().optional(),
+          status: zod.string().optional(),
+          region: zod.string().optional(),
+          webAclName: zod.string().optional(),
+          webAclId: zod.string().optional(),
+          webAclArn: zod.string().optional(),
+          protectedResources: zod.array(zod.string()).optional(),
+          loggingEnabled: zod.boolean().optional(),
+          logGroup: zod.string().optional(),
+          lastEventAt: zod.date().nullish(),
+          windowStart: zod.date().nullish(),
+          windowEnd: zod.date().nullish(),
+          total: zod.number().optional(),
+          blocked: zod.number().optional(),
+          allowed: zod.number().optional(),
+          count: zod.number().optional(),
+          challenge: zod.number().optional(),
+          captcha: zod.number().optional(),
+          topRules: zod
+            .array(zod.record(zod.string(), zod.unknown()))
+            .optional(),
+        })
+        .nullish(),
       recordedAt: zod.date(),
     })
     .nullish(),
@@ -504,6 +529,31 @@ export const GetServerResponse = zod.object({
       varnish: zod.record(zod.string(), zod.unknown()).nullish(),
       elasticsearch: zod.record(zod.string(), zod.unknown()).nullish(),
       sslExpiry: zod.array(zod.record(zod.string(), zod.unknown())).nullish(),
+      waf: zod
+        .object({
+          isRunning: zod.boolean().optional(),
+          status: zod.string().optional(),
+          region: zod.string().optional(),
+          webAclName: zod.string().optional(),
+          webAclId: zod.string().optional(),
+          webAclArn: zod.string().optional(),
+          protectedResources: zod.array(zod.string()).optional(),
+          loggingEnabled: zod.boolean().optional(),
+          logGroup: zod.string().optional(),
+          lastEventAt: zod.date().nullish(),
+          windowStart: zod.date().nullish(),
+          windowEnd: zod.date().nullish(),
+          total: zod.number().optional(),
+          blocked: zod.number().optional(),
+          allowed: zod.number().optional(),
+          count: zod.number().optional(),
+          challenge: zod.number().optional(),
+          captcha: zod.number().optional(),
+          topRules: zod
+            .array(zod.record(zod.string(), zod.unknown()))
+            .optional(),
+        })
+        .nullish(),
       recordedAt: zod.date(),
     })
     .nullish(),
@@ -554,6 +604,31 @@ export const UpdateServerResponse = zod.object({
       varnish: zod.record(zod.string(), zod.unknown()).nullish(),
       elasticsearch: zod.record(zod.string(), zod.unknown()).nullish(),
       sslExpiry: zod.array(zod.record(zod.string(), zod.unknown())).nullish(),
+      waf: zod
+        .object({
+          isRunning: zod.boolean().optional(),
+          status: zod.string().optional(),
+          region: zod.string().optional(),
+          webAclName: zod.string().optional(),
+          webAclId: zod.string().optional(),
+          webAclArn: zod.string().optional(),
+          protectedResources: zod.array(zod.string()).optional(),
+          loggingEnabled: zod.boolean().optional(),
+          logGroup: zod.string().optional(),
+          lastEventAt: zod.date().nullish(),
+          windowStart: zod.date().nullish(),
+          windowEnd: zod.date().nullish(),
+          total: zod.number().optional(),
+          blocked: zod.number().optional(),
+          allowed: zod.number().optional(),
+          count: zod.number().optional(),
+          challenge: zod.number().optional(),
+          captcha: zod.number().optional(),
+          topRules: zod
+            .array(zod.record(zod.string(), zod.unknown()))
+            .optional(),
+        })
+        .nullish(),
       recordedAt: zod.date(),
     })
     .nullish(),
@@ -620,6 +695,29 @@ export const GetServerMetricsResponseItem = zod.object({
   varnish: zod.record(zod.string(), zod.unknown()).nullish(),
   elasticsearch: zod.record(zod.string(), zod.unknown()).nullish(),
   sslExpiry: zod.array(zod.record(zod.string(), zod.unknown())).nullish(),
+  waf: zod
+    .object({
+      isRunning: zod.boolean().optional(),
+      status: zod.string().optional(),
+      region: zod.string().optional(),
+      webAclName: zod.string().optional(),
+      webAclId: zod.string().optional(),
+      webAclArn: zod.string().optional(),
+      protectedResources: zod.array(zod.string()).optional(),
+      loggingEnabled: zod.boolean().optional(),
+      logGroup: zod.string().optional(),
+      lastEventAt: zod.date().nullish(),
+      windowStart: zod.date().nullish(),
+      windowEnd: zod.date().nullish(),
+      total: zod.number().optional(),
+      blocked: zod.number().optional(),
+      allowed: zod.number().optional(),
+      count: zod.number().optional(),
+      challenge: zod.number().optional(),
+      captcha: zod.number().optional(),
+      topRules: zod.array(zod.record(zod.string(), zod.unknown())).optional(),
+    })
+    .nullish(),
   recordedAt: zod.date(),
 });
 export const GetServerMetricsResponse = zod.array(GetServerMetricsResponseItem);
@@ -651,6 +749,50 @@ export const GetServerLogSnapshotsResponseItem = zod.object({
 });
 export const GetServerLogSnapshotsResponse = zod.array(
   GetServerLogSnapshotsResponseItem,
+);
+
+/**
+ * @summary Get recent AWS WAF events
+ */
+export const GetServerWafEventsParams = zod.object({
+  serverId: zod.coerce.number(),
+});
+
+export const getServerWafEventsQueryHoursDefault = 24;
+export const getServerWafEventsQueryHoursMax = 168;
+
+export const getServerWafEventsQueryLimitDefault = 50;
+export const getServerWafEventsQueryLimitMax = 200;
+
+export const GetServerWafEventsQueryParams = zod.object({
+  hours: zod.coerce
+    .number()
+    .min(1)
+    .max(getServerWafEventsQueryHoursMax)
+    .default(getServerWafEventsQueryHoursDefault),
+  limit: zod.coerce
+    .number()
+    .min(1)
+    .max(getServerWafEventsQueryLimitMax)
+    .default(getServerWafEventsQueryLimitDefault),
+});
+
+export const GetServerWafEventsResponseItem = zod.object({
+  id: zod.number(),
+  serverId: zod.number(),
+  eventId: zod.string(),
+  action: zod.string(),
+  rule: zod.string().nullish(),
+  ruleType: zod.string().nullish(),
+  clientIp: zod.string().nullish(),
+  country: zod.string().nullish(),
+  method: zod.string().nullish(),
+  uri: zod.string().nullish(),
+  eventAt: zod.date(),
+  createdAt: zod.date(),
+});
+export const GetServerWafEventsResponse = zod.array(
+  GetServerWafEventsResponseItem,
 );
 
 /**

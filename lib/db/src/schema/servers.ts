@@ -1,4 +1,4 @@
-import { pgTable, serial, text, integer, boolean, timestamp, real, bigint, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, integer, boolean, timestamp, real, bigint, jsonb, uniqueIndex } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { relations } from "drizzle-orm";
@@ -45,6 +45,7 @@ export const serverMetricsTable = pgTable("server_metrics", {
   varnish: jsonb("varnish"),
   elasticsearch: jsonb("elasticsearch"),
   sslExpiry: jsonb("ssl_expiry"),
+  waf: jsonb("waf"),
   recordedAt: timestamp("recorded_at").notNull().defaultNow(),
 });
 
@@ -58,6 +59,34 @@ export const serverMetricsRelations = relations(serverMetricsTable, ({ one }) =>
 export const insertServerMetricSchema = createInsertSchema(serverMetricsTable).omit({ id: true });
 export type InsertServerMetric = z.infer<typeof insertServerMetricSchema>;
 export type ServerMetric = typeof serverMetricsTable.$inferSelect;
+
+export const serverWafEventsTable = pgTable("server_waf_events", {
+  id: serial("id").primaryKey(),
+  serverId: integer("server_id").notNull().references(() => serversTable.id, { onDelete: "cascade" }),
+  eventId: text("event_id").notNull(),
+  action: text("action").notNull(),
+  rule: text("rule"),
+  ruleType: text("rule_type"),
+  clientIp: text("client_ip"),
+  country: text("country"),
+  method: text("method"),
+  uri: text("uri"),
+  eventAt: timestamp("event_at").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (table) => ({
+  serverEventUnique: uniqueIndex("server_waf_events_server_event_unique").on(table.serverId, table.eventId),
+}));
+
+export const serverWafEventsRelations = relations(serverWafEventsTable, ({ one }) => ({
+  server: one(serversTable, {
+    fields: [serverWafEventsTable.serverId],
+    references: [serversTable.id],
+  }),
+}));
+
+export const insertServerWafEventSchema = createInsertSchema(serverWafEventsTable).omit({ id: true, createdAt: true });
+export type InsertServerWafEvent = z.infer<typeof insertServerWafEventSchema>;
+export type ServerWafEvent = typeof serverWafEventsTable.$inferSelect;
 
 export const serverLogSnapshotsTable = pgTable("server_log_snapshots", {
   id: serial("id").primaryKey(),

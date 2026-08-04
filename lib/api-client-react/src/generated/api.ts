@@ -29,6 +29,7 @@ import type {
   GetMagentoOrdersParams,
   GetServerLogSnapshotsParams,
   GetServerMetricsParams,
+  GetServerWafEventsParams,
   HealthStatus,
   IncidentAnalysis,
   IncidentAnalysisInput,
@@ -43,6 +44,7 @@ import type {
   ServerCreateResponse,
   ServerLogSnapshot,
   ServerMetric,
+  ServerWafEvent,
   ServerWithMetrics,
   SiteWithStatus,
   SuccessResponse,
@@ -2404,6 +2406,126 @@ export function useGetServerLogSnapshots<
   },
 ): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
   const queryOptions = getGetServerLogSnapshotsQueryOptions(
+    serverId,
+    params,
+    options,
+  );
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Get recent AWS WAF events
+ */
+export const getGetServerWafEventsUrl = (
+  serverId: number,
+  params?: GetServerWafEventsParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/servers/${serverId}/waf-events?${stringifiedParams}`
+    : `/api/servers/${serverId}/waf-events`;
+};
+
+export const getServerWafEvents = async (
+  serverId: number,
+  params?: GetServerWafEventsParams,
+  options?: RequestInit,
+): Promise<ServerWafEvent[]> => {
+  return customFetch<ServerWafEvent[]>(
+    getGetServerWafEventsUrl(serverId, params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getGetServerWafEventsQueryKey = (
+  serverId: number,
+  params?: GetServerWafEventsParams,
+) => {
+  return [
+    `/api/servers/${serverId}/waf-events`,
+    ...(params ? [params] : []),
+  ] as const;
+};
+
+export const getGetServerWafEventsQueryOptions = <
+  TData = Awaited<ReturnType<typeof getServerWafEvents>>,
+  TError = ErrorType<unknown>,
+>(
+  serverId: number,
+  params?: GetServerWafEventsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getServerWafEvents>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetServerWafEventsQueryKey(serverId, params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getServerWafEvents>>
+  > = ({ signal }) =>
+    getServerWafEvents(serverId, params, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!serverId,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getServerWafEvents>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetServerWafEventsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getServerWafEvents>>
+>;
+export type GetServerWafEventsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get recent AWS WAF events
+ */
+
+export function useGetServerWafEvents<
+  TData = Awaited<ReturnType<typeof getServerWafEvents>>,
+  TError = ErrorType<unknown>,
+>(
+  serverId: number,
+  params?: GetServerWafEventsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getServerWafEvents>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetServerWafEventsQueryOptions(
     serverId,
     params,
     options,

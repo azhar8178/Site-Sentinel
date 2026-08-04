@@ -595,6 +595,43 @@ paths:
                 items:
                   $ref: "#/components/schemas/ServerLogSnapshot"
 
+  /servers/{serverId}/waf-events:
+    get:
+      operationId: getServerWafEvents
+      tags: [servers]
+      summary: Get recent AWS WAF events
+      parameters:
+        - name: serverId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: hours
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 24
+            minimum: 1
+            maximum: 168
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 50
+            minimum: 1
+            maximum: 200
+      responses:
+        "200":
+          description: Recent normalized AWS WAF events
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ServerWafEvent"
+
   /servers/{serverId}/incident-analysis:
     post:
       operationId: analyzeServerIncident
@@ -1221,6 +1258,9 @@ components:
           items:
             type: object
             additionalProperties: true
+        waf:
+          nullable: true
+          $ref: "#/components/schemas/ServerWafSummary"
         recordedAt:
           type: string
           format: date-time
@@ -1238,6 +1278,102 @@ components:
         - loadAvg5m
         - loadAvg15m
         - recordedAt
+
+    ServerWafSummary:
+      type: object
+      properties:
+        isRunning:
+          type: boolean
+        status:
+          type: string
+        region:
+          type: string
+        webAclName:
+          type: string
+        webAclId:
+          type: string
+        webAclArn:
+          type: string
+        protectedResources:
+          type: array
+          items:
+            type: string
+        loggingEnabled:
+          type: boolean
+        logGroup:
+          type: string
+        lastEventAt:
+          type: string
+          format: date-time
+          nullable: true
+        windowStart:
+          type: string
+          format: date-time
+          nullable: true
+        windowEnd:
+          type: string
+          format: date-time
+          nullable: true
+        total:
+          type: integer
+        blocked:
+          type: integer
+        allowed:
+          type: integer
+        count:
+          type: integer
+        challenge:
+          type: integer
+        captcha:
+          type: integer
+        topRules:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+
+    ServerWafEvent:
+      type: object
+      properties:
+        id:
+          type: integer
+        serverId:
+          type: integer
+        eventId:
+          type: string
+        action:
+          type: string
+        rule:
+          type: string
+          nullable: true
+        ruleType:
+          type: string
+          nullable: true
+        clientIp:
+          type: string
+          nullable: true
+        country:
+          type: string
+          nullable: true
+        method:
+          type: string
+          nullable: true
+        uri:
+          type: string
+          nullable: true
+        eventAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - serverId
+        - eventId
+        - action
+        - eventAt
+        - createdAt
 
     ServerWithMetrics:
       type: object

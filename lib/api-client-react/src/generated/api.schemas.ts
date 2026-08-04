@@ -197,6 +197,30 @@ export type ServerMetricElasticsearch = { [key: string]: unknown } | null;
 
 export type ServerMetricSslExpiryItem = { [key: string]: unknown };
 
+export type ServerWafSummaryTopRulesItem = { [key: string]: unknown };
+
+export interface ServerWafSummary {
+  isRunning?: boolean;
+  status?: string;
+  region?: string;
+  webAclName?: string;
+  webAclId?: string;
+  webAclArn?: string;
+  protectedResources?: string[];
+  loggingEnabled?: boolean;
+  logGroup?: string;
+  lastEventAt?: string | null;
+  windowStart?: string | null;
+  windowEnd?: string | null;
+  total?: number;
+  blocked?: number;
+  allowed?: number;
+  count?: number;
+  challenge?: number;
+  captcha?: number;
+  topRules?: ServerWafSummaryTopRulesItem[];
+}
+
 export interface ServerMetric {
   id: number;
   serverId: number;
@@ -220,7 +244,23 @@ export interface ServerMetric {
   varnish?: ServerMetricVarnish;
   elasticsearch?: ServerMetricElasticsearch;
   sslExpiry?: ServerMetricSslExpiryItem[] | null;
+  waf?: ServerWafSummary | null;
   recordedAt: string;
+}
+
+export interface ServerWafEvent {
+  id: number;
+  serverId: number;
+  eventId: string;
+  action: string;
+  rule?: string | null;
+  ruleType?: string | null;
+  clientIp?: string | null;
+  country?: string | null;
+  method?: string | null;
+  uri?: string | null;
+  eventAt: string;
+  createdAt: string;
 }
 
 export interface ServerWithMetrics {
@@ -452,6 +492,19 @@ export type GetServerLogSnapshotsParams = {
    * @maximum 24
    */
   hours?: number;
+};
+
+export type GetServerWafEventsParams = {
+  /**
+   * @minimum 1
+   * @maximum 168
+   */
+  hours?: number;
+  /**
+   * @minimum 1
+   * @maximum 200
+   */
+  limit?: number;
 };
 
 export type GetMagentoOrdersParams = {

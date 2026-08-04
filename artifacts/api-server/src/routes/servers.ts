@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
 import crypto from "crypto";
 import { db } from "@workspace/db";
-import { serversTable, serverMetricsTable, serverLogSnapshotsTable } from "@workspace/db/schema";
+import { serversTable, serverMetricsTable, serverLogSnapshotsTable, serverWafEventsTable } from "@workspace/db/schema";
 import { eq, desc, and, gte, lt } from "drizzle-orm";
 import { requireRole } from "../middleware/auth";
 import OpenAI from "openai";
@@ -142,6 +142,30 @@ serversRouter.get("/servers/:id/log-snapshots", async (req, res, next) => {
       .orderBy(serverLogSnapshotsTable.recordedAt);
 
     res.json(snapshots);
+  } catch (err) {
+    next(err);
+  }
+});
+
+serversRouter.get("/servers/:id/waf-events", async (req, res, next): Promise<void> => {
+  try {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id) || id <= 0) {
+      res.status(400).json({ error: "Invalid server ID" });
+      return;
+    }
+
+    const hours = Math.max(1, Math.min(168, Number(req.query.hours) || 24));
+    const limit = Math.max(1, Math.min(200, Number(req.query.limit) || 50));
+    const since = new Date(Date.now() - hours * 60 * 60 * 1000);
+    const events = await db
+      .select()
+      .from(serverWafEventsTable)
+      .where(and(eq(serverWafEventsTable.serverId, id), gte(serverWafEventsTable.eventAt, since)))
+      .orderBy(desc(serverWafEventsTable.eventAt))
+      .limit(limit);
+
+    res.json(events);
   } catch (err) {
     next(err);
   }
@@ -383,6 +407,7 @@ reportRouter.post("/servers/report", async (req, res, next) => {
     const varnish = b.varnish && typeof b.varnish === "object" ? b.varnish : null;
     const elasticsearch = b.elasticsearch && typeof b.elasticsearch === "object" ? b.elasticsearch : null;
     const sslExpiry = Array.isArray(b.sslExpiry) ? b.sslExpiry : null;
+    const waf = b.waf && typeof b.waf === "object" ? b.waf : null;
     const rawLogSnapshot = b.logSnapshot && typeof b.logSnapshot === "object" ? b.logSnapshot : null;
     const serializedLogSnapshot = rawLogSnapshot ? JSON.stringify(rawLogSnapshot) : "";
     const logSnapshot = rawLogSnapshot && serializedLogSnapshot.length <= 100_000 ? rawLogSnapshot : null;
@@ -409,6 +434,7 @@ reportRouter.post("/servers/report", async (req, res, next) => {
       varnish,
       elasticsearch,
       sslExpiry,
+      waf,
     });
 
     await db
@@ -424,6 +450,35 @@ reportRouter.post("/servers/report", async (req, res, next) => {
       await db.delete(serverLogSnapshotsTable).where(and(
         eq(serverLogSnapshotsTable.serverId, server.id),
         lt(serverLogSnapshotsTable.recordedAt, new Date(Date.now() - 24 * 60 * 60 * 1000)),
+      ));
+    }
+
+    const wafEvents = waf && Array.isArray(waf.events) ? waf.events.slice(0, 200) : [];
+    if (wafEvents.length > 0) {
+      const parsedEvents = wafEvents
+        .filter((event: any) => event && typeof event.eventId === "string" && typeof event.action === "string")
+        .map((event: any) => ({
+          serverId: server.id,
+          eventId: event.eventId.slice(0, 128),
+          action: event.action.slice(0, 32),
+          rule: typeof event.rule === "string" ? event.rule.slice(0, 255) : null,
+          ruleType: typeof event.ruleType === "string" ? event.ruleType.slice(0, 64) : null,
+          clientIp: typeof event.clientIp === "string" ? event.clientIp.slice(0, 64) : null,
+          country: typeof event.country === "string" ? event.country.slice(0, 16) : null,
+          method: typeof event.method === "string" ? event.method.slice(0, 16) : null,
+          uri: typeof event.uri === "string" ? event.uri.slice(0, 512) : null,
+          eventAt: new Date(event.eventAt),
+        }))
+        .filter((event: any) => !Number.isNaN(event.eventAt.getTime()));
+
+      if (parsedEvents.length > 0) {
+        await db.insert(serverWafEventsTable)
+          .values(parsedEvents)
+          .onConflictDoNothing({ target: [serverWafEventsTable.serverId, serverWafEventsTable.eventId] });
+      }
+      await db.delete(serverWafEventsTable).where(and(
+        eq(serverWafEventsTable.serverId, server.id),
+        lt(serverWafEventsTable.eventAt, new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)),
       ));
     }
 
