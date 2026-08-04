@@ -651,7 +651,7 @@ async function collect() {
   }
 }
 
-const AGENT_VERSION = "3.2.0";
+const AGENT_VERSION = "3.3.0";
 const UPDATE_CHECK_INTERVAL = 3600000;
 let lastUpdateCheck = 0;
 

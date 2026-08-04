@@ -1,0 +1,32 @@
+
+=== Recent logs ===
+Aug 04 09:57:56 ip-172-33-86-172 node[2442938]:     at wrapSafe (node:internal/modules/cjs/loader:1692:18)
+Aug 04 09:57:56 ip-172-33-86-172 node[2442938]:     at Module._compile (node:internal/modules/cjs/loader:1735:20)
+Aug 04 09:57:56 ip-172-33-86-172 node[2442938]:     at Object..js (node:internal/modules/cjs/loader:1893:10)
+Aug 04 09:57:56 ip-172-33-86-172 node[2442938]:     at Module.load (node:internal/modules/cjs/loader:1481:32)
+Aug 04 09:57:56 ip-172-33-86-172 node[2442938]:     at Module._load (node:internal/modules/cjs/loader:1300:12)
+Aug 04 09:57:56 ip-172-33-86-172 node[2442938]:     at TracingChannel.traceSync (node:diagnostics_channel:328:14)
+Aug 04 09:57:56 ip-172-33-86-172 node[2442938]:     at wrapModuleLoad (node:internal/modules/cjs/loader:245:24)
+Aug 04 09:57:56 ip-172-33-86-172 node[2442938]:     at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:154:5)
+Aug 04 09:57:56 ip-172-33-86-172 node[2442938]:     at node:internal/main/run_main_module:33:47
+Aug 04 09:57:56 ip-172-33-86-172 node[2442938]: Node.js v24.13.0
+Aug 04 09:57:56 ip-172-33-86-172 systemd[1]: monitor-agent.service: Main process exited, code=exited, status=1/FAILURE
+Aug 04 09:57:56 ip-172-33-86-172 systemd[1]: monitor-agent.service: Failed with result 'exit-code'.
+Aug 04 09:58:05 ip-172-33-86-172 systemd[1]: Stopped Site Monitor Agent.
+Aug 04 09:59:14 ip-172-33-86-172 systemd[1]: Started Site Monitor Agent.
+Aug 04 09:59:14 ip-172-33-86-172 node[2443210]: Site Sentinel Monitor Agent v3.2.0
+Aug 04 09:59:14 ip-172-33-86-172 node[2443210]:   API: https://monit.lovefurniture.ie/
+Aug 04 09:59:14 ip-172-33-86-172 node[2443210]:   Interval: 30s
+Aug 04 09:59:14 ip-172-33-86-172 node[2443210]:   Features: CPU, Memory, Disk, Network, Load, PHP-FPM, MySQL, Nginx, Varnish, OpenSearch, SSL
+Aug 04 09:59:14 ip-172-33-86-172 node[2443210]:   OpenSearch: https://vpc-magento-prod-nzaysstzukhdmqqtuhh6be2use.eu-west-2.es.amazonaws.com (none auth)
+Aug 04 09:59:14 ip-172-33-86-172 node[2443210]:   SSL: set MONITOR_SSL_DOMAINS=domain1.com,domain2.com to enable SSL expiry checks
+Aug 04 09:59:15 ip-172-33-86-172 node[2443210]: Report failed: HTTP 404 - <!DOCTYPE html>
+Aug 04 09:59:15 ip-172-33-86-172 node[2443210]: <html lang="en">
+Aug 04 09:59:15 ip-172-33-86-172 node[2443210]: <head>
+Aug 04 09:59:15 ip-172-33-86-172 node[2443210]: <meta charset="utf-8">
+Aug 04 09:59:15 ip-172-33-86-172 node[2443210]: <title>Error</title>
+Aug 04 09:59:15 ip-172-33-86-172 node[2443210]: </head>
+Aug 04 09:59:15 ip-172-33-86-172 node[2443210]: <body>
+Aug 04 09:59:15 ip-172-33-86-172 node[2443210]: <pre>Cannot POST //api/servers/report</pre>
+Aug 04 09:59:15 ip-172-33-86-172 node[2443210]: </body>
+Aug 04 09:59:15 ip-172-33-86-172 node[2443210]: </html>
