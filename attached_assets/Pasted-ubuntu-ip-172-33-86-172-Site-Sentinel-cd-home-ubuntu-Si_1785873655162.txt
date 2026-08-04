@@ -1,0 +1,65 @@
+ubuntu@ip-172-33-86-172:~/Site-Sentinel$ cd /home/ubuntu/Site-Sentinel
+
+git fetch --prune origin main
+git reset --hard origin/main
+
+sudo docker compose build api
+sudo docker compose up -d --force-recreate api
+
+curl -fsS http://127.0.0.1:8080/api/healthz
+curl -fsS http://127.0.0.1:8080/api/agent/version
+remote: Enumerating objects: 67, done.
+remote: Counting objects: 100% (67/67), done.
+remote: Compressing objects: 100% (18/18), done.
+remote: Total 45 (delta 26), reused 45 (delta 26), pack-reused 0 (from 0)
+Unpacking objects: 100% (45/45), 351.06 KiB | 1.75 MiB/s, done.
+From github.com:azhar8178/Site-Sentinel
+ * branch            main       -> FETCH_HEAD
+   2d887b2..e13ecc1  main       -> origin/main
+HEAD is now at e13ecc1 Add dedicated AWS WAF dashboard
+[+] Building 44.5s (25/25) FINISHED                                                                                                                                        
+ => [internal] load local bake definitions                                                                                                                            0.0s
+ => => reading from stdin 504B                                                                                                                                        0.0s
+ => [internal] load build definition from Dockerfile                                                                                                                  0.0s
+ => => transferring dockerfile: 1.38kB                                                                                                                                0.0s
+ => [internal] load metadata for public.ecr.aws/docker/library/node:24-slim                                                                                           0.8s
+ => [internal] load .dockerignore                                                                                                                                     0.0s
+ => => transferring context: 494B                                                                                                                                     0.0s
+ => [internal] load build context                                                                                                                                     0.0s
+ => => transferring context: 1.31MB                                                                                                                                   0.0s
+ => [api-builder  1/14] FROM public.ecr.aws/docker/library/node:24-slim@sha256:cd84903a12dbd26b46f1f3b8144a2568c41c5d37ddd0c7a80a34c7a19786b35f                       0.0s
+ => => resolve public.ecr.aws/docker/library/node:24-slim@sha256:cd84903a12dbd26b46f1f3b8144a2568c41c5d37ddd0c7a80a34c7a19786b35f                                     0.0s
+ => CACHED [api-builder  2/14] RUN npm install -g pnpm@10                                                                                                             0.0s
+ => CACHED [api-builder  3/14] WORKDIR /app                                                                                                                           0.0s
+ => CACHED [api-builder  4/14] COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./                                                                                0.0s
+ => CACHED [api-builder  5/14] COPY artifacts/api-server/package.json ./artifacts/api-server/package.json                                                             0.0s
+ => CACHED [api-builder  6/14] COPY lib/db/package.json ./lib/db/package.json                                                                                         0.0s
+ => CACHED [api-builder  7/14] COPY lib/api-zod/package.json ./lib/api-zod/package.json                                                                               0.0s
+ => CACHED [api-builder  8/14] RUN pnpm install --frozen-lockfile --filter @workspace/api-server...                                                                   0.0s
+ => CACHED [api-builder  9/14] COPY tsconfig.base.json ./                                                                                                             0.0s
+ => CACHED [api-builder 10/14] COPY lib/db/ ./lib/db/                                                                                                                 0.0s
+ => CACHED [api-builder 11/14] COPY lib/api-zod/ ./lib/api-zod/                                                                                                       0.0s
+ => [api-builder 12/14] COPY artifacts/api-server/ ./artifacts/api-server/                                                                                            0.1s
+ => [api-builder 13/14] RUN pnpm --filter @workspace/api-server run build                                                                                             1.7s
+ => [api-builder 14/14] RUN rm -rf /tmp/runtime   && mkdir -p /tmp/runtime/artifacts/api-server   && pnpm --filter @workspace/api-server deploy --prod --legacy /tm  35.2s 
+ => CACHED [stage-1 2/5] WORKDIR /app                                                                                                                                 0.0s 
+ => [stage-1 3/5] COPY --from=api-builder /tmp/runtime ./                                                                                                             1.2s 
+ => [stage-1 4/5] COPY artifacts/web-dashboard/dist ./artifacts/web-dashboard/dist                                                                                    0.1s 
+ => [stage-1 5/5] COPY agent ./agent                                                                                                                                  0.1s 
+ => exporting to image                                                                                                                                                3.6s 
+ => => exporting layers                                                                                                                                               1.9s 
+ => => exporting manifest sha256:d698df973cc0e3da2191251a274b452fece3f59b1cda7c72c94f6ff6d7d62b3c                                                                     0.0s
+ => => exporting config sha256:505867d25c785ef05e41b68bedaed1d7474b1346ab2443c4a5e64884ae48883a                                                                       0.0s
+ => => exporting attestation manifest sha256:52a9678e3fcad1453d4560aa076ed2b28e92671fcac294e4e636b3523edd2072                                                         0.0s
+ => => exporting manifest list sha256:0935de7be1e0de5cbc043d39fe245a94a3d504a693bc247bd7e33585a491545c                                                                0.0s
+ => => naming to docker.io/library/site-sentinel-api:latest                                                                                                           0.0s
+ => => unpacking to docker.io/library/site-sentinel-api:latest                                                                                                        1.6s
+ => resolving provenance for metadata file                                                                                                                            0.0s
+[+] build 1/1
+ ✔ Image site-sentinel-api Built                                                                                                                                      44.6s
+[+] up 2/2
+ ✔ Container site-sentinel-postgres-1 Healthy                                                                                                                         11.3s
+ ✔ Container site-sentinel-api-1      Started                                                                                                                         11.5s
+curl: (56) Recv failure: Connection reset by peer
+curl: (56) Recv failure: Connection reset by peer
+ubuntu@ip-172-33-86-172:~/Site-Sentinel$ 
