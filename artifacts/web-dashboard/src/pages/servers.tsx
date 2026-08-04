@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useListServers, useCreateServer, useDeleteServer, useUpdateServer, useRegenerateServerKey, useGetServerMetrics } from "@workspace/api-client-react";
+import { useListServers, useCreateServer, useDeleteServer, useUpdateServer, useRegenerateServerKey, useGetServerMetrics, useGetServerLogSnapshots, useAnalyzeServerIncident } from "@workspace/api-client-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
@@ -32,6 +32,9 @@ function ServerDetailModal({
   const { data: metrics, isLoading } = useGetServerMetrics(serverId, { hours }, {
     query: { refetchInterval: 30000 },
   });
+  const { data: logSnapshots } = useGetServerLogSnapshots(serverId, { hours: Math.min(hours, 24) }, {
+    query: { enabled: true, refetchInterval: 300000 },
+  });
   const updateServer = useUpdateServer();
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -41,6 +44,9 @@ function ServerDetailModal({
   const [editHostname, setEditHostname] = useState(serverHostname);
   const [newApiKey, setNewApiKey] = useState<string | null>(null);
   const [copiedKey, setCopiedKey] = useState(false);
+  const [incidentAnalysis, setIncidentAnalysis] = useState<string | null>(null);
+  const [showCollectedLogs, setShowCollectedLogs] = useState(false);
+  const analyzeIncident = useAnalyzeServerIncident();
 
   const handleSaveEdit = async () => {
     try {
@@ -69,6 +75,20 @@ function ServerDetailModal({
       navigator.clipboard.writeText(newApiKey);
       setCopiedKey(true);
       setTimeout(() => setCopiedKey(false), 2000);
+    }
+  };
+
+  const handleAnalyzeIncident = async () => {
+    setIncidentAnalysis(null);
+    try {
+      const result = await analyzeIncident.mutateAsync({ serverId, data: { hours: Math.min(hours, 24) } });
+      setIncidentAnalysis(result.analysis);
+    } catch (e: any) {
+      toast({
+        variant: "destructive",
+        title: "Analysis unavailable",
+        description: e?.data?.error || e?.message || "Could not analyze this incident.",
+      });
     }
   };
 
@@ -173,6 +193,84 @@ function ServerDetailModal({
               </Button>
             </div>
           )}
+
+          <div className="rounded-xl border border-primary/20 bg-primary/5 p-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h3 className="font-semibold">Incident analysis</h3>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Analyze the selected window using sanitized service logs and server telemetry.
+                </p>
+              </div>
+              <Button
+                size="sm"
+                onClick={handleAnalyzeIncident}
+                disabled={analyzeIncident.isPending}
+                className="gap-2 shrink-0"
+              >
+                <Activity className={`w-4 h-4 ${analyzeIncident.isPending ? "animate-spin" : ""}`} />
+                {analyzeIncident.isPending ? "Analyzing…" : `Analyze last ${hours}h`}
+              </Button>
+            </div>
+            {incidentAnalysis && (
+              <div className="mt-4 rounded-lg border border-border bg-card p-4">
+                <div className="flex items-center justify-between gap-2 mb-3">
+                  <p className="text-sm font-semibold">AI findings</p>
+                  <button
+                    type="button"
+                    onClick={() => setIncidentAnalysis(null)}
+                    className="text-xs text-muted-foreground hover:text-foreground"
+                  >
+                    Dismiss
+                  </button>
+                </div>
+                <div className="text-sm leading-6 whitespace-pre-wrap text-foreground/90">
+                  {incidentAnalysis}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="rounded-xl border border-border bg-muted/20 p-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h3 className="font-semibold">Collected performance logs</h3>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Sanitized snapshots from the last {hours}h. Secrets and common credentials are redacted.
+                </p>
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setShowCollectedLogs(value => !value)}
+                disabled={!logSnapshots?.length}
+                className="shrink-0"
+              >
+                {showCollectedLogs ? "Hide logs" : `View logs (${logSnapshots?.length ?? 0})`}
+              </Button>
+            </div>
+            {showCollectedLogs && logSnapshots && logSnapshots.length > 0 && (
+              <div className="mt-4 space-y-3">
+                {logSnapshots.slice(-3).reverse().map((snapshot: any) => (
+                  <div key={snapshot.id} className="rounded-lg border border-border bg-card p-3">
+                    <p className="text-xs font-medium text-muted-foreground mb-2">
+                      Snapshot {new Date(snapshot.recordedAt).toLocaleString()}
+                    </p>
+                    <div className="space-y-3">
+                      {Object.entries(snapshot.logs?.sources ?? {}).filter(([, value]) => value).map(([source, value]) => (
+                        <div key={source}>
+                          <p className="text-xs font-semibold capitalize mb-1">{source}</p>
+                          <pre className="max-h-48 overflow-auto rounded bg-black/90 text-green-200 p-3 text-[10px] leading-4 whitespace-pre-wrap break-all">
+                            {String(value)}
+                          </pre>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
 
           {isLoading ? (
             <div className="flex items-center justify-center py-20">

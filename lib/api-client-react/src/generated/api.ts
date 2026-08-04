@@ -26,8 +26,11 @@ import type {
   GetCheckHistoryParams,
   GetMagentoCartsParams,
   GetMagentoOrdersParams,
+  GetServerLogSnapshotsParams,
   GetServerMetricsParams,
   HealthStatus,
+  IncidentAnalysis,
+  IncidentAnalysisInput,
   ListAlertsParams,
   MagentoCart,
   MagentoConfigResponse,
@@ -37,6 +40,7 @@ import type {
   RegenerateServerKey200,
   ServerAlertConfigResponse,
   ServerCreateResponse,
+  ServerLogSnapshot,
   ServerMetric,
   ServerWithMetrics,
   SiteWithStatus,
@@ -2202,6 +2206,214 @@ export function useGetServerMetrics<
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
+
+/**
+ * @summary Get recent sanitized performance logs
+ */
+export const getGetServerLogSnapshotsUrl = (
+  serverId: number,
+  params?: GetServerLogSnapshotsParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/servers/${serverId}/log-snapshots?${stringifiedParams}`
+    : `/api/servers/${serverId}/log-snapshots`;
+};
+
+export const getServerLogSnapshots = async (
+  serverId: number,
+  params?: GetServerLogSnapshotsParams,
+  options?: RequestInit,
+): Promise<ServerLogSnapshot[]> => {
+  return customFetch<ServerLogSnapshot[]>(
+    getGetServerLogSnapshotsUrl(serverId, params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getGetServerLogSnapshotsQueryKey = (
+  serverId: number,
+  params?: GetServerLogSnapshotsParams,
+) => {
+  return [
+    `/api/servers/${serverId}/log-snapshots`,
+    ...(params ? [params] : []),
+  ] as const;
+};
+
+export const getGetServerLogSnapshotsQueryOptions = <
+  TData = Awaited<ReturnType<typeof getServerLogSnapshots>>,
+  TError = ErrorType<unknown>,
+>(
+  serverId: number,
+  params?: GetServerLogSnapshotsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getServerLogSnapshots>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getGetServerLogSnapshotsQueryKey(serverId, params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getServerLogSnapshots>>
+  > = ({ signal }) =>
+    getServerLogSnapshots(serverId, params, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!serverId,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getServerLogSnapshots>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetServerLogSnapshotsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getServerLogSnapshots>>
+>;
+export type GetServerLogSnapshotsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get recent sanitized performance logs
+ */
+
+export function useGetServerLogSnapshots<
+  TData = Awaited<ReturnType<typeof getServerLogSnapshots>>,
+  TError = ErrorType<unknown>,
+>(
+  serverId: number,
+  params?: GetServerLogSnapshotsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getServerLogSnapshots>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetServerLogSnapshotsQueryOptions(
+    serverId,
+    params,
+    options,
+  );
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Analyze recent server performance logs with AI
+ */
+export const getAnalyzeServerIncidentUrl = (serverId: number) => {
+  return `/api/servers/${serverId}/incident-analysis`;
+};
+
+export const analyzeServerIncident = async (
+  serverId: number,
+  incidentAnalysisInput?: IncidentAnalysisInput,
+  options?: RequestInit,
+): Promise<IncidentAnalysis> => {
+  return customFetch<IncidentAnalysis>(getAnalyzeServerIncidentUrl(serverId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(incidentAnalysisInput),
+  });
+};
+
+export const getAnalyzeServerIncidentMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof analyzeServerIncident>>,
+    TError,
+    { serverId: number; data: BodyType<IncidentAnalysisInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof analyzeServerIncident>>,
+  TError,
+  { serverId: number; data: BodyType<IncidentAnalysisInput> },
+  TContext
+> => {
+  const mutationKey = ["analyzeServerIncident"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof analyzeServerIncident>>,
+    { serverId: number; data: BodyType<IncidentAnalysisInput> }
+  > = (props) => {
+    const { serverId, data } = props ?? {};
+
+    return analyzeServerIncident(serverId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AnalyzeServerIncidentMutationResult = NonNullable<
+  Awaited<ReturnType<typeof analyzeServerIncident>>
+>;
+export type AnalyzeServerIncidentMutationBody = BodyType<IncidentAnalysisInput>;
+export type AnalyzeServerIncidentMutationError = ErrorType<void>;
+
+/**
+ * @summary Analyze recent server performance logs with AI
+ */
+export const useAnalyzeServerIncident = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof analyzeServerIncident>>,
+    TError,
+    { serverId: number; data: BodyType<IncidentAnalysisInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof analyzeServerIncident>>,
+  TError,
+  { serverId: number; data: BodyType<IncidentAnalysisInput> },
+  TContext
+> => {
+  return useMutation(getAnalyzeServerIncidentMutationOptions(options));
+};
 
 /**
  * @summary Get order and cart statistics

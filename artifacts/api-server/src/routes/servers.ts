@@ -1,9 +1,10 @@
 import { Router, type IRouter } from "express";
 import crypto from "crypto";
 import { db } from "@workspace/db";
-import { serversTable, serverMetricsTable } from "@workspace/db/schema";
-import { eq, desc, and, gte } from "drizzle-orm";
+import { serversTable, serverMetricsTable, serverLogSnapshotsTable } from "@workspace/db/schema";
+import { eq, desc, and, gte, lt } from "drizzle-orm";
 import { requireRole } from "../middleware/auth";
+import OpenAI from "openai";
 
 function hashApiKey(key: string): string {
   return crypto.createHash("sha256").update(key).digest("hex");
@@ -119,6 +120,93 @@ serversRouter.get("/servers/:id/metrics", async (req, res, next) => {
       .orderBy(serverMetricsTable.recordedAt);
 
     res.json(metrics);
+  } catch (err) {
+    next(err);
+  }
+});
+
+serversRouter.get("/servers/:id/log-snapshots", async (req, res, next) => {
+  try {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id) || id <= 0) {
+      res.status(400).json({ error: "Invalid server ID" });
+      return;
+    }
+
+    const hours = Math.max(1, Math.min(24, Number(req.query.hours) || 6));
+    const since = new Date(Date.now() - hours * 60 * 60 * 1000);
+    const snapshots = await db
+      .select()
+      .from(serverLogSnapshotsTable)
+      .where(and(eq(serverLogSnapshotsTable.serverId, id), gte(serverLogSnapshotsTable.recordedAt, since)))
+      .orderBy(serverLogSnapshotsTable.recordedAt);
+
+    res.json(snapshots);
+  } catch (err) {
+    next(err);
+  }
+});
+
+serversRouter.post("/servers/:id/incident-analysis", async (req, res, next) => {
+  try {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id) || id <= 0) {
+      res.status(400).json({ error: "Invalid server ID" });
+      return;
+    }
+
+    const hours = Math.max(1, Math.min(24, Number(req.body?.hours) || 6));
+    const since = new Date(Date.now() - hours * 60 * 60 * 1000);
+    const [server] = await db.select({
+      id: serversTable.id,
+      name: serversTable.name,
+      hostname: serversTable.hostname,
+    }).from(serversTable).where(eq(serversTable.id, id)).limit(1);
+
+    if (!server) {
+      res.status(404).json({ error: "Server not found" });
+      return;
+    }
+
+    const [metrics, snapshots] = await Promise.all([
+      db.select().from(serverMetricsTable)
+        .where(and(eq(serverMetricsTable.serverId, id), gte(serverMetricsTable.recordedAt, since)))
+        .orderBy(serverMetricsTable.recordedAt),
+      db.select().from(serverLogSnapshotsTable)
+        .where(and(eq(serverLogSnapshotsTable.serverId, id), gte(serverLogSnapshotsTable.recordedAt, since)))
+        .orderBy(serverLogSnapshotsTable.recordedAt),
+    ]);
+
+    if (!process.env.OPENAI_API_KEY) {
+      res.status(503).json({ error: "AI analysis is not configured on the API server" });
+      return;
+    }
+
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    const response = await openai.responses.create({
+      model: "gpt-5.4-mini",
+      max_output_tokens: 1800,
+      instructions: [
+        "You are a senior Linux, Nginx, Varnish, PHP-FPM, MySQL, and Magento production incident analyst.",
+        "Analyze only the supplied telemetry and sanitized logs. Do not invent facts.",
+        "Return concise Markdown with exactly these headings: Summary, Evidence, Likely causes, Recommended checks, Severity.",
+        "Separate observed evidence from hypotheses. Prioritize actionable checks and mention when evidence is insufficient.",
+        "Never request credentials, API keys, or unrestricted server access.",
+      ].join(" "),
+      input: JSON.stringify({
+        server,
+        windowHours: hours,
+        metrics: metrics.slice(-720),
+        logSnapshots: snapshots.slice(-24),
+      }),
+    });
+
+    res.json({
+      analysis: response.output_text,
+      generatedAt: new Date().toISOString(),
+      snapshotCount: snapshots.length,
+      windowHours: hours,
+    });
   } catch (err) {
     next(err);
   }
@@ -295,6 +383,9 @@ reportRouter.post("/servers/report", async (req, res, next) => {
     const varnish = b.varnish && typeof b.varnish === "object" ? b.varnish : null;
     const elasticsearch = b.elasticsearch && typeof b.elasticsearch === "object" ? b.elasticsearch : null;
     const sslExpiry = Array.isArray(b.sslExpiry) ? b.sslExpiry : null;
+    const rawLogSnapshot = b.logSnapshot && typeof b.logSnapshot === "object" ? b.logSnapshot : null;
+    const serializedLogSnapshot = rawLogSnapshot ? JSON.stringify(rawLogSnapshot) : "";
+    const logSnapshot = rawLogSnapshot && serializedLogSnapshot.length <= 100_000 ? rawLogSnapshot : null;
 
     await db.insert(serverMetricsTable).values({
       serverId: server.id,
@@ -324,6 +415,17 @@ reportRouter.post("/servers/report", async (req, res, next) => {
       .update(serversTable)
       .set({ lastSeenAt: new Date() })
       .where(eq(serversTable.id, server.id));
+
+    if (logSnapshot) {
+      await db.insert(serverLogSnapshotsTable).values({
+        serverId: server.id,
+        logs: logSnapshot,
+      });
+      await db.delete(serverLogSnapshotsTable).where(and(
+        eq(serverLogSnapshotsTable.serverId, server.id),
+        lt(serverLogSnapshotsTable.recordedAt, new Date(Date.now() - 24 * 60 * 60 * 1000)),
+      ));
+    }
 
     res.json({ success: true });
   } catch (err) {

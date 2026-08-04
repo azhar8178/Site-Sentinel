@@ -19,6 +19,7 @@
     "express": "^5",
     "jsonwebtoken": "^9.0.3",
     "nodemailer": "^8.0.4",
+    "openai": "^7.3.0",
     "pg": "^8.20.0",
     "pino": "^9",
     "pino-http": "^10"

@@ -58,3 +58,21 @@ export const serverMetricsRelations = relations(serverMetricsTable, ({ one }) =>
 export const insertServerMetricSchema = createInsertSchema(serverMetricsTable).omit({ id: true });
 export type InsertServerMetric = z.infer<typeof insertServerMetricSchema>;
 export type ServerMetric = typeof serverMetricsTable.$inferSelect;
+
+export const serverLogSnapshotsTable = pgTable("server_log_snapshots", {
+  id: serial("id").primaryKey(),
+  serverId: integer("server_id").notNull().references(() => serversTable.id, { onDelete: "cascade" }),
+  logs: jsonb("logs").notNull(),
+  recordedAt: timestamp("recorded_at").notNull().defaultNow(),
+});
+
+export const serverLogSnapshotsRelations = relations(serverLogSnapshotsTable, ({ one }) => ({
+  server: one(serversTable, {
+    fields: [serverLogSnapshotsTable.serverId],
+    references: [serversTable.id],
+  }),
+}));
+
+export const insertServerLogSnapshotSchema = createInsertSchema(serverLogSnapshotsTable).omit({ id: true });
+export type InsertServerLogSnapshot = z.infer<typeof insertServerLogSnapshotSchema>;
+export type ServerLogSnapshot = typeof serverLogSnapshotsTable.$inferSelect;

@@ -25,6 +25,7 @@ if (!API_URL || !API_KEY) {
 
 let prevCpu = null;
 let prevNet = null;
+let lastLogSnapshotAt = 0;
 
 function readFile(path) {
   try {
@@ -557,6 +558,52 @@ function getHttpConnections() {
   return Math.max(0, parseInt(output, 10) - 1);
 }
 
+function sanitizeLog(value) {
+  return value
+    .replace(/(authorization\s*:\s*bearer\s+)[^\s]+/gi, "$1[REDACTED]")
+    .replace(/(bearer\s+)[A-Za-z0-9._~+/=-]+/gi, "$1[REDACTED]")
+    .replace(/((?:password|passwd|secret|token|api[_-]?key|access[_-]?key)\s*[=:]\s*)["']?[^"'\\s,;]+/gi, "$1[REDACTED]")
+    .replace(/([?&](?:password|passwd|token|api[_-]?key|secret)=)[^&\s]+/gi, "$1[REDACTED]")
+    .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, "[EMAIL]");
+}
+
+function readLogCommand(command, maxChars = 12000) {
+  const output = exec(command);
+  if (!output) return "";
+  return sanitizeLog(output).slice(-maxChars);
+}
+
+function getLogSnapshot() {
+  const sources = {
+    journal: readLogCommand(
+      "journalctl --since '5 minutes ago' --no-pager -n 160 -u nginx -u varnish -u mysql -u mariadb -u opensearch -u elasticsearch 2>/dev/null"
+    ),
+    nginxError: readLogCommand("tail -n 160 /var/log/nginx/error.log 2>/dev/null"),
+    varnish: readLogCommand("tail -n 160 /var/log/varnish/varnish.log 2>/dev/null"),
+    phpFpm: readLogCommand(
+      "sh -c 'for f in /var/log/php*-fpm.log /var/log/php*/fpm-php*.log; do [ -f \"$f\" ] && tail -n 80 \"$f\"; done' 2>/dev/null"
+    ),
+    magento: readLogCommand(
+      "sh -c 'for f in /var/www/html/var/log/system.log /var/www/html/var/log/exception.log /var/www/html/var/log/debug.log; do [ -f \"$f\" ] && tail -n 120 \"$f\"; done' 2>/dev/null"
+    ),
+    kernel: readLogCommand(
+      "journalctl -k --since '5 minutes ago' --no-pager -p warning..alert -n 120 2>/dev/null"
+    ),
+    failedServices: readLogCommand(
+      "systemctl --failed --no-legend --no-pager 2>/dev/null"
+    ),
+  };
+
+  const totalChars = Object.values(sources).reduce((sum, value) => sum + value.length, 0);
+  if (totalChars === 0) return null;
+
+  return {
+    capturedAt: new Date().toISOString(),
+    window: "last 5 minutes for journal/kernel; recent tail for file logs",
+    sources,
+  };
+}
+
 function postMetrics(data) {
   const url = new URL(`${API_URL}/api/servers/report`);
   const isHttps = url.protocol === "https:";
@@ -646,6 +693,14 @@ async function collect() {
     sslExpiry,
   };
 
+  if (Date.now() - lastLogSnapshotAt >= 5 * 60 * 1000) {
+    const logSnapshot = getLogSnapshot();
+    if (logSnapshot) {
+      data.logSnapshot = logSnapshot;
+      lastLogSnapshotAt = Date.now();
+    }
+  }
+
   const ok = await postMetrics(data);
   if (ok) {
     const memPct =
@@ -660,7 +715,7 @@ async function collect() {
   }
 }
 
-const AGENT_VERSION = "3.3.1";
+const AGENT_VERSION = "3.4.0";
 const UPDATE_CHECK_INTERVAL = 3600000;
 let lastUpdateCheck = 0;
 

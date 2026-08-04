@@ -70,6 +70,13 @@ try {
     recorded_at timestamp NOT NULL DEFAULT now()
   )`);
 
+  await run("server_log_snapshots table", `CREATE TABLE IF NOT EXISTS server_log_snapshots (
+    id serial PRIMARY KEY,
+    server_id integer NOT NULL REFERENCES servers(id) ON DELETE CASCADE,
+    logs jsonb NOT NULL,
+    recorded_at timestamp NOT NULL DEFAULT now()
+  )`);
+
   await run("sites table", `CREATE TABLE IF NOT EXISTS sites (
     id serial PRIMARY KEY,
     name text NOT NULL,

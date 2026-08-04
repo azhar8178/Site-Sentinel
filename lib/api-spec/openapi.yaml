@@ -540,6 +540,65 @@ paths:
                 items:
                   $ref: "#/components/schemas/ServerMetric"
 
+  /servers/{serverId}/log-snapshots:
+    get:
+      operationId: getServerLogSnapshots
+      tags: [servers]
+      summary: Get recent sanitized performance logs
+      parameters:
+        - name: serverId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: hours
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 6
+            minimum: 1
+            maximum: 24
+          description: Number of hours of log history
+      responses:
+        "200":
+          description: Sanitized performance log snapshots
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ServerLogSnapshot"
+
+  /servers/{serverId}/incident-analysis:
+    post:
+      operationId: analyzeServerIncident
+      tags: [servers]
+      summary: Analyze recent server performance logs with AI
+      parameters:
+        - name: serverId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IncidentAnalysisInput"
+      responses:
+        "200":
+          description: AI incident analysis
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IncidentAnalysis"
+        "400":
+          description: Invalid analysis window
+        "503":
+          description: AI analysis is not configured
+
   /magento/stats:
     get:
       operationId: getMagentoStats
@@ -1159,6 +1218,52 @@ components:
         - hostname
         - isActive
         - createdAt
+
+    ServerLogSnapshot:
+      type: object
+      properties:
+        id:
+          type: integer
+        serverId:
+          type: integer
+        logs:
+          type: object
+          additionalProperties: true
+        recordedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - serverId
+        - logs
+        - recordedAt
+
+    IncidentAnalysisInput:
+      type: object
+      properties:
+        hours:
+          type: integer
+          minimum: 1
+          maximum: 24
+          default: 6
+
+    IncidentAnalysis:
+      type: object
+      properties:
+        analysis:
+          type: string
+        generatedAt:
+          type: string
+          format: date-time
+        snapshotCount:
+          type: integer
+        windowHours:
+          type: integer
+      required:
+        - analysis
+        - generatedAt
+        - snapshotCount
+        - windowHours
 
     ServerCreateResponse:
       type: object

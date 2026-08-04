@@ -223,6 +223,30 @@ export interface ServerWithMetrics {
   latestMetrics?: ServerMetric | null;
 }
 
+export type ServerLogSnapshotLogs = { [key: string]: unknown };
+
+export interface ServerLogSnapshot {
+  id: number;
+  serverId: number;
+  logs: ServerLogSnapshotLogs;
+  recordedAt: string;
+}
+
+export interface IncidentAnalysisInput {
+  /**
+   * @minimum 1
+   * @maximum 24
+   */
+  hours?: number;
+}
+
+export interface IncidentAnalysis {
+  analysis: string;
+  generatedAt: string;
+  snapshotCount: number;
+  windowHours: number;
+}
+
 export interface ServerCreateResponse {
   id: number;
   name: string;
@@ -407,6 +431,15 @@ export type RegenerateServerKey200 = {
 export type GetServerMetricsParams = {
   /**
    * Number of hours of history
+   */
+  hours?: number;
+};
+
+export type GetServerLogSnapshotsParams = {
+  /**
+   * Number of hours of log history
+   * @minimum 1
+   * @maximum 24
    */
   hours?: number;
 };

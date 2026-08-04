@@ -604,6 +604,60 @@ export const GetServerMetricsResponseItem = zod.object({
 export const GetServerMetricsResponse = zod.array(GetServerMetricsResponseItem);
 
 /**
+ * @summary Get recent sanitized performance logs
+ */
+export const GetServerLogSnapshotsParams = zod.object({
+  serverId: zod.coerce.number(),
+});
+
+export const getServerLogSnapshotsQueryHoursDefault = 6;
+export const getServerLogSnapshotsQueryHoursMax = 24;
+
+export const GetServerLogSnapshotsQueryParams = zod.object({
+  hours: zod.coerce
+    .number()
+    .min(1)
+    .max(getServerLogSnapshotsQueryHoursMax)
+    .default(getServerLogSnapshotsQueryHoursDefault)
+    .describe("Number of hours of log history"),
+});
+
+export const GetServerLogSnapshotsResponseItem = zod.object({
+  id: zod.number(),
+  serverId: zod.number(),
+  logs: zod.record(zod.string(), zod.unknown()),
+  recordedAt: zod.date(),
+});
+export const GetServerLogSnapshotsResponse = zod.array(
+  GetServerLogSnapshotsResponseItem,
+);
+
+/**
+ * @summary Analyze recent server performance logs with AI
+ */
+export const AnalyzeServerIncidentParams = zod.object({
+  serverId: zod.coerce.number(),
+});
+
+export const analyzeServerIncidentBodyHoursDefault = 6;
+export const analyzeServerIncidentBodyHoursMax = 24;
+
+export const AnalyzeServerIncidentBody = zod.object({
+  hours: zod
+    .number()
+    .min(1)
+    .max(analyzeServerIncidentBodyHoursMax)
+    .default(analyzeServerIncidentBodyHoursDefault),
+});
+
+export const AnalyzeServerIncidentResponse = zod.object({
+  analysis: zod.string(),
+  generatedAt: zod.date(),
+  snapshotCount: zod.number(),
+  windowHours: zod.number(),
+});
+
+/**
  * @summary Get order and cart statistics
  */
 export const GetMagentoStatsResponse = zod.object({
