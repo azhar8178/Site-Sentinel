@@ -1,0 +1,188 @@
+ubuntu@ip-172-33-86-172:~/Site-Sentinel$ cd /home/ubuntu/Site-Sentinel
+ubuntu@ip-172-33-86-172:~/Site-Sentinel$ cd /home/ubuntu/Site-Sentinel
+sudo docker compose exec -T postgres psql -U monitor -d site_monitor <<'SQL'
+sudo docker compose exec -T postgres psql -U monitor -d site_monitor <<'SQL'
+SELECT
+  pid,e,
+  state,vent_type,
+  wait_event_type,
+  wait_event,ry_start AS running_for,
+  now() - query_start AS running_for,ids,
+  pg_blocking_pids(pid) AS blocking_pids,
+  left(query, 240) AS query
+FROM pg_stat_activity_monitor'
+WHERE datname = 'site_monitor'T;
+ORDER BY query_start NULLS LAST;
+SELECT
+SELECTd,
+  l.pid,type,
+  l.locktype,
+  l.mode,ed,
+  l.granted,::regclass AS relation,
+  l.relation::regclass AS relation,
+  a.state,a.query_start AS running_for,
+  now() - a.query_start AS running_for,
+  left(a.query, 240) AS query
+FROM pg_locks lat_activity a ON a.pid = l.pid
+LEFT JOIN pg_stat_activity a ON a.pid = l.pidse WHERE datname = 'site_monitor')
+WHERE l.database = (SELECT oid FROM pg_database WHERE datname = 'site_monitor')
+ORDER BY l.granted, a.query_start NULLS LAST;
+SELECT column_name
+SELECT column_namechema.columns
+FROM information_schema.columnsics'
+WHERE table_name = 'server_metrics'
+  AND column_name = 'waf';
+SELECT to_regclass('public.server_waf_events');
+SELECT to_regclass('public.server_waf_events');
+SELECT indexname
+SELECT indexname
+FROM pg_indexes = 'server_waf_events';
+WHERE tablename = 'server_waf_events';
+SQL
+  pid   | state  | wait_event_type |  wait_event  |   running_for   | blocking_pids |                                                                           query                                                                            
+--------+--------+-----------------+--------------+-----------------+---------------+------------------------------------------------------------------------------------------------------------------------------------------------------------
+ 939874 | active | IO              | DataFileRead | 08:11:49.327442 | {}            | SELECT sm.server_id, s.name, sm.cpu_percent, sm.mem_used_bytes, sm.mem_total_bytes, sm.disk_used_bytes, sm.disk_total_bytes, sm.recorded_at               +
+        |        |                 |              |                 |               |    FROM server_metrics sm                                                                                                                                 +
+        |        |                 |              |                 |               |    JOIN servers s ON s.id = sm.server_id                                                                                                                  +
+        |        |                 |              |                 |               |    WHERE sm.recorded_at = (SELECT
+ 963273 | active | Lock            | relation     | 00:41:09.376142 | {939874}      | ALTER TABLE "servers" DROP CONSTRAINT "servers_api_key_key";
+ 963298 | active | Lock            | relation     | 00:40:51.39209  | {963273}      | select "id", "name", "hostname", "api_key", "is_active", "last_seen_at", "created_at", "updated_at" from "servers" where "servers"."api_key" = $1 limit $2
+ 963308 | active | Lock            | relation     | 00:40:28.071695 | {963273}      | select "id", "name", "hostname", "is_active", "last_seen_at", "created_at" from "servers" order by "servers"."name"
+ 963327 | active | Lock            | relation     | 00:40:26.227105 | {963273}      | select "id", "name", "hostname", "is_active", "last_seen_at", "created_at" from "servers" order by "servers"."name"
+ 963329 | active | Lock            | relation     | 00:40:22.537735 | {963273}      | select "id", "name", "hostname", "api_key", "is_active", "last_seen_at", "created_at", "updated_at" from "servers" where "servers"."is_active" = $1
+ 963330 | active | Lock            | relation     | 00:40:21.835427 | {963273}      | select "id", "name", "hostname", "api_key", "is_active", "last_seen_at", "created_at", "updated_at" from "servers" where "servers"."api_key" = $1 limit $2
+ 963331 | active | Lock            | relation     | 00:40:18.669634 | {963273}      | select "id", "name", "hostname", "api_key", "is_active", "last_seen_at", "created_at", "updated_at" from "servers" order by "servers"."id"
+ 963354 | active | Lock            | relation     | 00:39:51.804411 | {963273}      | select "id", "name", "hostname", "api_key", "is_active", "last_seen_at", "created_at", "updated_at" from "servers" where "servers"."api_key" = $1 limit $2
+ 963385 | active | Lock            | relation     | 00:39:22.294532 | {939874}      | ALTER TABLE server_metrics                                                                                                                                +
+        |        |                 |              |                 |               |   ADD COLUMN IF NOT EXISTS waf jsonb;
+ 963379 | active | Lock            | relation     | 00:39:21.876583 | {963273}      | select "id", "name", "hostname", "api_key", "is_active", "last_seen_at", "created_at", "updated_at" from "servers" where "servers"."api_key" = $1 limit $2
+ 963394 | active | Lock            | relation     | 00:39:08.546374 | {963273}      | select "id", "name", "hostname", "api_key", "is_active", "last_seen_at", "created_at", "updated_at" from "servers" order by "servers"."id"
+ 963409 | active | Lock            | relation     | 00:38:51.830155 | {963273}      | select "id", "name", "hostname", "api_key", "is_active", "last_seen_at", "created_at", "updated_at" from "servers" where "servers"."api_key" = $1 limit $2
+ 964162 | active | Lock            | relation     | 00:21:54.620938 | {963273}      | select "id", "name", "hostname", "api_key", "is_active", "last_seen_at", "created_at", "updated_at" from "servers" where "servers"."is_active" = $1
+ 964160 | active | Lock            | relation     | 00:21:50.808391 | {963273}      | select "id", "name", "hostname", "api_key", "is_active", "last_seen_at", "created_at", "updated_at" from "servers" where "servers"."api_key" = $1 limit $2
+ 964161 | active | Lock            | relation     | 00:21:45.520377 | {963273}      | select "id", "name", "hostname", "api_key", "is_active", "last_seen_at", "created_at", "updated_at" from "servers" where "servers"."api_key" = $1 limit $2
+ 964187 | active | Lock            | relation     | 00:21:21.220557 | {963273}      | select "id", "name", "hostname", "api_key", "is_active", "last_seen_at", "created_at", "updated_at" from "servers" where "servers"."api_key" = $1 limit $2
+ 964195 | active | Lock            | relation     | 00:21:15.499915 | {963273}      | select "id", "name", "hostname", "api_key", "is_active", "last_seen_at", "created_at", "updated_at" from "servers" where "servers"."api_key" = $1 limit $2
+ 964204 | active | Lock            | relation     | 00:21:08.929013 | {963273}      | select "id", "name", "hostname", "api_key", "is_active", "last_seen_at", "created_at", "updated_at" from "servers" order by "servers"."id"
+ 964213 | active | Lock            | relation     | 00:20:51.24733  | {963273}      | select "id", "name", "hostname", "api_key", "is_active", "last_seen_at", "created_at", "updated_at" from "servers" where "servers"."api_key" = $1 limit $2
+ 964212 | active | Lock            | relation     | 00:20:45.324716 | {963273}      | select "id", "name", "hostname", "api_key", "is_active", "last_seen_at", "created_at", "updated_at" from "servers" where "servers"."api_key" = $1 limit $2
+ 964236 | active | Lock            | relation     | 00:20:21.150083 | {963273}      | select "id", "name", "hostname", "api_key", "is_active", "last_seen_at", "created_at", "updated_at" from "servers" where "servers"."api_key" = $1 limit $2
+ 964244 | active | Lock            | relation     | 00:20:15.488836 | {963273}      | select "id", "name", "hostname", "api_key", "is_active", "last_seen_at", "created_at", "updated_at" from "servers" where "servers"."api_key" = $1 limit $2
+ 964713 | active | Lock            | relation     | 00:09:37.840736 | {963273}      | select "id", "name", "hostname", "api_key", "is_active", "last_seen_at", "created_at", "updated_at" from "servers" where "servers"."is_active" = $1
+ 964712 | active | Lock            | relation     | 00:09:22.014736 | {963273}      | select "id", "name", "hostname", "api_key", "is_active", "last_seen_at", "created_at", "updated_at" from "servers" where "servers"."api_key" = $1 limit $2
+ 964729 | active | Lock            | relation     | 00:09:15.406102 | {963273}      | select "id", "name", "hostname", "api_key", "is_active", "last_seen_at", "created_at", "updated_at" from "servers" where "servers"."api_key" = $1 limit $2
+ 964752 | active | Lock            | relation     | 00:08:52.049372 | {963273}      | select "id", "name", "hostname", "api_key", "is_active", "last_seen_at", "created_at", "updated_at" from "servers" where "servers"."api_key" = $1 limit $2
+ 964754 | active | Lock            | relation     | 00:08:45.324488 | {963273}      | select "id", "name", "hostname", "api_key", "is_active", "last_seen_at", "created_at", "updated_at" from "servers" where "servers"."api_key" = $1 limit $2
+ 964778 | active | Lock            | relation     | 00:08:22.040684 | {963273}      | select "id", "name", "hostname", "api_key", "is_active", "last_seen_at", "created_at", "updated_at" from "servers" where "servers"."api_key" = $1 limit $2
+ 964779 | active | Lock            | relation     | 00:08:15.385663 | {963273}      | select "id", "name", "hostname", "api_key", "is_active", "last_seen_at", "created_at", "updated_at" from "servers" where "servers"."api_key" = $1 limit $2
+ 964787 | active | Lock            | relation     | 00:08:11.565706 | {963273}      | select "id", "name", "hostname", "api_key", "is_active", "last_seen_at", "created_at", "updated_at" from "servers" order by "servers"."id"
+ 964789 | active | Lock            | relation     | 00:08:07.573796 | {963273}      | select "id", "name", "hostname", "api_key", "is_active", "last_seen_at", "created_at", "updated_at" from "servers" order by "servers"."id"
+ 964797 | active | Lock            | relation     | 00:08:02.963707 | {963273}      | select "id", "name", "hostname", "is_active", "last_seen_at", "created_at" from "servers" order by "servers"."name"
+ 965161 | active |                 |              | 00:00:00        | {}            | SELECT                                                                                                                                                    +
+        |        |                 |              |                 |               |   pid,                                                                                                                                                    +
+        |        |                 |              |                 |               |   state,                                                                                                                                                  +
+        |        |                 |              |                 |               |   wait_event_type,                                                                                                                                        +
+        |        |                 |              |                 |               |   wait_event,                                                                                                                                             +
+        |        |                 |              |                 |               |   now() - query_start AS running_for,                                                                                                                     +
+        |        |                 |              |                 |               |   pg_blocking_pids(pid) AS blocking_pids,                                                                                                                 +
+        |        |                 |              |                 |               |   left(query, 240) AS query                                                                                                                               +
+        |        |                 |              |                 |               | FROM pg_stat_activity                                                                                                                                     +
+        |        |                 |              |                 |               | WHERE datname = 'site_monitor'                                                                                                                            +
+        |        |                 |              |                 |               | ORDER BY query_start NU
+(34 rows)
+
+  pid   | locktype |        mode         | granted |      relation       | state  |   running_for   |                                                                           query                                                                            
+--------+----------+---------------------+---------+---------------------+--------+-----------------+------------------------------------------------------------------------------------------------------------------------------------------------------------
+ 963273 | relation | AccessExclusiveLock | f       | servers             | active | 00:41:09.388848 | ALTER TABLE "servers" DROP CONSTRAINT "servers_api_key_key";
+ 963298 | relation | AccessShareLock     | f       | servers             | active | 00:40:51.404796 | select "id", "name", "hostname", "api_key", "is_active", "last_seen_at", "created_at", "updated_at" from "servers" where "servers"."api_key" = $1 limit $2
+ 963308 | relation | AccessShareLock     | f       | servers             | active | 00:40:28.084401 | select "id", "name", "hostname", "is_active", "last_seen_at", "created_at" from "servers" order by "servers"."name"
+ 963327 | relation | AccessShareLock     | f       | servers             | active | 00:40:26.239811 | select "id", "name", "hostname", "is_active", "last_seen_at", "created_at" from "servers" order by "servers"."name"
+ 963329 | relation | AccessShareLock     | f       | servers             | active | 00:40:22.550441 | select "id", "name", "hostname", "api_key", "is_active", "last_seen_at", "created_at", "updated_at" from "servers" where "servers"."is_active" = $1
+ 963330 | relation | AccessShareLock     | f       | servers             | active | 00:40:21.848133 | select "id", "name", "hostname", "api_key", "is_active", "last_seen_at", "created_at", "updated_at" from "servers" where "servers"."api_key" = $1 limit $2
+ 963331 | relation | AccessShareLock     | f       | servers             | active | 00:40:18.68234  | select "id", "name", "hostname", "api_key", "is_active", "last_seen_at", "created_at", "updated_at" from "servers" order by "servers"."id"
+ 963354 | relation | AccessShareLock     | f       | servers             | active | 00:39:51.817117 | select "id", "name", "hostname", "api_key", "is_active", "last_seen_at", "created_at", "updated_at" from "servers" where "servers"."api_key" = $1 limit $2
+ 963385 | relation | AccessExclusiveLock | f       | server_metrics      | active | 00:39:22.307238 | ALTER TABLE server_metrics                                                                                                                                +
+        |          |                     |         |                     |        |                 |   ADD COLUMN IF NOT EXISTS waf jsonb;
+ 963379 | relation | AccessShareLock     | f       | servers             | active | 00:39:21.889289 | select "id", "name", "hostname", "api_key", "is_active", "last_seen_at", "created_at", "updated_at" from "servers" where "servers"."api_key" = $1 limit $2
+ 963394 | relation | AccessShareLock     | f       | servers             | active | 00:39:08.55908  | select "id", "name", "hostname", "api_key", "is_active", "last_seen_at", "created_at", "updated_at" from "servers" order by "servers"."id"
+ 963409 | relation | AccessShareLock     | f       | servers             | active | 00:38:51.842861 | select "id", "name", "hostname", "api_key", "is_active", "last_seen_at", "created_at", "updated_at" from "servers" where "servers"."api_key" = $1 limit $2
+ 964162 | relation | AccessShareLock     | f       | servers             | active | 00:21:54.633644 | select "id", "name", "hostname", "api_key", "is_active", "last_seen_at", "created_at", "updated_at" from "servers" where "servers"."is_active" = $1
+ 964160 | relation | AccessShareLock     | f       | servers             | active | 00:21:50.821097 | select "id", "name", "hostname", "api_key", "is_active", "last_seen_at", "created_at", "updated_at" from "servers" where "servers"."api_key" = $1 limit $2
+ 964161 | relation | AccessShareLock     | f       | servers             | active | 00:21:45.533083 | select "id", "name", "hostname", "api_key", "is_active", "last_seen_at", "created_at", "updated_at" from "servers" where "servers"."api_key" = $1 limit $2
+ 964187 | relation | AccessShareLock     | f       | servers             | active | 00:21:21.233263 | select "id", "name", "hostname", "api_key", "is_active", "last_seen_at", "created_at", "updated_at" from "servers" where "servers"."api_key" = $1 limit $2
+ 964195 | relation | AccessShareLock     | f       | servers             | active | 00:21:15.512621 | select "id", "name", "hostname", "api_key", "is_active", "last_seen_at", "created_at", "updated_at" from "servers" where "servers"."api_key" = $1 limit $2
+ 964204 | relation | AccessShareLock     | f       | servers             | active | 00:21:08.941719 | select "id", "name", "hostname", "api_key", "is_active", "last_seen_at", "created_at", "updated_at" from "servers" order by "servers"."id"
+ 964213 | relation | AccessShareLock     | f       | servers             | active | 00:20:51.260036 | select "id", "name", "hostname", "api_key", "is_active", "last_seen_at", "created_at", "updated_at" from "servers" where "servers"."api_key" = $1 limit $2
+ 964212 | relation | AccessShareLock     | f       | servers             | active | 00:20:45.337422 | select "id", "name", "hostname", "api_key", "is_active", "last_seen_at", "created_at", "updated_at" from "servers" where "servers"."api_key" = $1 limit $2
+ 964236 | relation | AccessShareLock     | f       | servers             | active | 00:20:21.162789 | select "id", "name", "hostname", "api_key", "is_active", "last_seen_at", "created_at", "updated_at" from "servers" where "servers"."api_key" = $1 limit $2
+ 964244 | relation | AccessShareLock     | f       | servers             | active | 00:20:15.501542 | select "id", "name", "hostname", "api_key", "is_active", "last_seen_at", "created_at", "updated_at" from "servers" where "servers"."api_key" = $1 limit $2
+ 964713 | relation | AccessShareLock     | f       | servers             | active | 00:09:37.853442 | select "id", "name", "hostname", "api_key", "is_active", "last_seen_at", "created_at", "updated_at" from "servers" where "servers"."is_active" = $1
+ 964712 | relation | AccessShareLock     | f       | servers             | active | 00:09:22.027442 | select "id", "name", "hostname", "api_key", "is_active", "last_seen_at", "created_at", "updated_at" from "servers" where "servers"."api_key" = $1 limit $2
+ 964729 | relation | AccessShareLock     | f       | servers             | active | 00:09:15.418808 | select "id", "name", "hostname", "api_key", "is_active", "last_seen_at", "created_at", "updated_at" from "servers" where "servers"."api_key" = $1 limit $2
+ 964752 | relation | AccessShareLock     | f       | servers             | active | 00:08:52.062078 | select "id", "name", "hostname", "api_key", "is_active", "last_seen_at", "created_at", "updated_at" from "servers" where "servers"."api_key" = $1 limit $2
+ 964754 | relation | AccessShareLock     | f       | servers             | active | 00:08:45.337194 | select "id", "name", "hostname", "api_key", "is_active", "last_seen_at", "created_at", "updated_at" from "servers" where "servers"."api_key" = $1 limit $2
+ 964778 | relation | AccessShareLock     | f       | servers             | active | 00:08:22.05339  | select "id", "name", "hostname", "api_key", "is_active", "last_seen_at", "created_at", "updated_at" from "servers" where "servers"."api_key" = $1 limit $2
+ 964779 | relation | AccessShareLock     | f       | servers             | active | 00:08:15.398369 | select "id", "name", "hostname", "api_key", "is_active", "last_seen_at", "created_at", "updated_at" from "servers" where "servers"."api_key" = $1 limit $2
+ 964787 | relation | AccessShareLock     | f       | servers             | active | 00:08:11.578412 | select "id", "name", "hostname", "api_key", "is_active", "last_seen_at", "created_at", "updated_at" from "servers" order by "servers"."id"
+ 964789 | relation | AccessShareLock     | f       | servers             | active | 00:08:07.586502 | select "id", "name", "hostname", "api_key", "is_active", "last_seen_at", "created_at", "updated_at" from "servers" order by "servers"."id"
+ 964797 | relation | AccessShareLock     | f       | servers             | active | 00:08:02.976413 | select "id", "name", "hostname", "is_active", "last_seen_at", "created_at" from "servers" order by "servers"."name"
+ 939874 | relation | AccessShareLock     | t       | servers_api_key_key | active | 08:11:49.340148 | SELECT sm.server_id, s.name, sm.cpu_percent, sm.mem_used_bytes, sm.mem_total_bytes, sm.disk_used_bytes, sm.disk_total_bytes, sm.recorded_at               +
+        |          |                     |         |                     |        |                 |    FROM server_metrics sm                                                                                                                                 +
+        |          |                     |         |                     |        |                 |    JOIN servers s ON s.id = sm.server_id                                                                                                                  +
+        |          |                     |         |                     |        |                 |    WHERE sm.recorded_at = (SELECT
+ 939874 | relation | AccessShareLock     | t       | servers_pkey        | active | 08:11:49.340148 | SELECT sm.server_id, s.name, sm.cpu_percent, sm.mem_used_bytes, sm.mem_total_bytes, sm.disk_used_bytes, sm.disk_total_bytes, sm.recorded_at               +
+        |          |                     |         |                     |        |                 |    FROM server_metrics sm                                                                                                                                 +
+        |          |                     |         |                     |        |                 |    JOIN servers s ON s.id = sm.server_id                                                                                                                  +
+        |          |                     |         |                     |        |                 |    WHERE sm.recorded_at = (SELECT
+ 939874 | relation | AccessShareLock     | t       | server_metrics_pkey | active | 08:11:49.340148 | SELECT sm.server_id, s.name, sm.cpu_percent, sm.mem_used_bytes, sm.mem_total_bytes, sm.disk_used_bytes, sm.disk_total_bytes, sm.recorded_at               +
+        |          |                     |         |                     |        |                 |    FROM server_metrics sm                                                                                                                                 +
+        |          |                     |         |                     |        |                 |    JOIN servers s ON s.id = sm.server_id                                                                                                                  +
+        |          |                     |         |                     |        |                 |    WHERE sm.recorded_at = (SELECT
+ 939874 | relation | AccessShareLock     | t       | servers             | active | 08:11:49.340148 | SELECT sm.server_id, s.name, sm.cpu_percent, sm.mem_used_bytes, sm.mem_total_bytes, sm.disk_used_bytes, sm.disk_total_bytes, sm.recorded_at               +
+        |          |                     |         |                     |        |                 |    FROM server_metrics sm                                                                                                                                 +
+        |          |                     |         |                     |        |                 |    JOIN servers s ON s.id = sm.server_id                                                                                                                  +
+        |          |                     |         |                     |        |                 |    WHERE sm.recorded_at = (SELECT
+ 939874 | relation | AccessShareLock     | t       | server_metrics      | active | 08:11:49.340148 | SELECT sm.server_id, s.name, sm.cpu_percent, sm.mem_used_bytes, sm.mem_total_bytes, sm.disk_used_bytes, sm.disk_total_bytes, sm.recorded_at               +
+        |          |                     |         |                     |        |                 |    FROM server_metrics sm                                                                                                                                 +
+        |          |                     |         |                     |        |                 |    JOIN servers s ON s.id = sm.server_id                                                                                                                  +
+        |          |                     |         |                     |        |                 |    WHERE sm.recorded_at = (SELECT
+ 965161 | relation | AccessShareLock     | t       | pg_locks            | active | 00:00:00        | SELECT                                                                                                                                                    +
+        |          |                     |         |                     |        |                 |   l.pid,                                                                                                                                                  +
+        |          |                     |         |                     |        |                 |   l.locktype,                                                                                                                                             +
+        |          |                     |         |                     |        |                 |   l.mode,                                                                                                                                                 +
+        |          |                     |         |                     |        |                 |   l.granted,                                                                                                                                              +
+        |          |                     |         |                     |        |                 |   l.relation::regclass AS relation,                                                                                                                       +
+        |          |                     |         |                     |        |                 |   a.state,                                                                                                                                                +
+        |          |                     |         |                     |        |                 |   now() - a.query_start AS running_for,                                                                                                                   +
+        |          |                     |         |                     |        |                 |   left(a.query, 240) AS query                                                                                                                             +
+        |          |                     |         |                     |        |                 | FROM pg_locks l                                                                                                                                           +
+        |          |                     |         |                     |        |                 | LEFT JOIN pg_stat_activity a ON a.pid = l.pid                                                                                                             +
+        |          |                     |         |                     |        |                 | WHERE l.
+ 965161 | relation | AccessShareLock     | t       | pg_stat_activity    | active | 00:00:00        | SELECT                                                                                                                                                    +
+        |          |                     |         |                     |        |                 |   l.pid,                                                                                                                                                  +
+        |          |                     |         |                     |        |                 |   l.locktype,                                                                                                                                             +
+        |          |                     |         |                     |        |                 |   l.mode,                                                                                                                                                 +
+        |          |                     |         |                     |        |                 |   l.granted,                                                                                                                                              +
+        |          |                     |         |                     |        |                 |   l.relation::regclass AS relation,                                                                                                                       +
+        |          |                     |         |                     |        |                 |   a.state,                                                                                                                                                +
+        |          |                     |         |                     |        |                 |   now() - a.query_start AS running_for,                                                                                                                   +
+        |          |                     |         |                     |        |                 |   left(a.query, 240) AS query                                                                                                                             +
+        |          |                     |         |                     |        |                 | FROM pg_locks l                                                                                                                                           +
+        |          |                     |         |                     |        |                 | LEFT JOIN pg_stat_activity a ON a.pid = l.pid                                                                                                             +
+        |          |                     |         |                     |        |                 | WHERE l.
+(39 rows)
+
+ column_name 
+-------------
+(0 rows)
+
+    to_regclass    
+-------------------
+ server_waf_events
+(1 row)
+
+               indexname               
+---------------------------------------
+ server_waf_events_pkey
+ server_waf_events_server_event_unique
+(2 rows)
