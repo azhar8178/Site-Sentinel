@@ -355,16 +355,16 @@ function ServiceHealth({ servers }: { servers: HealthReport["servers"] }) {
     const svc = server.services;
     if (!svc) return [];
     return [
-      svc.nginx && { server: server.name, label: "Nginx", healthy: svc.nginx.isRunning, detail: svc.nginx.activeConnections != null ? `${svc.nginx.activeConnections} active connections` : "Web server" },
-      svc.varnish && { server: server.name, label: "Varnish", healthy: svc.varnish.isRunning, detail: svc.varnish.hitRate != null ? `${svc.varnish.hitRate}% cache hit rate` : "Cache layer" },
-      svc.phpFpm && { server: server.name, label: "PHP-FPM", healthy: svc.phpFpm.total > 0, detail: `${svc.phpFpm.active} active / ${svc.phpFpm.total} workers` },
-      svc.mysql && { server: server.name, label: "MySQL", healthy: true, detail: `${svc.mysql.threads} threads · ${svc.mysql.slowQueries} slow queries` },
-      svc.elasticsearch && { server: server.name, label: "OpenSearch", healthy: svc.elasticsearch.isRunning && svc.elasticsearch.status !== "red", detail: svc.elasticsearch.status ? `Cluster ${svc.elasticsearch.status}` : svc.elasticsearch.error || "Search cluster" },
-    ].filter(Boolean) as { server: string; label: string; healthy: boolean; detail: string }[];
+      svc.nginx && { server: server.name, label: "Nginx", healthy: svc.nginx.isRunning, detail: svc.nginx.activeConnections != null ? `${svc.nginx.activeConnections} active connections` : "Web server", icon: <Globe2 className="h-5 w-5" /> },
+      svc.varnish && { server: server.name, label: "Varnish", healthy: svc.varnish.isRunning, detail: svc.varnish.hitRate != null ? `${svc.varnish.hitRate}% cache hit rate` : "Cache layer", icon: <Activity className="h-5 w-5" /> },
+      svc.phpFpm && { server: server.name, label: "PHP-FPM", healthy: svc.phpFpm.total > 0, detail: `${svc.phpFpm.active} active / ${svc.phpFpm.total} workers`, icon: <Cpu className="h-5 w-5" /> },
+      svc.mysql && { server: server.name, label: "MySQL", healthy: true, detail: `${svc.mysql.threads} threads · ${svc.mysql.slowQueries} slow queries`, icon: <Database className="h-5 w-5" /> },
+      svc.elasticsearch && { server: server.name, label: "OpenSearch", healthy: svc.elasticsearch.isRunning && svc.elasticsearch.status !== "red", detail: svc.elasticsearch.status ? `Cluster ${svc.elasticsearch.status}` : svc.elasticsearch.error || "Search cluster", icon: <Server className="h-5 w-5" /> },
+    ].filter(Boolean) as { server: string; label: string; healthy: boolean; detail: string; icon: React.ReactNode }[];
   });
 
   return (
-    <Card className="h-full flex flex-col" data-testid="card-service-health">
+    <Card className="order-4 flex flex-col xl:col-span-12" data-testid="card-service-health">
       <CardHeader className="px-5 pb-4 pt-5 shrink-0 border-b border-border/50">
         <div className="flex items-center justify-between gap-3">
           <div>
@@ -372,7 +372,7 @@ function ServiceHealth({ servers }: { servers: HealthReport["servers"] }) {
               <Database className="h-4 w-4 text-primary" aria-hidden="true" />
               Service Health
             </CardTitle>
-            <p className="text-xs text-muted-foreground mt-1">Application layer dependencies</p>
+            <p className="text-xs text-muted-foreground mt-1">Application layer dependencies across the production stack</p>
           </div>
           {services.length > 0 && (
             <Badge variant="outline" className="font-mono text-xs">
@@ -389,16 +389,18 @@ function ServiceHealth({ servers }: { servers: HealthReport["servers"] }) {
             <p className="mt-1 text-xs text-muted-foreground max-w-[250px]">Install specific integration plugins on agents to track services.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
             {services.map((service, index) => (
-              <div key={`${service.server}-${service.label}-${index}`} className="flex flex-col gap-2 rounded-xl border border-border bg-card p-3 shadow-sm transition-all hover:border-primary/30 hover:shadow-md" data-testid={`service-${service.label.toLowerCase()}-${index}`}>
-                <div className="flex items-center justify-between">
-                  <p className="text-sm font-bold">{service.label}</p>
+              <div key={`${service.server}-${service.label}-${index}`} className="group flex min-h-[112px] flex-col justify-between rounded-xl border border-border bg-muted/10 p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md" data-testid={`service-${service.label.toLowerCase()}-${index}`}>
+                <div className="flex items-start justify-between gap-2">
+                  <div className={cn("flex h-9 w-9 items-center justify-center rounded-lg transition-colors", service.healthy ? "bg-success/10 text-success group-hover:bg-success/15" : "bg-destructive/10 text-destructive")}>
+                    {service.icon}
+                  </div>
                   <StatusPill online={service.healthy} label={service.healthy ? "Up" : "Down"} />
                 </div>
-                <div className="flex flex-col mt-auto pt-2 border-t border-border/50">
-                   <p className="text-[11px] text-muted-foreground font-medium truncate mb-0.5">{service.server}</p>
-                   <p className="text-[10px] font-mono text-muted-foreground truncate">{service.detail}</p>
+                <div className="mt-4 min-w-0">
+                   <p className="truncate text-sm font-bold text-foreground">{service.label}</p>
+                   <p className="mt-1 truncate text-[10px] font-mono text-muted-foreground">{service.detail}</p>
                 </div>
               </div>
             ))}
@@ -480,10 +482,10 @@ export default function Dashboard() {
   const overallLabel = overallGood ? "All systems operational" : data.overallStatus === "outage" ? "Service outage detected" : "System performance degraded";
 
   return (
-    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-8 pb-10">
+    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="grid grid-cols-1 gap-6 pb-10 xl:grid-cols-12">
       
       {/* Page Header */}
-      <header className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between border-b border-border pb-6">
+      <header className="order-1 flex flex-col gap-4 border-b border-border pb-6 lg:col-span-12 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <div className="mb-3 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-primary">
             <span className="relative flex h-2 w-2">
@@ -512,7 +514,7 @@ export default function Dashboard() {
       {/* Global Status Banner */}
       <section 
         className={cn(
-          "relative overflow-hidden rounded-2xl border p-5 sm:p-6 shadow-sm transition-colors",
+          "relative order-2 overflow-hidden rounded-2xl border p-5 shadow-sm transition-colors sm:p-6 lg:col-span-12",
           overallGood 
             ? "border-success/30 bg-success/5" 
             : data.overallStatus === "outage" ? "border-destructive/30 bg-destructive/5" : "border-warning/30 bg-warning/5"
@@ -557,7 +559,7 @@ export default function Dashboard() {
       </section>
 
       {/* KPI Cards */}
-      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5" aria-label="Key infrastructure indicators">
+      <section className="order-3 grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:col-span-12 lg:grid-cols-4" aria-label="Key infrastructure indicators">
         {[
           { 
             label: "Storefronts", 
@@ -620,8 +622,8 @@ export default function Dashboard() {
       </section>
 
       {/* Grid: Availability & Fleet */}
-      <section className="grid grid-cols-1 xl:grid-cols-2 gap-5 sm:gap-6 lg:gap-8">
-        <Card className="flex flex-col" data-testid="card-site-availability">
+      <section className="contents">
+        <Card className="order-8 flex flex-col xl:col-span-6" data-testid="card-site-availability">
           <CardHeader className="px-5 sm:px-6 pt-6 pb-4 border-b border-border/50 shrink-0">
             <div className="flex items-center justify-between gap-3">
               <div className="space-y-1">
@@ -683,7 +685,7 @@ export default function Dashboard() {
           )}
         </Card>
 
-        <Card className="flex flex-col" data-testid="card-server-fleet">
+        <Card className="order-7 flex flex-col xl:col-span-12" data-testid="card-server-fleet">
           <CardHeader className="px-5 sm:px-6 pt-6 pb-4 border-b border-border/50 shrink-0">
             <div className="flex items-center justify-between gap-3">
               <div className="space-y-1">
@@ -752,15 +754,28 @@ export default function Dashboard() {
       </section>
 
       {/* Historical Trends */}
-      <section aria-labelledby="historical-trends-heading" className="space-y-4 pt-4">
+      <section aria-labelledby="historical-trends-heading" className="order-5 space-y-4 border-t border-border pt-6 xl:col-span-12">
         <div className="flex flex-col gap-2 border-b border-border pb-4 sm:flex-row sm:items-end sm:justify-between px-1">
           <div>
-            <h2 id="historical-trends-heading" className="text-xl font-display font-bold text-foreground">Resource Trends</h2>
-            <p className="text-sm text-muted-foreground mt-1">CPU, Memory, and Disk utilization over time</p>
+            <h2 id="historical-trends-heading" className="flex items-center gap-2 text-xl font-display font-bold text-foreground">
+              <Activity className="h-5 w-5 text-primary" aria-hidden="true" />
+              Resource Trends
+            </h2>
+            <p className="mt-1 text-sm text-muted-foreground">CPU, Memory, Disk, and load utilization over time</p>
           </div>
-          <Badge variant="outline" className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground hidden sm:inline-flex">
-            Agent Telemetry
-          </Badge>
+          <div className="flex flex-wrap items-center gap-2">
+            {[
+              { label: "CPU", icon: <Cpu className="h-3.5 w-3.5" />, color: "text-primary" },
+              { label: "Memory", icon: <MemoryStick className="h-3.5 w-3.5" />, color: "text-warning" },
+              { label: "Disk", icon: <HardDrive className="h-3.5 w-3.5" />, color: "text-success" },
+              { label: "Load", icon: <Activity className="h-3.5 w-3.5" />, color: "text-destructive" },
+            ].map((metric) => (
+              <span key={metric.label} className={cn("inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wide", metric.color)}>
+                {metric.icon}
+                {metric.label}
+              </span>
+            ))}
+          </div>
         </div>
         
         {data.servers.length === 0 ? (
@@ -772,17 +787,17 @@ export default function Dashboard() {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-5 sm:gap-6 lg:gap-8">
+          <div className="grid grid-cols-1 gap-5 sm:gap-6 lg:gap-8">
             {data.servers.map((server) => <ServerTrend key={server.id} server={server} />)}
           </div>
         )}
       </section>
 
-      {/* Bottom Grid: Services & SSL */}
-      <section className="grid grid-cols-1 xl:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] gap-5 sm:gap-6 lg:gap-8 pt-4 border-t border-border">
+      {/* Service health is positioned directly after the KPI row; endpoint and certificate detail finish the page. */}
+      <section className="contents">
         <ServiceHealth servers={data.servers} />
         
-        <Card className="flex flex-col" data-testid="card-ssl-certificates">
+        <Card className="order-9 flex flex-col xl:col-span-6" data-testid="card-ssl-certificates">
           <CardHeader className="px-5 sm:px-6 pt-6 pb-4 border-b border-border/50 shrink-0">
             <div className="flex items-center justify-between gap-3">
               <div className="space-y-1">
