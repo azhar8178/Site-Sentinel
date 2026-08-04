@@ -1,0 +1,23 @@
+ubuntu@ip-172-33-120-248:~$ sudo nano /opt/monitor-agent/.env
+ubuntu@ip-172-33-120-248:~$ sudo systemctl restart monitor-agent
+ubuntu@ip-172-33-120-248:~$ sudo journalctl -u monitor-agent -n 20 --no-pager
+Aug 04 11:42:34 ip-172-33-120-248 node[2168083]: Report failed: HTTP 401 - {"error":"Invalid API key"}
+Aug 04 11:43:05 ip-172-33-120-248 node[2168083]: Report failed: HTTP 401 - {"error":"Invalid API key"}
+Aug 04 11:43:34 ip-172-33-120-248 node[2168083]: Report failed: HTTP 401 - {"error":"Invalid API key"}
+Aug 04 11:44:05 ip-172-33-120-248 node[2168083]: Report failed: HTTP 401 - {"error":"Invalid API key"}
+Aug 04 11:44:34 ip-172-33-120-248 node[2168083]: Report failed: HTTP 401 - {"error":"Invalid API key"}
+Aug 04 11:45:05 ip-172-33-120-248 node[2168083]: Report failed: HTTP 401 - {"error":"Invalid API key"}
+Aug 04 11:45:35 ip-172-33-120-248 node[2168083]: Report failed: HTTP 401 - {"error":"Invalid API key"}
+Aug 04 11:46:05 ip-172-33-120-248 node[2168083]: Report failed: HTTP 401 - {"error":"Invalid API key"}
+Aug 04 11:46:12 ip-172-33-120-248 systemd[1]: Stopping Site Monitor Agent...
+Aug 04 11:46:12 ip-172-33-120-248 systemd[1]: monitor-agent.service: Deactivated successfully.
+Aug 04 11:46:12 ip-172-33-120-248 systemd[1]: Stopped Site Monitor Agent.
+Aug 04 11:46:12 ip-172-33-120-248 systemd[1]: monitor-agent.service: Consumed 1h 42min 47.110s CPU time.
+Aug 04 11:46:12 ip-172-33-120-248 systemd[1]: Started Site Monitor Agent.
+Aug 04 11:46:13 ip-172-33-120-248 node[3884810]: Site Sentinel Monitor Agent v3.2.0
+Aug 04 11:46:13 ip-172-33-120-248 node[3884810]:   API: https://monit.lovefurniture.ie
+Aug 04 11:46:13 ip-172-33-120-248 node[3884810]:   Interval: 30s
+Aug 04 11:46:13 ip-172-33-120-248 node[3884810]:   Features: CPU, Memory, Disk, Network, Load, PHP-FPM, MySQL, Nginx, Varnish, OpenSearch, SSL
+Aug 04 11:46:13 ip-172-33-120-248 node[3884810]:   OpenSearch: https://vpc-magento-prod-nzaysstzukhdmqqtuhh6be2use.eu-west-2.es.amazonaws.com (none auth)
+Aug 04 11:46:13 ip-172-33-120-248 node[3884810]:   SSL: set MONITOR_SSL_DOMAINS=domain1.com,domain2.com to enable SSL expiry checks
+Aug 04 11:46:14 ip-172-33-120-248 node[3884810]: [2026-08-04T11:46:14.546Z] CPU: 29.38% | Mem: 69.4% | Disk: 48.9% | Load: 2.24 | PHP: 11/11 | Nginx:up(?conn) | Varnish:up(?%hit)
