@@ -864,9 +864,9 @@ export default function Dashboard() {
         </Card>
       </section>
 
-      <footer className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-border pt-6 pb-2 text-xs text-muted-foreground font-medium">
-        <span className="flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-primary" /> Sentinel System Dashboard</span>
-        <span className="flex items-center gap-1">V 1.0.0 <ChevronRight className="h-3 w-3 opacity-50" /> Internal Ops</span>
+      <footer className="order-10 col-span-1 mt-2 flex w-full flex-col items-center justify-between gap-4 border-t border-border pt-6 pb-2 text-xs font-medium text-muted-foreground sm:flex-row xl:col-span-12">
+        <span className="flex shrink-0 items-center gap-2 whitespace-nowrap"><ShieldCheck className="h-4 w-4 text-primary" /> Sentinel System Dashboard</span>
+        <span className="flex shrink-0 items-center gap-1 whitespace-nowrap">V 1.0.0 <ChevronRight className="h-3 w-3 opacity-50" /> Internal Ops</span>
       </footer>
     </motion.div>
   );
