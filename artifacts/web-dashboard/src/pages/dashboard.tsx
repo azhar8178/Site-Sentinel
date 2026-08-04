@@ -35,6 +35,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
 interface HealthReport {
   generatedAt: string;
@@ -92,12 +93,12 @@ type MetricPoint = {
 };
 
 const CHART_COLORS = {
-  cpu: "#1769aa",
-  memory: "#b26a00",
-  disk: "#087f5b",
-  load: "#7c3aed",
-  grid: "hsl(214 18% 87%)",
-  tick: "hsl(215 16% 45%)",
+  cpu: "hsl(var(--primary))",
+  memory: "hsl(var(--warning))",
+  disk: "hsl(var(--success))",
+  load: "hsl(var(--destructive))",
+  grid: "hsl(var(--border) / 0.5)",
+  tick: "hsl(var(--muted-foreground))",
 };
 
 async function apiFetch<T>(url: string): Promise<T> {
@@ -136,27 +137,27 @@ function MetricBar({
   warning?: number;
 }) {
   const tone = value == null ? "muted" : value >= 90 ? "danger" : value >= warning ? "warning" : "good";
-  const toneClasses = {
-    muted: "text-muted-foreground bg-muted",
-    good: "text-emerald-700 bg-emerald-500",
-    warning: "text-amber-700 bg-amber-500",
-    danger: "text-red-700 bg-red-500",
+  const tones = {
+    muted: { text: "text-muted-foreground", bg: "bg-muted", bar: "bg-muted" },
+    good: { text: "text-success", bg: "bg-success/10", bar: "bg-success" },
+    warning: { text: "text-warning", bg: "bg-warning/10", bar: "bg-warning" },
+    danger: { text: "text-destructive", bg: "bg-destructive/10", bar: "bg-destructive" },
   };
 
   return (
-    <div className="space-y-1.5" data-testid={`metric-${label.toLowerCase()}`}>
+    <div className="space-y-2 bg-card border border-border/50 rounded-xl p-3 shadow-sm" data-testid={`metric-${label.toLowerCase()}`}>
       <div className="flex items-center justify-between text-xs">
-        <span className="flex items-center gap-1.5 text-muted-foreground">
+        <span className="flex items-center gap-1.5 text-muted-foreground font-medium uppercase tracking-wider text-[10px]">
           {icon}
           {label}
         </span>
-        <span className={`font-mono font-semibold ${toneClasses[tone].split(" ")[0]}`}>
+        <span className={cn("font-mono font-bold text-sm", tones[tone].text)}>
           {formatPercent(value)}
         </span>
       </div>
-      <div className="h-1.5 overflow-hidden rounded-full bg-muted" aria-hidden="true">
+      <div className="h-1.5 overflow-hidden rounded-full bg-muted/50" aria-hidden="true">
         <div
-          className={`h-full rounded-full transition-[width] duration-300 ${toneClasses[tone].split(" ")[1]}`}
+          className={cn("h-full rounded-full transition-all duration-500 ease-out", tones[tone].bar)}
           style={{ width: `${Math.min(Math.max(value ?? 0, 0), 100)}%` }}
         />
       </div>
@@ -168,14 +169,14 @@ function StatusPill({ online, label }: { online: boolean | null; label: string }
   const Icon = online === null ? Clock3 : online ? CheckCircle2 : XCircle;
   const classes =
     online === null
-      ? "border-border bg-muted text-muted-foreground"
+      ? "bg-muted text-muted-foreground border-border"
       : online
-        ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-        : "border-red-200 bg-red-50 text-red-700";
+        ? "bg-success/10 text-success border-success/20"
+        : "bg-destructive/10 text-destructive border-destructive/20";
 
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-1 text-[11px] font-semibold ${classes}`}
+      className={cn("inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-[11px] font-bold uppercase tracking-wider", classes)}
       data-testid={`status-${label.toLowerCase().replace(/\s+/g, "-")}`}
     >
       <Icon className="h-3 w-3" aria-hidden="true" />
@@ -186,15 +187,15 @@ function StatusPill({ online, label }: { online: boolean | null; label: string }
 
 function LoadingRows({ count = 3 }: { count?: number }) {
   return (
-    <div className="space-y-3" aria-label="Loading monitoring data" data-testid="loading-dashboard">
+    <div className="space-y-4" aria-label="Loading monitoring data" data-testid="loading-dashboard">
       {Array.from({ length: count }).map((_, index) => (
-        <div key={index} className="flex animate-pulse items-center gap-3">
-          <div className="h-8 w-8 rounded-lg bg-muted" />
-          <div className="flex-1 space-y-2">
-            <div className="h-3 w-2/5 rounded bg-muted" />
-            <div className="h-2.5 w-3/5 rounded bg-muted" />
+        <div key={index} className="flex animate-pulse items-center gap-4 bg-muted/20 p-4 rounded-xl">
+          <div className="h-10 w-10 rounded-xl bg-muted" />
+          <div className="flex-1 space-y-2.5">
+            <div className="h-3 w-1/3 rounded bg-muted" />
+            <div className="h-2 w-1/2 rounded bg-muted" />
           </div>
-          <div className="h-5 w-16 rounded-full bg-muted" />
+          <div className="h-6 w-20 rounded-md bg-muted" />
         </div>
       ))}
     </div>
@@ -212,20 +213,22 @@ function ChartTooltipContent({
 }) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="rounded-lg border border-border bg-card px-3 py-2 text-xs shadow-lg">
-      <p className="mb-1.5 font-semibold text-foreground">{label}</p>
-      {payload.map((item) => (
-        <div key={item.name} className="flex items-center justify-between gap-5 py-0.5">
-          <span className="flex items-center gap-1.5 text-muted-foreground">
-            <span className="h-2 w-2 rounded-full" style={{ backgroundColor: item.color }} />
-            {item.name}
-          </span>
-          <span className="font-mono font-semibold text-foreground">
-            {typeof item.value === "number" ? item.value.toFixed(1) : "—"}
-            {item.name === "CPU" || item.name === "Memory" || item.name === "Disk" ? "%" : ""}
-          </span>
-        </div>
-      ))}
+    <div className="rounded-xl border border-border bg-card/95 backdrop-blur shadow-xl p-3 text-xs z-50">
+      <p className="mb-2 font-bold text-foreground border-b border-border/50 pb-2">{label}</p>
+      <div className="space-y-1.5">
+        {payload.map((item) => (
+          <div key={item.name} className="flex items-center justify-between gap-6">
+            <span className="flex items-center gap-2 text-muted-foreground font-medium">
+              <span className="h-2 w-2 rounded-full" style={{ backgroundColor: item.color }} />
+              {item.name}
+            </span>
+            <span className="font-mono font-bold text-foreground">
+              {typeof item.value === "number" ? item.value.toFixed(1) : "—"}
+              {item.name === "CPU" || item.name === "Memory" || item.name === "Disk" ? "%" : ""}
+            </span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -253,22 +256,23 @@ function ServerTrend({ server }: { server: HealthReport["servers"][number] }) {
   }, [hours, metrics]);
 
   return (
-    <Card className="overflow-hidden border-border/80 shadow-none" data-testid={`card-server-trend-${server.id}`}>
-      <CardHeader className="border-b border-border/70 bg-muted/20 px-4 py-3 sm:px-5">
+    <Card className="overflow-hidden flex flex-col h-full" data-testid={`card-server-trend-${server.id}`}>
+      <CardHeader className="border-b border-border/50 bg-muted/10 px-5 py-4 shrink-0">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <CardTitle className="flex items-center gap-2 text-sm">
+            <CardTitle className="flex items-center gap-2 text-[15px]">
               <Activity className="h-4 w-4 text-primary" aria-hidden="true" />
               {server.name}
-              <span className="font-mono text-[11px] font-normal text-muted-foreground">{server.hostname}</span>
             </CardTitle>
-            <p className="mt-1 text-xs text-muted-foreground">
-              CPU, memory and disk utilization
-              {metrics?.length ? ` · ${metrics.length} readings` : ""}
-            </p>
+            <div className="flex items-center gap-2 mt-1">
+              <span className="font-mono text-[10px] bg-muted px-1.5 py-0.5 rounded text-muted-foreground">{server.hostname}</span>
+              <span className="text-[11px] text-muted-foreground font-medium">
+                {metrics?.length ? `${metrics.length} readings` : "Waiting for metrics"}
+              </span>
+            </div>
           </div>
           <div className="flex items-center gap-2">
-            <div className="flex rounded-lg border border-border bg-card p-0.5" aria-label={`Time range for ${server.name}`}>
+            <div className="flex rounded-lg border border-border bg-muted/50 p-1" aria-label={`Time range for ${server.name}`}>
               {[1, 6, 24].map((range) => (
                 <button
                   key={range}
@@ -276,9 +280,12 @@ function ServerTrend({ server }: { server: HealthReport["servers"][number] }) {
                   onClick={() => setHours(range)}
                   aria-pressed={hours === range}
                   data-testid={`button-trend-${server.id}-${range}h`}
-                  className={`rounded-md px-2.5 py-1 text-[11px] font-semibold transition-colors ${
-                    hours === range ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"
-                  }`}
+                  className={cn(
+                    "rounded-md px-3 py-1 text-[11px] font-bold transition-all",
+                    hours === range 
+                      ? "bg-background text-foreground shadow-sm" 
+                      : "text-muted-foreground hover:text-foreground hover:bg-background/50"
+                  )}
                 >
                   {range}h
                 </button>
@@ -286,54 +293,54 @@ function ServerTrend({ server }: { server: HealthReport["servers"][number] }) {
             </div>
             <Button
               type="button"
-              variant="ghost"
+              variant="outline"
               size="icon"
-              className="h-8 w-8"
+              className="h-7 w-7 rounded-lg"
               onClick={() => refetch()}
               disabled={isFetching}
               aria-label={`Refresh ${server.name} trend`}
               data-testid={`button-refresh-trend-${server.id}`}
             >
-              <RefreshCw className={`h-3.5 w-3.5 ${isFetching ? "animate-spin" : ""}`} aria-hidden="true" />
+              <RefreshCw className={cn("h-3 w-3", isFetching && "animate-spin")} aria-hidden="true" />
             </Button>
           </div>
         </div>
       </CardHeader>
-      <CardContent className="p-4 sm:p-5">
+      <CardContent className="p-5 flex-1 min-h-[250px] relative">
         {isLoading ? (
-          <div className="flex h-[220px] items-end gap-2 px-2 pb-4 pt-6" aria-label="Loading chart">
+          <div className="absolute inset-5 flex items-end gap-2" aria-label="Loading chart">
             {[42, 68, 54, 82, 48, 72, 61, 88, 52, 75, 45, 64].map((height, index) => (
-              <div key={index} className="flex-1 animate-pulse rounded-t bg-muted" style={{ height: `${height}%` }} />
+              <div key={index} className="flex-1 animate-pulse rounded-t-sm bg-muted" style={{ height: `${height}%` }} />
             ))}
           </div>
         ) : isError ? (
-          <div className="flex h-[220px] flex-col items-center justify-center rounded-lg border border-dashed border-red-200 bg-red-50/40 px-6 text-center" data-testid={`error-chart-${server.id}`}>
-            <AlertTriangle className="mb-2 h-6 w-6 text-red-600" aria-hidden="true" />
-            <p className="text-sm font-semibold text-red-800">Trend unavailable</p>
-            <p className="mt-1 max-w-xs text-xs text-red-700/80">The metrics history could not be loaded for this server.</p>
-            <Button type="button" variant="outline" size="sm" className="mt-3 border-red-200 bg-card" onClick={() => refetch()} data-testid={`button-retry-chart-${server.id}`}>
-              Try again
+          <div className="absolute inset-5 flex flex-col items-center justify-center rounded-xl border border-dashed border-destructive/30 bg-destructive/5 text-center" data-testid={`error-chart-${server.id}`}>
+            <AlertTriangle className="mb-2 h-8 w-8 text-destructive opacity-80" aria-hidden="true" />
+            <p className="text-sm font-bold text-destructive">Trend Unavailable</p>
+            <p className="mt-1 max-w-[200px] text-xs text-muted-foreground">Failed to load metrics history.</p>
+            <Button type="button" variant="outline" size="sm" className="mt-4" onClick={() => refetch()} data-testid={`button-retry-chart-${server.id}`}>
+              Retry
             </Button>
           </div>
         ) : chartData.length === 0 ? (
-          <div className="flex h-[220px] flex-col items-center justify-center rounded-lg border border-dashed border-border bg-muted/20 px-6 text-center" data-testid={`empty-chart-${server.id}`}>
-            <Activity className="mb-2 h-6 w-6 text-muted-foreground/50" aria-hidden="true" />
-            <p className="text-sm font-semibold">No history in this window</p>
-            <p className="mt-1 max-w-xs text-xs text-muted-foreground">Metrics will appear after the monitoring agent reports its first reading.</p>
+          <div className="absolute inset-5 flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-muted/20 text-center" data-testid={`empty-chart-${server.id}`}>
+            <Activity className="mb-2 h-8 w-8 text-muted-foreground/40" aria-hidden="true" />
+            <p className="text-sm font-bold text-foreground">No History</p>
+            <p className="mt-1 max-w-[250px] text-xs text-muted-foreground">Awaiting first agent report.</p>
           </div>
         ) : (
-          <div className="h-[220px] w-full" data-testid={`chart-server-${server.id}`}>
+          <div className="absolute inset-5" data-testid={`chart-server-${server.id}`}>
             <ResponsiveContainer width="100%" height="100%" debounce={0}>
-              <LineChart data={chartData} margin={{ top: 6, right: 8, bottom: 0, left: -22 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={CHART_COLORS.grid} />
-                <XAxis dataKey="time" tick={{ fontSize: 10, fill: CHART_COLORS.tick }} tickLine={false} axisLine={false} minTickGap={24} />
-                <YAxis domain={[0, "auto"]} tick={{ fontSize: 10, fill: CHART_COLORS.tick }} tickLine={false} axisLine={false} />
-                <Tooltip content={<ChartTooltipContent />} cursor={{ stroke: CHART_COLORS.grid, strokeDasharray: "3 3" }} isAnimationActive={false} />
-                <Legend wrapperStyle={{ fontSize: "11px", paddingTop: "12px" }} iconType="circle" />
-                <Line type="monotone" dataKey="CPU" stroke={CHART_COLORS.cpu} strokeWidth={2} dot={false} connectNulls isAnimationActive={false} />
-                <Line type="monotone" dataKey="Memory" stroke={CHART_COLORS.memory} strokeWidth={2} dot={false} connectNulls isAnimationActive={false} />
-                <Line type="monotone" dataKey="Disk" stroke={CHART_COLORS.disk} strokeWidth={2} dot={false} connectNulls isAnimationActive={false} />
-                <Line type="monotone" dataKey="Load" stroke={CHART_COLORS.load} strokeWidth={1.5} strokeDasharray="4 3" dot={false} connectNulls isAnimationActive={false} />
+              <LineChart data={chartData} margin={{ top: 5, right: 0, bottom: 0, left: -25 }}>
+                <CartesianGrid strokeDasharray="4 4" vertical={false} stroke={CHART_COLORS.grid} />
+                <XAxis dataKey="time" tick={{ fontSize: 10, fill: CHART_COLORS.tick, fontWeight: 500 }} tickLine={false} axisLine={false} minTickGap={30} dy={10} />
+                <YAxis domain={[0, "auto"]} tick={{ fontSize: 10, fill: CHART_COLORS.tick, fontFamily: "monospace" }} tickLine={false} axisLine={false} dx={-10} />
+                <Tooltip content={<ChartTooltipContent />} cursor={{ stroke: CHART_COLORS.grid, strokeWidth: 1 }} isAnimationActive={false} />
+                <Legend wrapperStyle={{ fontSize: "11px", fontWeight: 600, paddingTop: "20px" }} iconType="circle" />
+                <Line type="monotone" dataKey="CPU" stroke={CHART_COLORS.cpu} strokeWidth={2.5} dot={false} connectNulls isAnimationActive={false} />
+                <Line type="monotone" dataKey="Memory" stroke={CHART_COLORS.memory} strokeWidth={2.5} dot={false} connectNulls isAnimationActive={false} />
+                <Line type="monotone" dataKey="Disk" stroke={CHART_COLORS.disk} strokeWidth={2.5} dot={false} connectNulls isAnimationActive={false} />
+                <Line type="monotone" dataKey="Load" stroke={CHART_COLORS.load} strokeWidth={1.5} strokeDasharray="4 4" dot={false} connectNulls isAnimationActive={false} />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -357,36 +364,42 @@ function ServiceHealth({ servers }: { servers: HealthReport["servers"] }) {
   });
 
   return (
-    <Card className="border-border/80 shadow-none" data-testid="card-service-health">
-      <CardHeader className="px-4 pb-3 pt-4 sm:px-5">
+    <Card className="h-full flex flex-col" data-testid="card-service-health">
+      <CardHeader className="px-5 pb-4 pt-5 shrink-0 border-b border-border/50">
         <div className="flex items-center justify-between gap-3">
-          <CardTitle className="flex items-center gap-2 text-sm">
-            <Database className="h-4 w-4 text-primary" aria-hidden="true" />
-            Service health
-          </CardTitle>
+          <div>
+            <CardTitle className="flex items-center gap-2 text-[15px]">
+              <Database className="h-4 w-4 text-primary" aria-hidden="true" />
+              Service Health
+            </CardTitle>
+            <p className="text-xs text-muted-foreground mt-1">Application layer dependencies</p>
+          </div>
           {services.length > 0 && (
-            <span className="font-mono text-xs text-muted-foreground">
-              {services.filter((service) => service.healthy).length}/{services.length} healthy
-            </span>
+            <Badge variant="outline" className="font-mono text-xs">
+              {services.filter((service) => service.healthy).length}/{services.length} UP
+            </Badge>
           )}
         </div>
       </CardHeader>
-      <CardContent className="px-4 pb-4 sm:px-5">
+      <CardContent className="px-5 pb-5 pt-5 flex-1">
         {services.length === 0 ? (
-          <div className="rounded-lg border border-dashed border-border bg-muted/20 px-4 py-6 text-center" data-testid="empty-service-health">
-            <Database className="mx-auto mb-2 h-5 w-5 text-muted-foreground/50" aria-hidden="true" />
-            <p className="text-sm font-medium">No service telemetry</p>
-            <p className="mt-1 text-xs text-muted-foreground">Service checks will appear with the next agent report.</p>
+          <div className="h-full min-h-[200px] flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-muted/20 text-center px-4" data-testid="empty-service-health">
+            <Database className="mb-3 h-8 w-8 text-muted-foreground/40" aria-hidden="true" />
+            <p className="text-sm font-bold">No Service Telemetry</p>
+            <p className="mt-1 text-xs text-muted-foreground max-w-[250px]">Install specific integration plugins on agents to track services.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {services.map((service, index) => (
-              <div key={`${service.server}-${service.label}-${index}`} className="flex items-center justify-between gap-3 rounded-lg border border-border/70 bg-muted/10 px-3 py-2.5" data-testid={`service-${service.label.toLowerCase()}-${index}`}>
-                <div className="min-w-0">
-                  <p className="truncate text-xs font-semibold">{service.label} <span className="font-normal text-muted-foreground">· {service.server}</span></p>
-                  <p className="mt-0.5 truncate text-[11px] text-muted-foreground">{service.detail}</p>
+              <div key={`${service.server}-${service.label}-${index}`} className="flex flex-col gap-2 rounded-xl border border-border bg-card p-3 shadow-sm transition-all hover:border-primary/30 hover:shadow-md" data-testid={`service-${service.label.toLowerCase()}-${index}`}>
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-bold">{service.label}</p>
+                  <StatusPill online={service.healthy} label={service.healthy ? "Up" : "Down"} />
                 </div>
-                <StatusPill online={service.healthy} label={service.healthy ? "Healthy" : "Down"} />
+                <div className="flex flex-col mt-auto pt-2 border-t border-border/50">
+                   <p className="text-[11px] text-muted-foreground font-medium truncate mb-0.5">{service.server}</p>
+                   <p className="text-[10px] font-mono text-muted-foreground truncate">{service.detail}</p>
+                </div>
               </div>
             ))}
           </div>
@@ -406,30 +419,38 @@ export default function Dashboard() {
 
   if (isLoading) {
     return (
-      <div className="mx-auto max-w-[1440px] space-y-6" aria-busy="true">
-        <div className="space-y-2">
-          <div className="h-8 w-48 animate-pulse rounded bg-muted" />
-          <div className="h-4 w-72 animate-pulse rounded bg-muted" />
+      <div className="space-y-6" aria-busy="true">
+        <div className="space-y-3 border-b border-border pb-6">
+          <div className="h-5 w-32 animate-pulse rounded bg-muted" />
+          <div className="h-10 w-64 animate-pulse rounded-lg bg-muted" />
+          <div className="h-4 w-96 animate-pulse rounded bg-muted" />
         </div>
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          {Array.from({ length: 4 }).map((_, index) => <div key={index} className="h-28 animate-pulse rounded-2xl border bg-muted/60" />)}
+        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, index) => <div key={index} className="h-32 animate-pulse rounded-2xl bg-muted" />)}
         </div>
-        <Card className="border-border/80 shadow-none"><CardContent className="p-5"><LoadingRows /></CardContent></Card>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="h-[400px] animate-pulse rounded-2xl bg-muted" />
+          <div className="h-[400px] animate-pulse rounded-2xl bg-muted" />
+        </div>
       </div>
     );
   }
 
   if (isError || !data) {
     return (
-      <div className="mx-auto flex min-h-[520px] max-w-[720px] items-center justify-center px-4">
-        <Card className="w-full border-red-200 bg-red-50/40 shadow-none" data-testid="error-dashboard">
-          <CardContent className="p-8 text-center">
-            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-red-100 text-red-700"><AlertTriangle className="h-6 w-6" aria-hidden="true" /></div>
-            <h1 className="text-lg font-bold">Dashboard data unavailable</h1>
-            <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">{error instanceof Error ? error.message : "The health report could not be loaded. Check the API connection and try again."}</p>
-            <Button type="button" onClick={() => refetch()} className="mt-5 gap-2" disabled={isFetching} data-testid="button-retry-dashboard">
-              <RefreshCw className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`} aria-hidden="true" />
-              Retry
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <Card className="w-full max-w-md border-destructive/30 bg-destructive/5 shadow-xl" data-testid="error-dashboard">
+          <CardContent className="p-8 text-center flex flex-col items-center">
+            <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-destructive/10 text-destructive">
+              <AlertTriangle className="h-8 w-8" aria-hidden="true" />
+            </div>
+            <h1 className="text-xl font-display font-bold text-foreground">Dashboard Offline</h1>
+            <p className="mt-3 text-sm text-muted-foreground leading-relaxed">
+              {error instanceof Error ? error.message : "The health report could not be loaded. Verify API connectivity."}
+            </p>
+            <Button type="button" onClick={() => refetch()} className="mt-8 gap-2 w-full sm:w-auto" disabled={isFetching} data-testid="button-retry-dashboard">
+              <RefreshCw className={cn("h-4 w-4", isFetching && "animate-spin")} aria-hidden="true" />
+              Re-establish Connection
             </Button>
           </CardContent>
         </Card>
@@ -456,97 +477,197 @@ export default function Dashboard() {
   }).length;
   const lastUpdate = dataUpdatedAt ? format(new Date(dataUpdatedAt), "HH:mm:ss") : formatDateTime(data.generatedAt);
   const overallGood = data.overallStatus === "operational";
-  const overallLabel = overallGood ? "All systems operational" : data.overallStatus === "outage" ? "Service outage" : "System degraded";
+  const overallLabel = overallGood ? "All systems operational" : data.overallStatus === "outage" ? "Service outage detected" : "System performance degraded";
 
   return (
-    <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="mx-auto max-w-[1440px] space-y-6 pb-8">
-      <header className="flex flex-col gap-4 border-b border-border/70 pb-5 lg:flex-row lg:items-end lg:justify-between">
+    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-8 pb-10">
+      
+      {/* Page Header */}
+      <header className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between border-b border-border pb-6">
         <div>
-          <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-primary">
-            <span className="h-1.5 w-1.5 rounded-full bg-primary" aria-hidden="true" />
-            Operations control room
+          <div className="mb-3 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-primary">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+            </span>
+            Operations Control Room
           </div>
-          <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Dashboard</h1>
-          <p className="mt-1.5 text-sm text-muted-foreground">Magento production stack · live service posture and infrastructure trends</p>
+          <h1 className="text-3xl font-display font-bold tracking-tight sm:text-4xl text-foreground">Fleet Dashboard</h1>
+          <p className="mt-2 text-sm text-muted-foreground font-medium max-w-2xl leading-relaxed">
+            Live telemetry and health posture for the Magento production stack.
+          </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-2 text-xs text-muted-foreground" data-testid="text-last-updated">
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-2 rounded-lg border border-border bg-card/50 px-3 py-1.5 text-xs text-muted-foreground font-mono" data-testid="text-last-updated">
             <Clock3 className="h-3.5 w-3.5" aria-hidden="true" />
-            Updated {lastUpdate}
-          </span>
-          <Button type="button" variant="outline" size="sm" className="gap-2" onClick={() => refetch()} disabled={isFetching} data-testid="button-refresh-dashboard">
-            <RefreshCw className={`h-3.5 w-3.5 ${isFetching ? "animate-spin" : ""}`} aria-hidden="true" />
-            Refresh
+            <span className="font-semibold text-foreground">{lastUpdate}</span>
+          </div>
+          <Button type="button" variant="outline" size="sm" className="gap-2 font-semibold shadow-sm" onClick={() => refetch()} disabled={isFetching} data-testid="button-refresh-dashboard">
+            <RefreshCw className={cn("h-3.5 w-3.5", isFetching && "animate-spin")} aria-hidden="true" />
+            Sync
           </Button>
         </div>
       </header>
 
-      <section className={`flex flex-col gap-3 rounded-2xl border px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between sm:px-5 ${overallGood ? "border-emerald-200 bg-emerald-50/70" : "border-amber-200 bg-amber-50/70"}`} aria-label="Overall system status" data-testid="status-overall">
-        <div className="flex items-center gap-3">
-          <div className={`flex h-9 w-9 items-center justify-center rounded-xl ${overallGood ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}>
-            {overallGood ? <ShieldCheck className="h-5 w-5" aria-hidden="true" /> : <AlertTriangle className="h-5 w-5" aria-hidden="true" />}
+      {/* Global Status Banner */}
+      <section 
+        className={cn(
+          "relative overflow-hidden rounded-2xl border p-5 sm:p-6 shadow-sm transition-colors",
+          overallGood 
+            ? "border-success/30 bg-success/5" 
+            : data.overallStatus === "outage" ? "border-destructive/30 bg-destructive/5" : "border-warning/30 bg-warning/5"
+        )} 
+        aria-label="Overall system status" 
+        data-testid="status-overall"
+      >
+        <div className="absolute right-0 top-0 h-full w-64 bg-gradient-to-l from-background/50 to-transparent pointer-events-none" />
+        <div className="flex items-start gap-4 relative z-10">
+          <div className={cn(
+            "flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl shadow-inner",
+            overallGood ? "bg-success text-success-foreground" : data.overallStatus === "outage" ? "bg-destructive text-destructive-foreground" : "bg-warning text-warning-foreground"
+          )}>
+            {overallGood ? <ShieldCheck className="h-6 w-6" aria-hidden="true" /> : <AlertTriangle className="h-6 w-6" aria-hidden="true" />}
           </div>
-          <div>
-            <p className={`text-sm font-bold ${overallGood ? "text-emerald-800" : "text-amber-800"}`}>{overallLabel}</p>
-            <p className="text-xs text-muted-foreground">{data.companyName} · Health report generated {formatDateTime(data.generatedAt)}</p>
+          <div className="flex flex-col flex-1 justify-center min-h-[48px]">
+            <div className="flex flex-wrap items-center gap-3 mb-1">
+              <h2 className={cn(
+                "text-lg font-display font-bold tracking-tight",
+                overallGood ? "text-success" : data.overallStatus === "outage" ? "text-destructive" : "text-warning"
+              )}>
+                {overallLabel}
+              </h2>
+              {!overallGood && (
+                 <Badge variant="outline" className={cn(
+                   "font-mono uppercase text-[10px] tracking-wider",
+                   data.overallStatus === "outage" ? "border-destructive text-destructive" : "border-warning text-warning"
+                 )}>
+                   INCIDENT ACTIVE
+                 </Badge>
+              )}
+            </div>
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs font-medium text-muted-foreground">
+              <span>{data.companyName}</span>
+              <span className="hidden sm:inline text-border">•</span>
+              <span>Report generated {formatDateTime(data.generatedAt)}</span>
+              <span className="hidden sm:inline text-border">•</span>
+              <span className="flex items-center gap-1.5"><Timer className="w-3 h-3"/> Auto-sync 5m</span>
+            </div>
           </div>
         </div>
-        <span className="text-xs font-medium text-muted-foreground">Automatic refresh every 5 minutes</span>
       </section>
 
-      <section className="grid grid-cols-2 gap-3 lg:grid-cols-4" aria-label="Key infrastructure indicators">
+      {/* KPI Cards */}
+      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5" aria-label="Key infrastructure indicators">
         {[
-          { label: "Store availability", value: data.sites.length ? `${sitesUp}/${data.sites.length}` : "—", note: data.sites.length ? `${sitesUp === data.sites.length ? "All endpoints responding" : `${data.sites.length - sitesUp} endpoint issue`}` : "No sites configured", icon: <Globe2 className="h-4 w-4" />, good: data.sites.length > 0 && sitesUp === data.sites.length },
-          { label: "Server fleet", value: data.servers.length ? `${serversOnline}/${data.servers.length}` : "—", note: data.servers.length ? `${serversOnline === data.servers.length ? "All agents online" : `${data.servers.length - serversOnline} offline`}` : "No servers configured", icon: <Server className="h-4 w-4" />, good: data.servers.length > 0 && serversOnline === data.servers.length },
-          { label: "Service health", value: serviceEntries.length ? `${healthyServices}/${serviceEntries.length}` : "—", note: serviceEntries.length ? `${healthyServices === serviceEntries.length ? "No service faults" : "Attention required"}` : "No telemetry", icon: <Activity className="h-4 w-4" />, good: serviceEntries.length > 0 && healthyServices === serviceEntries.length },
-          { label: "Certificate runway", value: minSslDays !== null ? `${minSslDays}d` : "—", note: expiredSsl ? `${expiredSsl} expired certificate` : warningSsl ? `${warningSsl} expiring within threshold` : minSslDays !== null ? "Certificates valid" : "No certificates tracked", icon: <LockKeyhole className="h-4 w-4" />, good: allSslEntries.length > 0 && expiredSsl === 0 && warningSsl === 0 },
+          { 
+            label: "Storefronts", 
+            value: data.sites.length ? `${sitesUp}/${data.sites.length}` : "—", 
+            note: data.sites.length ? `${sitesUp === data.sites.length ? "All responding" : `${data.sites.length - sitesUp} down`}` : "None configured", 
+            icon: <Globe2 className="h-5 w-5" />, 
+            good: data.sites.length > 0 && sitesUp === data.sites.length,
+            danger: data.sites.length > 0 && sitesUp < data.sites.length
+          },
+          { 
+            label: "Server Fleet", 
+            value: data.servers.length ? `${serversOnline}/${data.servers.length}` : "—", 
+            note: data.servers.length ? `${serversOnline === data.servers.length ? "All agents online" : `${data.servers.length - serversOnline} offline`}` : "None registered", 
+            icon: <Server className="h-5 w-5" />, 
+            good: data.servers.length > 0 && serversOnline === data.servers.length,
+            danger: data.servers.length > 0 && serversOnline < data.servers.length
+          },
+          { 
+            label: "Service Layer", 
+            value: serviceEntries.length ? `${healthyServices}/${serviceEntries.length}` : "—", 
+            note: serviceEntries.length ? `${healthyServices === serviceEntries.length ? "No faults detected" : `${serviceEntries.length - healthyServices} failing`}` : "No telemetry", 
+            icon: <Activity className="h-5 w-5" />, 
+            good: serviceEntries.length > 0 && healthyServices === serviceEntries.length,
+            danger: serviceEntries.length > 0 && healthyServices < serviceEntries.length
+          },
+          { 
+            label: "SSL Runway", 
+            value: minSslDays !== null ? `${minSslDays}d` : "—", 
+            note: expiredSsl ? `${expiredSsl} expired` : warningSsl ? `${warningSsl} expiring soon` : minSslDays !== null ? "Valid certificates" : "Not tracked", 
+            icon: <LockKeyhole className="h-5 w-5" />, 
+            good: allSslEntries.length > 0 && expiredSsl === 0 && warningSsl === 0,
+            danger: expiredSsl > 0 || warningSsl > 0
+          },
         ].map((stat) => (
-          <Card key={stat.label} className="border-border/80 shadow-none" data-testid={`card-kpi-${stat.label.toLowerCase().replace(/\s+/g, "-")}`}>
-            <CardContent className="p-4 sm:p-5">
-              <div className="mb-3 flex items-center justify-between">
-                <span className="text-xs font-medium text-muted-foreground">{stat.label}</span>
-                <span className={`rounded-lg p-2 ${stat.good ? "bg-emerald-50 text-emerald-700" : "bg-muted text-muted-foreground"}`}>{stat.icon}</span>
+          <Card key={stat.label} className={cn(
+            "relative overflow-hidden group",
+            stat.danger && "border-destructive/40 shadow-[0_0_15px_rgba(var(--destructive),0.1)]"
+          )} data-testid={`card-kpi-${stat.label.toLowerCase().replace(/\s+/g, "-")}`}>
+            <div className={cn(
+              "absolute inset-x-0 top-0 h-1",
+              stat.good ? "bg-success" : stat.danger ? "bg-destructive" : "bg-muted"
+            )} />
+            <CardContent className="p-5 sm:p-6">
+              <div className="flex items-start justify-between mb-4">
+                <span className="text-sm font-semibold text-foreground">{stat.label}</span>
+                <div className={cn(
+                  "p-2 rounded-xl transition-colors",
+                  stat.good ? "bg-success/10 text-success" : stat.danger ? "bg-destructive/10 text-destructive" : "bg-muted text-muted-foreground group-hover:bg-muted/80"
+                )}>
+                  {stat.icon}
+                </div>
               </div>
-              <p className="font-mono text-2xl font-bold tracking-tight" data-testid={`value-${stat.label.toLowerCase().replace(/\s+/g, "-")}`}>{stat.value}</p>
-              <p className={`mt-1 truncate text-xs ${stat.good ? "text-emerald-700" : "text-muted-foreground"}`}>{stat.note}</p>
+              <div className="space-y-1">
+                <p className="font-display text-3xl font-bold tracking-tight text-foreground" data-testid={`value-${stat.label.toLowerCase().replace(/\s+/g, "-")}`}>{stat.value}</p>
+                <p className={cn("text-xs font-medium", stat.good ? "text-success" : stat.danger ? "text-destructive" : "text-muted-foreground")}>{stat.note}</p>
+              </div>
             </CardContent>
           </Card>
         ))}
       </section>
 
-      <section className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.45fr)]">
-        <Card className="border-border/80 shadow-none" data-testid="card-site-availability">
-          <CardHeader className="px-4 pb-3 pt-4 sm:px-5">
+      {/* Grid: Availability & Fleet */}
+      <section className="grid grid-cols-1 xl:grid-cols-2 gap-5 sm:gap-6 lg:gap-8">
+        <Card className="flex flex-col" data-testid="card-site-availability">
+          <CardHeader className="px-5 sm:px-6 pt-6 pb-4 border-b border-border/50 shrink-0">
             <div className="flex items-center justify-between gap-3">
-              <div>
-                <CardTitle className="flex items-center gap-2 text-sm"><Globe2 className="h-4 w-4 text-primary" aria-hidden="true" />Store availability</CardTitle>
-                <p className="mt-1 text-xs text-muted-foreground">Public endpoints checked by Sentinel</p>
+              <div className="space-y-1">
+                <CardTitle className="flex items-center gap-2.5 text-base">
+                  <div className="bg-primary/10 p-1.5 rounded-lg text-primary"><Globe2 className="h-4 w-4" /></div>
+                  Public Endpoints
+                </CardTitle>
+                <p className="text-xs text-muted-foreground font-medium">External availability checks</p>
               </div>
-              <span className="font-mono text-xs text-muted-foreground">{sitesUp}/{data.sites.length}</span>
+              <Badge variant="secondary" className="font-mono text-xs">{sitesUp}/{data.sites.length} UP</Badge>
             </div>
           </CardHeader>
-          <CardContent className="px-4 pb-4 sm:px-5">
+          <CardContent className="p-0 flex-1 flex flex-col">
             {data.sites.length === 0 ? (
-              <div className="rounded-lg border border-dashed border-border bg-muted/20 px-4 py-8 text-center" data-testid="empty-sites">
-                <Globe2 className="mx-auto mb-2 h-6 w-6 text-muted-foreground/50" aria-hidden="true" />
-                <p className="text-sm font-semibold">No sites configured</p>
-                <p className="mt-1 text-xs text-muted-foreground">Add a storefront to begin endpoint monitoring.</p>
+              <div className="flex-1 flex flex-col items-center justify-center p-8 text-center" data-testid="empty-sites">
+                <div className="bg-muted p-4 rounded-full mb-3"><Globe2 className="h-8 w-8 text-muted-foreground/60" /></div>
+                <p className="text-sm font-bold text-foreground">No Sites Configured</p>
+                <p className="mt-1 text-xs text-muted-foreground max-w-[250px]">Add a storefront URL in Settings to begin monitoring availability.</p>
               </div>
             ) : (
-              <div className="divide-y divide-border/70">
+              <div className="divide-y divide-border/50">
                 {data.sites.map((site) => {
                   const isUp = site.currentStatus === "up";
                   const isSlow = site.currentStatus === "slow";
                   return (
-                    <div key={site.id} className="flex items-center gap-3 py-3 first:pt-1 last:pb-1" data-testid={`row-site-${site.id}`}>
-                      <span className={`h-2 w-2 shrink-0 rounded-full ${isUp ? "bg-emerald-500" : isSlow ? "bg-amber-500" : "bg-red-500"}`} aria-hidden="true" />
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-semibold">{site.name}</p>
-                        <a href={site.url} target="_blank" rel="noreferrer" className="block truncate text-xs text-muted-foreground hover:text-primary" data-testid={`link-site-${site.id}`}>{site.url.replace(/^https?:\/\//, "")}</a>
+                    <div key={site.id} className="flex items-center gap-4 p-5 sm:px-6 hover:bg-muted/10 transition-colors group" data-testid={`row-site-${site.id}`}>
+                      <div className="relative flex shrink-0">
+                         <span className={cn("absolute inline-flex h-full w-full rounded-full opacity-20", isUp ? "bg-success" : isSlow ? "bg-warning" : "bg-destructive animate-ping")} />
+                         <span className={cn("relative h-3 w-3 rounded-full", isUp ? "bg-success" : isSlow ? "bg-warning" : "bg-destructive")} aria-hidden="true" />
                       </div>
-                      <div className="shrink-0 text-right">
-                        <Badge variant={isUp ? "success" : isSlow ? "warning" : "destructive"}>{statusLabel(site.currentStatus)}</Badge>
-                        <p className="mt-1 font-mono text-[11px] text-muted-foreground">{site.lastResponseTimeMs != null ? `${site.lastResponseTimeMs}ms` : "No latency"}</p>
+                      <div className="min-w-0 flex-1 space-y-1">
+                        <p className="truncate text-sm font-bold text-foreground group-hover:text-primary transition-colors">{site.name}</p>
+                        <a href={site.url} target="_blank" rel="noreferrer" className="block truncate text-xs text-muted-foreground hover:underline font-mono" data-testid={`link-site-${site.id}`}>
+                          {site.url.replace(/^https?:\/\//, "")}
+                        </a>
+                      </div>
+                      <div className="shrink-0 flex flex-col items-end gap-1.5">
+                        <Badge variant={isUp ? "default" : isSlow ? "secondary" : "destructive"} className={cn(
+                          isUp && "bg-success/10 text-success hover:bg-success/20 border-transparent",
+                          isSlow && "bg-warning/10 text-warning hover:bg-warning/20 border-transparent"
+                        )}>
+                          {statusLabel(site.currentStatus)}
+                        </Badge>
+                        <span className="font-mono text-[11px] font-medium text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                          {site.lastResponseTimeMs != null ? `${site.lastResponseTimeMs}ms` : "—"}
+                        </span>
                       </div>
                     </div>
                   );
@@ -555,51 +676,74 @@ export default function Dashboard() {
             )}
           </CardContent>
           {data.sites.some((site) => site.lastCheckedAt) && (
-            <div className="flex items-center gap-1.5 border-t border-border/70 bg-muted/20 px-4 py-2.5 text-[11px] text-muted-foreground sm:px-5">
-              <Timer className="h-3.5 w-3.5" aria-hidden="true" />
-              Last check {data.sites.find((site) => site.lastCheckedAt)?.lastCheckedAt ? formatDistanceToNow(new Date(data.sites.find((site) => site.lastCheckedAt)?.lastCheckedAt as string), { addSuffix: true }) : "not available"}
+            <div className="mt-auto px-5 sm:px-6 py-3 border-t border-border/50 bg-muted/10 flex items-center gap-2 text-[11px] font-medium text-muted-foreground shrink-0">
+              <Timer className="h-3.5 w-3.5 text-muted-foreground/70" />
+              Last check {data.sites.find((site) => site.lastCheckedAt)?.lastCheckedAt ? formatDistanceToNow(new Date(data.sites.find((site) => site.lastCheckedAt)?.lastCheckedAt as string), { addSuffix: true }) : "unknown"}
             </div>
           )}
         </Card>
 
-        <Card className="border-border/80 shadow-none" data-testid="card-server-fleet">
-          <CardHeader className="px-4 pb-3 pt-4 sm:px-5">
+        <Card className="flex flex-col" data-testid="card-server-fleet">
+          <CardHeader className="px-5 sm:px-6 pt-6 pb-4 border-b border-border/50 shrink-0">
             <div className="flex items-center justify-between gap-3">
-              <div>
-                <CardTitle className="flex items-center gap-2 text-sm"><Server className="h-4 w-4 text-primary" aria-hidden="true" />Server fleet</CardTitle>
-                <p className="mt-1 text-xs text-muted-foreground">Current capacity snapshot across production hosts</p>
+              <div className="space-y-1">
+                <CardTitle className="flex items-center gap-2.5 text-base">
+                  <div className="bg-primary/10 p-1.5 rounded-lg text-primary"><Server className="h-4 w-4" /></div>
+                  Infrastructure Nodes
+                </CardTitle>
+                <p className="text-xs text-muted-foreground font-medium">Active server agents</p>
               </div>
-              <span className="font-mono text-xs text-muted-foreground">{serversOnline}/{data.servers.length} online</span>
+              <Badge variant="secondary" className="font-mono text-xs">{serversOnline}/{data.servers.length} UP</Badge>
             </div>
           </CardHeader>
-          <CardContent className="space-y-4 px-4 pb-4 sm:px-5">
+          <CardContent className="p-4 sm:p-5 space-y-4 flex-1 overflow-y-auto max-h-[600px]">
             {data.servers.length === 0 ? (
-              <div className="rounded-lg border border-dashed border-border bg-muted/20 px-4 py-8 text-center" data-testid="empty-servers">
-                <Server className="mx-auto mb-2 h-6 w-6 text-muted-foreground/50" aria-hidden="true" />
-                <p className="text-sm font-semibold">No servers registered</p>
-                <p className="mt-1 text-xs text-muted-foreground">Add an agent from the Servers page to see infrastructure health.</p>
+              <div className="h-full flex flex-col items-center justify-center p-8 text-center" data-testid="empty-servers">
+                <div className="bg-muted p-4 rounded-full mb-3"><Server className="h-8 w-8 text-muted-foreground/60" /></div>
+                <p className="text-sm font-bold text-foreground">No Agents Registered</p>
+                <p className="mt-1 text-xs text-muted-foreground max-w-[250px]">Deploy the Sentinel agent to your servers to track resources.</p>
               </div>
             ) : data.servers.map((server) => (
-              <div key={server.id} className="rounded-xl border border-border/70 bg-muted/10 p-3.5 sm:p-4" data-testid={`row-server-${server.id}`}>
-                <div className="mb-3 flex items-start justify-between gap-3">
-                  <div className="flex min-w-0 items-center gap-2.5">
-                    <div className={`rounded-lg p-2 ${server.isOnline ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-700"}`}><Server className="h-4 w-4" aria-hidden="true" /></div>
-                    <div className="min-w-0"><p className="truncate text-sm font-semibold">{server.name}</p><p className="truncate font-mono text-[11px] text-muted-foreground">{server.hostname}</p></div>
+              <div key={server.id} className="rounded-xl border border-border bg-card shadow-sm overflow-hidden" data-testid={`row-server-${server.id}`}>
+                <div className="p-4 border-b border-border/50 bg-muted/5 flex items-center justify-between gap-4">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <div className={cn("p-2 rounded-lg shrink-0", server.isOnline ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive")}>
+                      <Server className="h-4 w-4" />
+                    </div>
+                    <div className="min-w-0 space-y-0.5">
+                      <p className="truncate text-sm font-bold text-foreground">{server.name}</p>
+                      <p className="truncate font-mono text-[10px] font-medium text-muted-foreground">{server.hostname}</p>
+                    </div>
                   </div>
                   <StatusPill online={server.isOnline} label={server.isOnline ? "Online" : "Offline"} />
                 </div>
-                {server.metrics ? (
-                  <div className="grid gap-3 sm:grid-cols-3">
-                    <MetricBar label="CPU" value={server.metrics.cpuPercent} icon={<Cpu className="h-3 w-3" aria-hidden="true" />} />
-                    <MetricBar label="Memory" value={server.metrics.memPercent} icon={<MemoryStick className="h-3 w-3" aria-hidden="true" />} />
-                    <MetricBar label="Disk" value={server.metrics.diskPercent} icon={<HardDrive className="h-3 w-3" aria-hidden="true" />} />
+                
+                <div className="p-4">
+                  {server.metrics ? (
+                    <div className="grid gap-3 sm:grid-cols-3">
+                      <MetricBar label="CPU" value={server.metrics.cpuPercent} icon={<Cpu className="h-3.5 w-3.5" />} warning={85} />
+                      <MetricBar label="MEM" value={server.metrics.memPercent} icon={<MemoryStick className="h-3.5 w-3.5" />} warning={85} />
+                      <MetricBar label="DSK" value={server.metrics.diskPercent} icon={<HardDrive className="h-3.5 w-3.5" />} warning={90} />
+                    </div>
+                  ) : (
+                    <div className="rounded-lg border border-dashed border-border/70 bg-muted/20 px-4 py-3 text-center">
+                      <p className="text-xs font-medium text-muted-foreground">
+                        {server.isOnline ? "Awaiting initial metric payload" : "Agent offline. Metrics unavailable."}
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                <div className="bg-muted/10 px-4 py-2 border-t border-border/50 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+                  <div className="flex gap-4">
+                    {server.metrics && (
+                      <>
+                        <span className="flex items-center gap-1.5 font-mono"><Activity className="h-3 w-3" />L {server.metrics.loadAvg1m.toFixed(2)}</span>
+                        {server.metrics.connectionCount != null && <span className="flex items-center gap-1.5 font-mono"><Wifi className="h-3 w-3" />{server.metrics.connectionCount} conn</span>}
+                      </>
+                    )}
                   </div>
-                ) : (
-                  <p className="rounded-lg bg-muted/50 px-3 py-2 text-xs text-muted-foreground">{server.isOnline ? "Waiting for first metrics report" : "No metrics · server offline"}</p>
-                )}
-                <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 border-t border-border/70 pt-2.5 text-[11px] text-muted-foreground">
-                  {server.metrics && <><span className="flex items-center gap-1"><Activity className="h-3 w-3" aria-hidden="true" />Load {server.metrics.loadAvg1m.toFixed(2)}</span>{server.metrics.connectionCount != null && <span className="flex items-center gap-1"><Wifi className="h-3 w-3" aria-hidden="true" />{server.metrics.connectionCount} connections</span>}</>}
-                  {server.lastSeenAt && <span className="ml-auto">Seen {formatDistanceToNow(new Date(server.lastSeenAt), { addSuffix: true })}</span>}
+                  {server.lastSeenAt && <span className="text-right flex-1 sm:flex-none">Ping {formatDistanceToNow(new Date(server.lastSeenAt), { addSuffix: true })}</span>}
                 </div>
               </div>
             ))}
@@ -607,47 +751,95 @@ export default function Dashboard() {
         </Card>
       </section>
 
-      <section aria-labelledby="historical-trends-heading">
-        <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
-          <div><h2 id="historical-trends-heading" className="text-lg font-bold">Historical server trends</h2><p className="text-xs text-muted-foreground">Choose a window to inspect resource pressure and load patterns. Data comes from agent readings.</p></div>
-          <span className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground">No interpolation</span>
+      {/* Historical Trends */}
+      <section aria-labelledby="historical-trends-heading" className="space-y-4 pt-4">
+        <div className="flex flex-col gap-2 border-b border-border pb-4 sm:flex-row sm:items-end sm:justify-between px-1">
+          <div>
+            <h2 id="historical-trends-heading" className="text-xl font-display font-bold text-foreground">Resource Trends</h2>
+            <p className="text-sm text-muted-foreground mt-1">CPU, Memory, and Disk utilization over time</p>
+          </div>
+          <Badge variant="outline" className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground hidden sm:inline-flex">
+            Agent Telemetry
+          </Badge>
         </div>
+        
         {data.servers.length === 0 ? (
-          <Card className="border-dashed border-border shadow-none"><CardContent className="p-8 text-center"><Activity className="mx-auto mb-2 h-6 w-6 text-muted-foreground/50" aria-hidden="true" /><p className="text-sm font-semibold">Historical trends need a server</p><p className="mt-1 text-xs text-muted-foreground">Register a monitoring agent to populate this view.</p></CardContent></Card>
+          <Card className="border-dashed shadow-none">
+            <CardContent className="p-10 text-center">
+              <Activity className="mx-auto mb-4 h-10 w-10 text-muted-foreground/30" aria-hidden="true" />
+              <p className="text-base font-bold text-foreground">Trends Requires Agents</p>
+              <p className="mt-2 text-sm text-muted-foreground max-w-sm mx-auto">Register a monitoring agent to your servers to visualize resource utilization history.</p>
+            </CardContent>
+          </Card>
         ) : (
-          <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">{data.servers.map((server) => <ServerTrend key={server.id} server={server} />)}</div>
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-5 sm:gap-6 lg:gap-8">
+            {data.servers.map((server) => <ServerTrend key={server.id} server={server} />)}
+          </div>
         )}
       </section>
 
-      <section className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.65fr)]">
+      {/* Bottom Grid: Services & SSL */}
+      <section className="grid grid-cols-1 xl:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] gap-5 sm:gap-6 lg:gap-8 pt-4 border-t border-border">
         <ServiceHealth servers={data.servers} />
-        <Card className="border-border/80 shadow-none" data-testid="card-ssl-certificates">
-          <CardHeader className="px-4 pb-3 pt-4 sm:px-5">
+        
+        <Card className="flex flex-col" data-testid="card-ssl-certificates">
+          <CardHeader className="px-5 sm:px-6 pt-6 pb-4 border-b border-border/50 shrink-0">
             <div className="flex items-center justify-between gap-3">
-              <div><CardTitle className="flex items-center gap-2 text-sm"><LockKeyhole className="h-4 w-4 text-primary" aria-hidden="true" />SSL certificates</CardTitle><p className="mt-1 text-xs text-muted-foreground">Certificate expiry across monitored servers</p></div>
-              <span className="font-mono text-xs text-muted-foreground">{allSslEntries.length} tracked</span>
+              <div className="space-y-1">
+                <CardTitle className="flex items-center gap-2.5 text-base">
+                  <div className="bg-primary/10 p-1.5 rounded-lg text-primary"><LockKeyhole className="h-4 w-4" /></div>
+                  Security Certificates
+                </CardTitle>
+                <p className="text-xs text-muted-foreground font-medium">SSL/TLS expiration tracking</p>
+              </div>
+              <Badge variant="secondary" className="font-mono text-xs">{allSslEntries.length} CERTS</Badge>
             </div>
           </CardHeader>
-          <CardContent className="px-0 pb-0">
+          <CardContent className="p-0 flex-1">
             {allSslEntries.length === 0 ? (
-              <div className="mx-4 mb-4 rounded-lg border border-dashed border-border bg-muted/20 px-4 py-8 text-center sm:mx-5" data-testid="empty-ssl">
-                <LockKeyhole className="mx-auto mb-2 h-6 w-6 text-muted-foreground/50" aria-hidden="true" />
-                <p className="text-sm font-semibold">No certificate data reported</p>
-                <p className="mt-1 text-xs text-muted-foreground">SSL visibility will populate from the next server telemetry report.</p>
+              <div className="m-5 sm:m-6 rounded-xl border border-dashed border-border bg-muted/20 px-4 py-10 text-center flex flex-col items-center" data-testid="empty-ssl">
+                <LockKeyhole className="mb-3 h-8 w-8 text-muted-foreground/40" aria-hidden="true" />
+                <p className="text-sm font-bold text-foreground">No Certificates Tracked</p>
+                <p className="mt-1 text-xs text-muted-foreground max-w-[250px]">Certificate discovery runs automatically during agent telemetry collection.</p>
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[560px] text-left text-xs">
-                  <thead className="border-y border-border/70 bg-muted/25 text-[11px] uppercase tracking-wide text-muted-foreground"><tr><th className="px-4 py-2.5 font-semibold sm:px-5">Domain</th><th className="px-4 py-2.5 font-semibold">Status</th><th className="px-4 py-2.5 font-semibold">Expires</th><th className="px-4 py-2.5 text-right font-semibold sm:px-5">Runway</th></tr></thead>
-                  <tbody className="divide-y divide-border/70">
+                <table className="w-full text-left text-sm whitespace-nowrap">
+                  <thead className="border-b border-border/50 bg-muted/10 text-[10px] uppercase tracking-wider text-muted-foreground font-bold">
+                    <tr>
+                      <th className="px-5 sm:px-6 py-3">Domain</th>
+                      <th className="px-4 py-3">Status</th>
+                      <th className="px-4 py-3">Expiration Date</th>
+                      <th className="px-5 sm:px-6 py-3 text-right">Runway</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border/50">
                     {allSslEntries.map((entry, index) => {
                       const valid = !entry.isExpired && !entry.isExpiringSoon;
-                      return <tr key={`${entry.domain}-${index}`} className="hover:bg-muted/20" data-testid={`row-ssl-${index}`}>
-                        <td className="max-w-[260px] truncate px-4 py-3 font-mono text-[11px] sm:px-5">{entry.domain}</td>
-                        <td className="px-4 py-3"><span className={`inline-flex items-center gap-1.5 font-semibold ${valid ? "text-emerald-700" : entry.isExpiringSoon ? "text-amber-700" : "text-red-700"}`}><span className={`h-1.5 w-1.5 rounded-full ${valid ? "bg-emerald-500" : entry.isExpiringSoon ? "bg-amber-500" : "bg-red-500"}`} aria-hidden="true" />{entry.isExpired ? "Expired" : entry.isExpiringSoon ? "Expiring soon" : "Valid"}</span></td>
-                        <td className="px-4 py-3 text-muted-foreground">{entry.expiresAt ? formatDateTime(entry.expiresAt) : "Date unavailable"}</td>
-                        <td className={`px-4 py-3 text-right font-mono font-semibold sm:px-5 ${valid ? "text-foreground" : entry.isExpiringSoon ? "text-amber-700" : "text-red-700"}`}>{entry.isExpired ? "Expired" : `${entry.daysRemaining}d`}</td>
-                      </tr>;
+                      return (
+                        <tr key={`${entry.domain}-${index}`} className="hover:bg-muted/10 transition-colors group" data-testid={`row-ssl-${index}`}>
+                          <td className="px-5 sm:px-6 py-4 font-mono text-[11px] font-semibold text-foreground">{entry.domain}</td>
+                          <td className="px-4 py-4">
+                            <span className={cn(
+                              "inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider border",
+                              valid ? "bg-success/10 text-success border-success/20" : 
+                              entry.isExpiringSoon ? "bg-warning/10 text-warning border-warning/20" : 
+                              "bg-destructive/10 text-destructive border-destructive/20"
+                            )}>
+                              {entry.isExpired ? "Expired" : entry.isExpiringSoon ? "Expiring" : "Valid"}
+                            </span>
+                          </td>
+                          <td className="px-4 py-4 text-xs font-medium text-muted-foreground">
+                            {entry.expiresAt ? formatDateTime(entry.expiresAt) : "Unknown"}
+                          </td>
+                          <td className={cn(
+                            "px-5 sm:px-6 py-4 text-right font-mono text-sm font-bold",
+                            valid ? "text-foreground" : entry.isExpiringSoon ? "text-warning" : "text-destructive"
+                          )}>
+                            {entry.isExpired ? "0d" : `${entry.daysRemaining}d`}
+                          </td>
+                        </tr>
+                      );
                     })}
                   </tbody>
                 </table>
@@ -657,9 +849,9 @@ export default function Dashboard() {
         </Card>
       </section>
 
-      <footer className="flex items-center justify-between border-t border-border/70 pt-4 text-[11px] text-muted-foreground">
-        <span className="flex items-center gap-1.5"><ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" />Sentinel health report</span>
-        <span className="flex items-center gap-1.5"><ChevronRight className="h-3 w-3" aria-hidden="true" />Use Servers for deeper diagnostics</span>
+      <footer className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-border pt-6 pb-2 text-xs text-muted-foreground font-medium">
+        <span className="flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-primary" /> Sentinel System Dashboard</span>
+        <span className="flex items-center gap-1">V 1.0.0 <ChevronRight className="h-3 w-3 opacity-50" /> Internal Ops</span>
       </footer>
     </motion.div>
   );

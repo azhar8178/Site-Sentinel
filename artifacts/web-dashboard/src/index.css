@@ -49,11 +49,17 @@
   --radius-lg: 0.75rem;
   --radius-xl: 1rem;
   --radius-2xl: 1.5rem;
+
+  /* Custom utility classes based on tokens */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.05), 0 4px 6px -4px rgb(0 0 0 / 0.05);
+  --shadow-card: 0px 8px 24px -4px rgba(0, 0, 0, 0.04), 0px 2px 6px -1px rgba(0, 0, 0, 0.02), inset 0px 1px 1px 0px rgba(255, 255, 255, 0.4);
 }
 
 :root {
-  /* Very light slate/blue tinted background for a clean professional look */
-  --background: 210 40% 98%;
+  /* High contrast, technical, premium dark mode vibe but for light mode */
+  --background: 220 20% 97%; /* Slate 100 */
   --foreground: 222 47% 11%;
   
   --border: 214 32% 91%;
@@ -68,75 +74,75 @@
   --popover-foreground: 222 47% 11%;
   --popover-border: 214 32% 91%;
 
-  /* Vibrant Blue Primary */
+  /* High performance blue */
   --primary: 221 83% 53%;
   --primary-foreground: 210 40% 98%;
 
   --secondary: 210 40% 96.1%;
   --secondary-foreground: 222 47% 11.2%;
 
-  --muted: 210 40% 96.1%;
+  --muted: 220 14% 92%;
   --muted-foreground: 215.4 16.3% 46.9%;
 
   --accent: 210 40% 96.1%;
   --accent-foreground: 222 47% 11.2%;
 
-  --success: 142 71% 45%;
-  --success-foreground: 144 100% 98%;
+  /* Purposeful status colors */
+  --success: 160 84% 39%;
+  --success-foreground: 160 100% 97%;
 
   --warning: 38 92% 50%;
   --warning-foreground: 48 100% 96%;
 
-  --destructive: 0 84% 60%;
-  --destructive-foreground: 210 40% 98%;
+  --destructive: 348 83% 53%;
+  --destructive-foreground: 350 100% 98%;
 
   --radius: 0.75rem;
 }
 
 .dark {
-  --background: 222 47% 7%;
+  /* Deep, technical abyss. Like a true cockpit */
+  --background: 230 25% 7%;
   --foreground: 210 40% 96%;
 
-  --border: 217 32% 17%;
-  --input: 217 32% 17%;
-  --ring: 221 83% 53%;
+  --border: 226 21% 15%;
+  --input: 226 21% 15%;
+  --ring: 221 83% 58%;
 
-  --card: 222 47% 11%;
+  --card: 230 25% 10%;
   --card-foreground: 210 40% 96%;
-  --card-border: 217 32% 17%;
+  --card-border: 226 21% 15%;
 
-  --popover: 222 47% 11%;
+  --popover: 230 25% 10%;
   --popover-foreground: 210 40% 96%;
-  --popover-border: 217 32% 17%;
+  --popover-border: 226 21% 15%;
 
-  /* Keep the same vibrant blue primary */
+  /* Electric blue for dark mode */
   --primary: 221 83% 58%;
   --primary-foreground: 210 40% 98%;
 
-  --secondary: 217 32% 17%;
+  --secondary: 226 21% 15%;
   --secondary-foreground: 210 40% 96%;
 
-  --muted: 217 32% 14%;
-  --muted-foreground: 215 20% 55%;
+  --muted: 226 21% 13%;
+  --muted-foreground: 215 20% 65%;
 
-  --accent: 217 32% 17%;
+  --accent: 226 21% 18%;
   --accent-foreground: 210 40% 96%;
 
-  --success: 142 71% 45%;
-  --success-foreground: 144 100% 98%;
+  /* Vibrant status colors for dark mode */
+  --success: 158 64% 45%;
+  --success-foreground: 160 100% 97%;
 
-  --warning: 38 92% 50%;
+  --warning: 40 86% 55%;
   --warning-foreground: 48 100% 96%;
 
-  --destructive: 0 72% 55%;
-  --destructive-foreground: 210 40% 98%;
+  --destructive: 350 89% 60%;
+  --destructive-foreground: 350 100% 98%;
 }
 
 /*
  * Compatibility mappings for older page-level utility classes.
- * A number of the report, analytics, alert, and server views predate the
- * semantic color tokens above and still use Tailwind's light gray utilities.
- * Keep those classes working in light mode while making them theme-aware here.
  */
 .dark {
   color-scheme: dark;
@@ -273,7 +279,7 @@
   }
 
   body {
-    @apply font-sans antialiased bg-background text-foreground;
+    @apply font-sans antialiased bg-background text-foreground selection:bg-primary/30 selection:text-foreground;
   }
 
   h1, h2, h3, h4, h5, h6 {
@@ -284,15 +290,15 @@
 
 /* Custom Scrollbar for a cleaner look */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
   background: hsl(var(--muted-foreground) / 0.3);
-  border-radius: 4px;
+  border-radius: 6px;
 }
 ::-webkit-scrollbar-thumb:hover {
   background: hsl(var(--muted-foreground) / 0.5);
@@ -321,5 +327,20 @@
 
 /* Glassmorphism utilities */
 .glass-panel {
-  @apply bg-background/80 backdrop-blur-lg border border-border/50 shadow-[0_8px_30px_rgb(0,0,0,0.06)];
+  @apply bg-card/80 backdrop-blur-xl border border-border shadow-card;
+}
+
+/* Decorative Noise for Dark Mode */
+.dark .noise-bg {
+  position: relative;
+}
+
+.dark .noise-bg::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+  opacity: 0.03;
+  z-index: 0;
 }
