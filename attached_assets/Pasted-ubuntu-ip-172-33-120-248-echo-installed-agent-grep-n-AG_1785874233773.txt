@@ -1,0 +1,49 @@
+ubuntu@ip-172-33-120-248:~$ echo "--- installed agent ---"
+grep -n 'AGENT_VERSION' /opt/monitor-agent/monitor-agent.js
+sudo sha256sum /opt/monitor-agent/monitor-agent.js
+
+echo "--- running processes ---"
+pgrep -af 'monitor-agent|node.*monitor'
+
+echo "--- service definition ---"
+sudo systemctl cat monitor-agent
+
+echo "--- possible duplicate services ---"
+sudo systemctl list-units --type=service --all --no-pager | \
+  grep -Ei 'monitor|sentinel|agent'
+
+echo "--- recent full agent logs ---"
+sudo journalctl -u monitor-agent --since "20 minutes ago" -l --no-pager | \
+  grep -Ei 'Site Sentinel|Report failed|HTTP 401|HTTP 200|WAF|AWS|400|error|failed'
+--- installed agent ---
+909:const AGENT_VERSION = "3.5.1";
+927:        if (info.version && info.version !== AGENT_VERSION) {
+929:            `[UPDATE] New agent version available: ${info.version} (current: ${AGENT_VERSION})`
+942:console.log(`Site Sentinel Monitor Agent v${AGENT_VERSION}`);
+875b3e4a690a311792b13ae45bb638188020d838c60720e302375368a8f22afc  /opt/monitor-agent/monitor-agent.js
+--- running processes ---
+126216 /usr/bin/node /opt/monitor-agent/monitor-agent.js
+--- service definition ---
+# /etc/systemd/system/monitor-agent.service
+[Unit]
+Description=Site Monitor Agent
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/node /opt/monitor-agent/monitor-agent.js
+Restart=always
+RestartSec=10
+EnvironmentFile=/opt/monitor-agent/.env
+
+[Install]
+WantedBy=multi-user.target
+--- possible duplicate services ---
+  action1_agent.service                          loaded    active   running Action1 Agent Daemon
+  amazon-guardduty-agent.service                 loaded    active   running Amazon GuardDuty Agent
+  hibinit-agent.service                          loaded    inactive dead    EC2 instance hibernation setup agent
+  lvm2-monitor.service                           loaded    active   exited  Monitoring of LVM2 mirrors, snapshots etc. using dmeventd or progress polling
+  lxd-agent.service                              loaded    inactive dead    LXD - agent
+  monitor-agent.service                          loaded    active   running Site Monitor Agent
+  newrelic-infra.service                         loaded    active   running New Relic Infrastructure Agent
+--- recent full agent logs ---
