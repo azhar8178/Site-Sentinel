@@ -561,9 +561,17 @@ async function awsJsonRequest(service, target, body) {
     timeout: 10000,
   });
   if (response.statusCode < 200 || response.statusCode >= 300) {
+    let detail = "";
+    try {
+      const parsed = JSON.parse(response.body);
+      detail = parsed.message || parsed.Message || parsed.__type || "";
+    } catch {}
+    if (!detail && response.body) {
+      detail = response.body.replace(/\s+/g, " ").slice(0, 240);
+    }
     return {
       error: response.statusCode
-        ? `${service} request returned HTTP ${response.statusCode}`
+        ? `${service} request returned HTTP ${response.statusCode}${detail ? `: ${detail}` : ""}`
         : response.error || `${service} request failed`,
     };
   }
@@ -906,7 +914,7 @@ async function collect() {
   }
 }
 
-const AGENT_VERSION = "3.5.1";
+const AGENT_VERSION = "3.5.2";
 const UPDATE_CHECK_INTERVAL = 3600000;
 let lastUpdateCheck = 0;
 

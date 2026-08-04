@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useListServers, useCreateServer, useDeleteServer, useUpdateServer, useRegenerateServerKey, useGetServerMetrics, useGetServerLogSnapshots, useGetServerWafEvents } from "@workspace/api-client-react";
+import { useListServers, useCreateServer, useDeleteServer, useUpdateServer, useRegenerateServerKey, useGetServerMetrics, useGetServerLogSnapshots } from "@workspace/api-client-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
@@ -11,7 +11,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import {
   Server as ServerIcon, Cpu, HardDrive, MemoryStick, Trash2,
   Activity, Plus, X, Copy, Check, Edit2, Save, KeyRound, RefreshCw,
-  Gauge, Search, ShieldCheck, ShieldAlert, CircleCheck, CircleX, CircleAlert,
+  Gauge, Search, CircleCheck, CircleX, CircleAlert,
 } from "lucide-react";
 import { formatBytes } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
@@ -33,9 +33,6 @@ function ServerDetailModal({
     query: { refetchInterval: 30000 },
   });
   const { data: logSnapshots } = useGetServerLogSnapshots(serverId, { hours: Math.min(hours, 24) }, {
-    query: { enabled: true, refetchInterval: 300000 },
-  });
-  const { data: wafEvents } = useGetServerWafEvents(serverId, { hours: Math.min(hours, 168), limit: 50 }, {
     query: { enabled: true, refetchInterval: 300000 },
   });
   const updateServer = useUpdateServer();
@@ -114,7 +111,6 @@ function ServerDetailModal({
   const latestVarnish = (latest as any)?.varnish;
   const latestOpenSearch = (latest as any)?.elasticsearch;
   const openSearchStatus = latestOpenSearch?.status;
-  const latestWaf = (latest as any)?.waf;
   const serviceStatus = (running: boolean | undefined, label: string) => {
     if (running === true) {
       return <span className="inline-flex items-center gap-1 text-xs font-medium text-success"><CircleCheck className="w-3.5 h-3.5" /> {label}</span>;
@@ -347,112 +343,6 @@ function ServerDetailModal({
                     )}
                   </div>
 
-                  <div className="rounded-xl border border-border bg-muted/30 p-4">
-                    <div className="flex items-start justify-between gap-3 mb-4">
-                      <div className="flex items-center gap-2">
-                        <div className="rounded-lg bg-indigo-500/10 p-2 text-indigo-600">
-                          {latestWaf?.status === "error" ? <ShieldAlert className="w-5 h-5" /> : <ShieldCheck className="w-5 h-5" />}
-                        </div>
-                        <div>
-                          <h3 className="font-semibold">AWS WAF</h3>
-                          <p className="text-xs text-muted-foreground">
-                            {latestWaf?.webAclName || "Web ACL traffic protection"}
-                          </p>
-                        </div>
-                      </div>
-                      {serviceStatus(
-                        latestWaf?.isRunning,
-                        latestWaf?.status === "healthy" ? "Healthy" : latestWaf?.status === "warning" ? "Warning" : "WAF"
-                      )}
-                    </div>
-                    {latestWaf ? (
-                      <>
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                          {[
-                            { label: "Blocked", value: latestWaf.blocked ?? 0, tone: "text-destructive" },
-                            { label: "Allowed", value: latestWaf.allowed ?? 0, tone: "text-success" },
-                            { label: "Counted", value: latestWaf.count ?? 0, tone: "" },
-                            { label: "Total events", value: latestWaf.total ?? 0, tone: "" },
-                          ].map(stat => (
-                            <div key={stat.label}>
-                              <p className="text-xs text-muted-foreground">{stat.label}</p>
-                              <p className={`text-xl font-bold ${stat.tone}`}>{Number(stat.value).toLocaleString()}</p>
-                            </div>
-                          ))}
-                        </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4 text-xs">
-                          <div className="rounded-lg border border-border bg-card p-3">
-                            <p className="text-muted-foreground">Logging</p>
-                            <p className="font-semibold mt-1">{latestWaf.loggingEnabled ? "Enabled" : "Unavailable"}</p>
-                            <p className="text-muted-foreground mt-1 break-all">{latestWaf.logGroup || "—"}</p>
-                          </div>
-                          <div className="rounded-lg border border-border bg-card p-3">
-                            <p className="text-muted-foreground">Protected resource</p>
-                            <p className="font-semibold mt-1">{latestWaf.region || "—"}</p>
-                            <p className="text-muted-foreground mt-1 truncate" title={latestWaf.protectedResources?.[0]}>
-                              {latestWaf.protectedResources?.[0] || "No resource association reported"}
-                            </p>
-                          </div>
-                        </div>
-                        {(latestWaf.topRules?.length ?? 0) > 0 && (
-                          <div className="mt-4">
-                            <p className="text-xs font-semibold mb-2">Top rules in the last hour</p>
-                            <div className="space-y-2">
-                              {latestWaf.topRules.slice(0, 5).map((rule: any) => (
-                                <div key={rule.rule} className="flex items-center justify-between text-xs">
-                                  <span className="truncate mr-3" title={rule.rule}>{rule.rule}</span>
-                                  <span className="font-semibold">{Number(rule.hits).toLocaleString()}</span>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                        {latestWaf.error && (
-                          <p className="text-xs text-warning mt-3">{latestWaf.error}</p>
-                        )}
-                      </>
-                    ) : (
-                      <p className="text-sm text-muted-foreground">
-                        No AWS WAF telemetry has been reported yet. The production agent will populate this after its next update.
-                      </p>
-                    )}
-                  </div>
-
-                  {wafEvents && wafEvents.length > 0 && (
-                    <div className="rounded-xl border border-border bg-muted/30 p-4">
-                      <div className="flex items-center justify-between gap-3 mb-3">
-                        <div>
-                          <p className="text-sm font-semibold">Recent WAF events</p>
-                          <p className="text-xs text-muted-foreground">Redacted events retained for 7 days</p>
-                        </div>
-                        <span className="text-xs text-muted-foreground">{wafEvents.length} shown</span>
-                      </div>
-                      <div className="overflow-x-auto">
-                        <table className="w-full text-xs">
-                          <thead>
-                            <tr className="border-b text-left text-muted-foreground">
-                              <th className="pb-2 pr-3">Time</th>
-                              <th className="pb-2 pr-3">Action</th>
-                              <th className="pb-2 pr-3">Rule</th>
-                              <th className="pb-2 pr-3">Source</th>
-                              <th className="pb-2">Path</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {wafEvents.slice(0, 15).map((event: any) => (
-                              <tr key={event.id} className="border-b border-secondary">
-                                <td className="py-2 pr-3 whitespace-nowrap">{new Date(event.eventAt).toLocaleString()}</td>
-                                <td className={`py-2 pr-3 font-semibold ${event.action === "BLOCK" ? "text-destructive" : event.action === "ALLOW" ? "text-success" : ""}`}>{event.action}</td>
-                                <td className="py-2 pr-3 max-w-[180px] truncate" title={event.rule || ""}>{event.rule || "—"}</td>
-                                <td className="py-2 pr-3">{event.clientIp || "—"}{event.country ? ` (${event.country})` : ""}</td>
-                                <td className="py-2 max-w-[180px] truncate" title={event.uri || ""}>{event.method ? `${event.method} ` : ""}{event.uri || "—"}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
-                  )}
                 </div>
               )}
 

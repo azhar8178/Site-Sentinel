@@ -13,6 +13,7 @@ import Dashboard from "@/pages/dashboard";
 import History from "@/pages/history";
 import Store from "@/pages/store";
 import Servers from "@/pages/servers";
+import Waf from "@/pages/waf";
 import Alerts from "@/pages/alerts";
 import Settings from "@/pages/settings";
 import HealthReport from "@/pages/health-report";
@@ -65,6 +66,7 @@ function AppRoutes() {
         <Route path="/history" component={History} />
         <Route path="/store" component={Store} />
         <Route path="/servers" component={Servers} />
+        <Route path="/waf" component={Waf} />
         <Route path="/alerts" component={Alerts} />
         <Route path="/health-report" component={HealthReport} />
         <Route path="/analytics" component={Analytics} />
