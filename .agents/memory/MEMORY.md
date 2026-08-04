@@ -4,3 +4,4 @@
 - [AWS OpenSearch monitoring](aws-opensearch-monitoring.md) — managed OpenSearch domains need a remote IAM/SigV4 health check from the monitored EC2 host, not localhost Elasticsearch probing.
 - [Production deployment path](production-deployment-path.md) — live monit.lovefurniture.ie runs Docker Compose from the Site-Sentinel checkout on the monitoring host.
 - [Incident log safety](incident-log-safety.md) — incident analysis must use allowlisted, redacted, size-capped snapshots rather than arbitrary remote log access.
+- [Agent restart requirement](agent-restart-requirement.md) — replacing the agent file does not reload an active Node process; updates must explicitly restart the systemd service.

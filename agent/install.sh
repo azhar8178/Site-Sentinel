@@ -32,7 +32,7 @@ sudo chmod 600 /opt/monitor-agent/.env
 sudo cp monitor-agent.service /etc/systemd/system/
 sudo systemctl daemon-reload
 sudo systemctl enable monitor-agent
-sudo systemctl start monitor-agent
+sudo systemctl restart monitor-agent
 
 echo ""
 echo "Agent installed and running!"
