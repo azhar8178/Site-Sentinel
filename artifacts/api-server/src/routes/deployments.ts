@@ -162,7 +162,7 @@ function normalizeGitlabPayload(body: Record<string, any>, system: typeof deploy
       ?? (projectUrl && commitSha ? `${projectUrl}/-/commit/${commitSha}` : null),
     1200,
   );
-  const triggerSource = cleanText(
+  const rawTriggerSource = cleanText(
     body.event_name
       ?? body.object_kind
       ?? deployment.trigger
@@ -170,6 +170,11 @@ function normalizeGitlabPayload(body: Record<string, any>, system: typeof deploy
       ?? (body.commits ? "push" : "deployment"),
     64,
   );
+  const triggerSource = rawTriggerSource?.toLowerCase().includes("push")
+    ? "push"
+    : rawTriggerSource?.toLowerCase().includes("deploy")
+      ? "deployment"
+      : rawTriggerSource;
   const summary = cleanText(
     deployment.description ?? commitTitle ?? commitMessage ?? pipeline.name ?? body.build_name,
     MAX_TEXT,

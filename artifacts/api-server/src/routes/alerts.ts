@@ -69,7 +69,11 @@ router.get("/alerts", async (req, res, next) => {
         })
         .from(deploymentsTable)
         .innerJoin(deploymentSystemsTable, eq(deploymentsTable.systemId, deploymentSystemsTable.id))
-        .orderBy(desc(deploymentsTable.deployedAt))
+        // The alert feed should show when Site Sentinel received the event.
+        // Git commit timestamps can be much older than the webhook delivery
+        // time and could otherwise push a valid new event outside the feed
+        // window.
+        .orderBy(desc(deploymentsTable.createdAt))
         .limit(fetchLimit),
       db
         .select({ total: count() })
@@ -125,7 +129,9 @@ router.get("/alerts", async (req, res, next) => {
         statusCode: null,
         emailSent: false,
         hasTimeline: false,
-        createdAt: r.deployedAt ?? r.createdAt,
+        createdAt: r.triggerSource === "push"
+          ? r.createdAt
+          : r.deployedAt ?? r.createdAt,
         deploymentId: r.id,
         systemName: r.systemName,
         systemKey: r.systemKey,
