@@ -399,7 +399,11 @@ gitlabWebhookRouter.post("/webhooks/gitlab/:systemKey", async (req, res, next) =
     const [deployment] = await db.insert(deploymentsTable)
       .values(normalized)
       .onConflictDoUpdate({
-        target: [deploymentsTable.provider, deploymentsTable.providerDeploymentId],
+        target: [
+          deploymentsTable.provider,
+          deploymentsTable.systemId,
+          deploymentsTable.providerDeploymentId,
+        ],
         set: normalized,
       })
       .returning({ id: deploymentsTable.id, status: deploymentsTable.status });

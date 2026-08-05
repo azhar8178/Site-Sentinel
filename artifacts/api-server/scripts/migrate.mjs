@@ -273,7 +273,7 @@ try {
     deployed_at timestamp NOT NULL DEFAULT now(),
     created_at timestamp NOT NULL DEFAULT now(),
     updated_at timestamp NOT NULL DEFAULT now(),
-    CONSTRAINT deployments_provider_deployment_unique UNIQUE (provider, provider_deployment_id)
+    CONSTRAINT deployments_provider_system_deployment_unique UNIQUE (provider, system_id, provider_deployment_id)
   )`);
   for (const column of [
     ["commit_title", "text"],
@@ -287,6 +287,26 @@ try {
   ]) {
     await run(`deployments.${column[0]}`, `ALTER TABLE deployments ADD COLUMN IF NOT EXISTS ${column[0]} ${column[1]}`);
   }
+
+  await run("scope deployment identity by system", `DO $$
+    BEGIN
+      IF EXISTS (
+        SELECT 1 FROM pg_constraint
+        WHERE conname = 'deployments_provider_deployment_unique'
+      ) THEN
+        ALTER TABLE deployments DROP CONSTRAINT deployments_provider_deployment_unique;
+      END IF;
+
+      IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint
+        WHERE conname = 'deployments_provider_system_deployment_unique'
+      ) THEN
+        ALTER TABLE deployments
+          ADD CONSTRAINT deployments_provider_system_deployment_unique
+          UNIQUE (provider, system_id, provider_deployment_id);
+      END IF;
+    END
+  $$`);
 
   await run("seed deployment systems", `INSERT INTO deployment_systems (system_key, name)
     VALUES

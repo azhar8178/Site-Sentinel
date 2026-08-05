@@ -65,8 +65,8 @@ export const deploymentsTable = pgTable("deployments", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 }, (table) => ({
-  providerDeploymentUnique: uniqueIndex("deployments_provider_deployment_unique")
-    .on(table.provider, table.providerDeploymentId),
+  providerSystemDeploymentUnique: uniqueIndex("deployments_provider_system_deployment_unique")
+    .on(table.provider, table.systemId, table.providerDeploymentId),
 }));
 
 export const insertDeploymentSchema = createInsertSchema(deploymentsTable).omit({
