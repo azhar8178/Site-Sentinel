@@ -1,0 +1,245 @@
+ubuntu@ip-172-33-86-172:~$ cd Site-Sentinel/
+ubuntu@ip-172-33-86-172:~/Site-Sentinel$ # Back up the database first
+docker compose exec postgres pg_dump -U monitor site_monitor \
+  > backup_$(date +%Y%m%d_%H%M%S).sql
+# Preserve the existing .env and local operational files
+git pull origin main
+# Rebuild and recreate containers without deleting the database volume
+docker compose up -d --build
+# Verify
+docker compose ps
+curl -s https://monit.lovefurniture.ie/api/healthz
+docker compose logs --tail=100 api
+remote: Enumerating objects: 134, done.
+remote: Counting objects: 100% (134/134), done.
+remote: Compressing objects: 100% (44/44), done.
+remote: Total 92 (delta 44), reused 92 (delta 44), pack-reused 0 (from 0)
+Unpacking objects: 100% (92/92), 734.25 KiB | 1.96 MiB/s, done.
+From github.com:azhar8178/Site-Sentinel
+ * branch            main       -> FETCH_HEAD
+   713aee0..0ef7b1d  main       -> origin/main
+Updating 713aee0..0ef7b1d
+Fast-forward
+ .agents/memory/MEMORY.md                                                                         |   4 +-
+ .agents/memory/deployment-ingestion.md                                                           |  10 ++
+ .agents/memory/spa-sensitive-paths.md                                                            |  10 ++
+ .replit                                                                                          |   2 +-
+ artifacts/api-server/scripts/migrate.mjs                                                         |  48 ++++++
+ artifacts/api-server/src/middleware/auth.ts                                                      |   2 +-
+ artifacts/api-server/src/routes/deployments.ts                                                   | 334 ++++++++++++++++++++++++++++++++++++++
+ artifacts/api-server/src/routes/index.ts                                                         |   3 +
+ artifacts/api-server/src/routes/sites.ts                                                         |   8 +-
+ artifacts/web-dashboard/dist/assets/index-C2AgSdCP.js                                            | 130 +++++++++++++++
+ artifacts/web-dashboard/dist/assets/index-D2fUs98k.css                                           |   1 -
+ artifacts/web-dashboard/dist/assets/index-T7IxLB7J.js                                            | 130 ---------------
+ artifacts/web-dashboard/dist/assets/index-VwIeyM6o.css                                           |   1 +
+ artifacts/web-dashboard/dist/index.html                                                          |   4 +-
+ artifacts/web-dashboard/src/App.tsx                                                              |   2 +
+ artifacts/web-dashboard/src/components/layout.tsx                                                |   2 +
+ artifacts/web-dashboard/src/pages/deployments.tsx                                                | 576 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ attached_assets/Pasted-I-need-help-designing-and-building-a-deployment-history_1785958869251.txt |  62 +++++++
+ attached_assets/Pasted-ubuntu-ip-172-33-86-172-Site-Sentinel-cd-home-ubuntu-Si_1785875493640.txt |  85 ++++++++++
+ attached_assets/Pasted-ubuntu-ip-172-33-86-172-Site-Sentinel-cd-home-ubuntu-Si_1785875736047.txt | 159 ++++++++++++++++++
+ attached_assets/Pasted-ubuntu-ip-172-33-86-172-Site-Sentinel-cd-home-ubuntu-Si_1785877227359.txt |  74 +++++++++
+ attached_assets/image_1785876152853.png                                                          | Bin 0 -> 103741 bytes
+ attached_assets/image_1785876759240.png                                                          | Bin 0 -> 272933 bytes
+ lib/api-client-react/src/generated/api.schemas.ts                                                | 132 +++++++++++++++
+ lib/api-client-react/src/generated/api.ts                                                        | 534 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ lib/api-spec/openapi.yaml                                                                        | 389 ++++++++++++++++++++++++++++++++++++++++++++
+ lib/api-zod/src/generated/api.ts                                                                 | 174 ++++++++++++++++++++
+ lib/api-zod/src/generated/types/createDeploymentSystemInput.ts                                   |  17 ++
+ lib/api-zod/src/generated/types/deployment.ts                                                    |  32 ++++
+ lib/api-zod/src/generated/types/deploymentListResponse.ts                                        |  17 ++
+ lib/api-zod/src/generated/types/deploymentStatus.ts                                              |  18 +++
+ lib/api-zod/src/generated/types/deploymentSummary.ts                                             |  15 ++
+ lib/api-zod/src/generated/types/deploymentSystem.ts                                              |  20 +++
+ lib/api-zod/src/generated/types/deploymentSystemWithSecret.ts                                    |  12 ++
+ lib/api-zod/src/generated/types/index.ts                                                         |  13 ++
+ lib/api-zod/src/generated/types/listDeploymentsParams.ts                                         |  28 ++++
+ lib/api-zod/src/generated/types/listDeploymentsStatus.ts                                         |  18 +++
+ lib/api-zod/src/generated/types/receiveGitlabDeploymentWebhookBody.ts                            |   9 ++
+ lib/api-zod/src/generated/types/webhookAcceptedResponse.ts                                       |  14 ++
+ lib/api-zod/src/generated/types/webhookAcceptedResponseStatus.ts                                 |  18 +++
+ lib/api-zod/src/generated/types/webhookSecretResponse.ts                                         |  11 ++
+ lib/db/src/schema/deployments.ts                                                                 |  67 ++++++++
+ lib/db/src/schema/index.ts                                                                       |   1 +
+ 43 files changed, 3046 insertions(+), 140 deletions(-)
+ create mode 100644 .agents/memory/deployment-ingestion.md
+ create mode 100644 .agents/memory/spa-sensitive-paths.md
+ create mode 100644 artifacts/api-server/src/routes/deployments.ts
+ create mode 100644 artifacts/web-dashboard/dist/assets/index-C2AgSdCP.js
+ delete mode 100644 artifacts/web-dashboard/dist/assets/index-D2fUs98k.css
+ delete mode 100644 artifacts/web-dashboard/dist/assets/index-T7IxLB7J.js
+ create mode 100644 artifacts/web-dashboard/dist/assets/index-VwIeyM6o.css
+ create mode 100644 artifacts/web-dashboard/src/pages/deployments.tsx
+ create mode 100644 attached_assets/Pasted-I-need-help-designing-and-building-a-deployment-history_1785958869251.txt
+ create mode 100644 attached_assets/Pasted-ubuntu-ip-172-33-86-172-Site-Sentinel-cd-home-ubuntu-Si_1785875493640.txt
+ create mode 100644 attached_assets/Pasted-ubuntu-ip-172-33-86-172-Site-Sentinel-cd-home-ubuntu-Si_1785875736047.txt
+ create mode 100644 attached_assets/Pasted-ubuntu-ip-172-33-86-172-Site-Sentinel-cd-home-ubuntu-Si_1785877227359.txt
+ create mode 100644 attached_assets/image_1785876152853.png
+ create mode 100644 attached_assets/image_1785876759240.png
+ create mode 100644 lib/api-zod/src/generated/types/createDeploymentSystemInput.ts
+ create mode 100644 lib/api-zod/src/generated/types/deployment.ts
+ create mode 100644 lib/api-zod/src/generated/types/deploymentListResponse.ts
+ create mode 100644 lib/api-zod/src/generated/types/deploymentStatus.ts
+ create mode 100644 lib/api-zod/src/generated/types/deploymentSummary.ts
+ create mode 100644 lib/api-zod/src/generated/types/deploymentSystem.ts
+ create mode 100644 lib/api-zod/src/generated/types/deploymentSystemWithSecret.ts
+ create mode 100644 lib/api-zod/src/generated/types/listDeploymentsParams.ts
+ create mode 100644 lib/api-zod/src/generated/types/listDeploymentsStatus.ts
+ create mode 100644 lib/api-zod/src/generated/types/receiveGitlabDeploymentWebhookBody.ts
+ create mode 100644 lib/api-zod/src/generated/types/webhookAcceptedResponse.ts
+ create mode 100644 lib/api-zod/src/generated/types/webhookAcceptedResponseStatus.ts
+ create mode 100644 lib/api-zod/src/generated/types/webhookSecretResponse.ts
+ create mode 100644 lib/db/src/schema/deployments.ts
+[+] Building 5.7s (8/23)                                                                                                                                                   
+ => [internal] load local bake definitions                                                                                                                            0.0s
+ => => reading from stdin 504B                                                                                                                                        0.0s
+ => [internal] load build definition from Dockerfile                                                                                                                  0.0s
+ => => transferring dockerfile: 1.38kB                                                                                                                                0.0s
+ => [internal] load metadata for public.ecr.aws/docker/library/node:24-slim                                                                                           1.4s
+ => [internal] load .dockerignore                                                                                                                                     0.0s
+ => => transferring context: 494B                                                                                                                                     0.0s
+ => [internal] load build context                                                                                                                                     0.1s
+ => => transferring context: 3.19MB                                                                                                                                   0.1s
+ => [api-builder  1/14] FROM public.ecr.aws/docker/library/node:24-slim@sha256:3638d9a6fe4030bd716be989438248074489337ba3275657f93595428be4fc03                       4.1s
+ => => resolve public.ecr.aws/docker/library/node:24-slim@sha256:3638d9a6fe4030bd716be989438248074489337ba3275657f93595428be4fc03                                     0.0s
+ => => sha256:d46110e39e3390b26a65f185e07dbd037b1f6185d3d70f5ce7960ccb54484044 1.71MB / 1.71MB                                                                        0.1s
+ => => sha256:9899b563237de9f1d4ac5f86b036a4eecda5a05e58cc8d06d077816d57826517 448B / 448B                                                                            0.2s
+ => => sha256:de581f349ca7109adb73037d51404252bcf76c8a4a12c68308123a63848c05ee 50.50MB / 50.50MB                                                                      0.9s
+ => => sha256:a6144b671d9d073d43bb6a6c4d4cac8e5e00612ff23fd47e2db2d70f64d8bed0 3.32kB / 3.32kB                                                                        0.3s
+ => => sha256:039e6f9f9752f74a3ff4a6a224f64c7c864da16ed98f882107704328f41b9c42 28.23MB / 28.23MB                                                                      0.6s
+ => => extracting sha256:039e6f9f9752f74a3ff4a6a224f64c7c864da16ed98f882107704328f41b9c42                                                                             1.5s
+ => => extracting sha256:a6144b671d9d073d43bb6a6c4d4cac8e5e00612ff23fd47e2db2d70f64d8bed0                                                                             0.0s
+ => => extracting sha256:de581f349ca7109adb73037d51404252bcf76c8a4a12c68308123a63848c05ee                                                                             1.6s
+ => ERROR [api-builder  2/14] RUN npm install -g pnpm@10                                                                                                              0.0s
+ => ERROR [stage-1 2/5] WORKDIR /app                                                                                                                                  0.0s
+------
+ > [api-builder  2/14] RUN npm install -g pnpm@10:
+------
+------
+ > [stage-1 2/5] WORKDIR /app:
+------
+[+] up 0/1
+ ⠙ Image site-sentinel-api Building                                                                                                                                    5.8s
+Dockerfile:3
+
+--------------------
+
+   1 |     FROM public.ecr.aws/docker/library/node:24-slim AS api-builder
+
+   2 |     ENV CI=true
+
+   3 | >>> RUN npm install -g pnpm@10
+
+   4 |     
+
+   5 |     WORKDIR /app
+
+--------------------
+
+failed to solve: failed to compute cache key: write /var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/1967/fs/usr/local/bin/node: no space left on device
+
+NAME                       IMAGE                COMMAND                  SERVICE    CREATED        STATUS                  PORTS
+site-sentinel-api-1        site-sentinel-api    "docker-entrypoint.s…"   api        24 hours ago   Up 24 hours (healthy)   127.0.0.1:8080->8080/tcp
+site-sentinel-postgres-1   postgres:16-alpine   "docker-entrypoint.s…"   postgres   4 months ago   Up 4 months (healthy)   127.0.0.1:5432->5432/tcp
+{"status":"ok"}api-1  | {"level":30,"time":1785960565989,"pid":19,"hostname":"ff6bd3101bfb","siteId":1,"siteName":"Love Furniture IE","isUp":true,"responseTimeMs":11,"msg":"Site check complete"}
+api-1  | {"level":30,"time":1785960566014,"pid":19,"hostname":"ff6bd3101bfb","siteId":2,"siteName":"Love Furniture UK","isUp":true,"responseTimeMs":12,"msg":"Site check complete"}
+api-1  | {"level":30,"time":1785960575320,"pid":19,"hostname":"ff6bd3101bfb","req":{"id":13359,"method":"POST","url":"/api/servers/report"},"res":{"statusCode":200},"responseTime":6,"msg":"request completed"}
+api-1  | {"level":30,"time":1785960584632,"pid":19,"hostname":"ff6bd3101bfb","req":{"id":13360,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":1,"msg":"request completed"}
+api-1  | {"level":30,"time":1785960591339,"pid":19,"hostname":"ff6bd3101bfb","req":{"id":13361,"method":"GET","url":"/nginx_status"},"res":{"statusCode":200},"responseTime":1,"msg":"request completed"}
+api-1  | {"level":30,"time":1785960591414,"pid":19,"hostname":"ff6bd3101bfb","req":{"id":13362,"method":"POST","url":"/api/servers/report"},"res":{"statusCode":401},"responseTime":9,"msg":"request completed"}
+api-1  | {"level":30,"time":1785960605816,"pid":19,"hostname":"ff6bd3101bfb","req":{"id":13363,"method":"POST","url":"/api/servers/report"},"res":{"statusCode":200},"responseTime":15,"msg":"request completed"}
+api-1  | {"level":30,"time":1785960614764,"pid":19,"hostname":"ff6bd3101bfb","req":{"id":13364,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":0,"msg":"request completed"}
+api-1  | {"level":30,"time":1785960621354,"pid":19,"hostname":"ff6bd3101bfb","req":{"id":13365,"method":"GET","url":"/nginx_status"},"res":{"statusCode":200},"responseTime":0,"msg":"request completed"}
+api-1  | {"level":30,"time":1785960621453,"pid":19,"hostname":"ff6bd3101bfb","req":{"id":13366,"method":"POST","url":"/api/servers/report"},"res":{"statusCode":401},"responseTime":9,"msg":"request completed"}
+api-1  | {"level":30,"time":1785960624050,"pid":19,"hostname":"ff6bd3101bfb","url":"https://www.lovefurniture.ie/rest/V1/orders?searchCriteria%5BpageSize%5D=100&searchCriteria%5BcurrentPage%5D=1&searchCriteria%5BsortOrders%5D%5B0%5D%5Bfield%5D=entity_id&searchCriteria%5BsortOrders%5D","apiUrl":"https://www.lovefurniture.ie/rest/V1","endpoint":"/orders?searchCriteria%5BpageSize%5D=100&searchCriteria%5BcurrentPage%5D=1&searc","msg":"Magento API request"}
+api-1  | {"level":30,"time":1785960625420,"pid":19,"hostname":"ff6bd3101bfb","syncType":"orders","count":72,"duration":1370,"msg":"Magento sync complete"}
+api-1  | {"level":30,"time":1785960625423,"pid":19,"hostname":"ff6bd3101bfb","url":"https://www.lovefurniture.ie/rest/V1/carts/search?searchCriteria%5BpageSize%5D=100&searchCriteria%5BcurrentPage%5D=1&searchCriteria%5BsortOrders%5D%5B0%5D%5Bfield%5D=entity_id&searchCriteria%5BsortOrd","apiUrl":"https://www.lovefurniture.ie/rest/V1","endpoint":"/carts/search?searchCriteria%5BpageSize%5D=100&searchCriteria%5BcurrentPage%5D=1","msg":"Magento API request"}
+api-1  | {"level":30,"time":1785960625968,"pid":19,"hostname":"ff6bd3101bfb","count":2,"msg":"Running site checks"}
+api-1  | {"level":30,"time":1785960625990,"pid":19,"hostname":"ff6bd3101bfb","siteId":1,"siteName":"Love Furniture IE","isUp":true,"responseTimeMs":9,"msg":"Site check complete"}
+api-1  | {"level":30,"time":1785960626005,"pid":19,"hostname":"ff6bd3101bfb","siteId":2,"siteName":"Love Furniture UK","isUp":true,"responseTimeMs":11,"msg":"Site check complete"}
+api-1  | {"level":30,"time":1785960628157,"pid":19,"hostname":"ff6bd3101bfb","url":"https://www.lovefurniture.ie/rest/V1/carts/search?searchCriteria%5BpageSize%5D=100&searchCriteria%5BcurrentPage%5D=2&searchCriteria%5BsortOrders%5D%5B0%5D%5Bfield%5D=entity_id&searchCriteria%5BsortOrd","apiUrl":"https://www.lovefurniture.ie/rest/V1","endpoint":"/carts/search?searchCriteria%5BpageSize%5D=100&searchCriteria%5BcurrentPage%5D=2","msg":"Magento API request"}
+api-1  | {"level":30,"time":1785960631213,"pid":19,"hostname":"ff6bd3101bfb","url":"https://www.lovefurniture.ie/rest/V1/carts/search?searchCriteria%5BpageSize%5D=100&searchCriteria%5BcurrentPage%5D=3&searchCriteria%5BsortOrders%5D%5B0%5D%5Bfield%5D=entity_id&searchCriteria%5BsortOrd","apiUrl":"https://www.lovefurniture.ie/rest/V1","endpoint":"/carts/search?searchCriteria%5BpageSize%5D=100&searchCriteria%5BcurrentPage%5D=3","msg":"Magento API request"}
+api-1  | {"level":30,"time":1785960631505,"pid":19,"hostname":"ff6bd3101bfb","syncType":"carts","count":203,"duration":6083,"msg":"Magento sync complete"}
+api-1  | {"level":30,"time":1785960635364,"pid":19,"hostname":"ff6bd3101bfb","req":{"id":13367,"method":"POST","url":"/api/servers/report"},"res":{"statusCode":200},"responseTime":6,"msg":"request completed"}
+api-1  | {"level":30,"time":1785960644897,"pid":19,"hostname":"ff6bd3101bfb","req":{"id":13368,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":0,"msg":"request completed"}
+api-1  | {"level":30,"time":1785960651373,"pid":19,"hostname":"ff6bd3101bfb","req":{"id":13369,"method":"GET","url":"/nginx_status"},"res":{"statusCode":200},"responseTime":1,"msg":"request completed"}
+api-1  | {"level":30,"time":1785960651442,"pid":19,"hostname":"ff6bd3101bfb","req":{"id":13370,"method":"POST","url":"/api/servers/report"},"res":{"statusCode":401},"responseTime":9,"msg":"request completed"}
+api-1  | {"level":30,"time":1785960665368,"pid":19,"hostname":"ff6bd3101bfb","req":{"id":13371,"method":"POST","url":"/api/servers/report"},"res":{"statusCode":200},"responseTime":15,"msg":"request completed"}
+api-1  | {"level":30,"time":1785960672578,"pid":19,"hostname":"ff6bd3101bfb","req":{"id":13372,"method":"GET","url":"/api/agent/version"},"res":{"statusCode":200},"responseTime":1,"msg":"request completed"}
+api-1  | {"level":30,"time":1785960675020,"pid":19,"hostname":"ff6bd3101bfb","req":{"id":13373,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":0,"msg":"request completed"}
+api-1  | {"level":30,"time":1785960681381,"pid":19,"hostname":"ff6bd3101bfb","req":{"id":13374,"method":"GET","url":"/nginx_status"},"res":{"statusCode":200},"responseTime":0,"msg":"request completed"}
+api-1  | {"level":30,"time":1785960681460,"pid":19,"hostname":"ff6bd3101bfb","req":{"id":13375,"method":"POST","url":"/api/servers/report"},"res":{"statusCode":401},"responseTime":9,"msg":"request completed"}
+api-1  | {"level":30,"time":1785960685972,"pid":19,"hostname":"ff6bd3101bfb","count":2,"msg":"Running site checks"}
+api-1  | {"level":30,"time":1785960685994,"pid":19,"hostname":"ff6bd3101bfb","siteId":2,"siteName":"Love Furniture UK","isUp":true,"responseTimeMs":10,"msg":"Site check complete"}
+api-1  | {"level":30,"time":1785960686017,"pid":19,"hostname":"ff6bd3101bfb","siteId":1,"siteName":"Love Furniture IE","isUp":true,"responseTimeMs":14,"msg":"Site check complete"}
+api-1  | {"level":30,"time":1785960695443,"pid":19,"hostname":"ff6bd3101bfb","req":{"id":13376,"method":"POST","url":"/api/servers/report"},"res":{"statusCode":200},"responseTime":11,"msg":"request completed"}
+api-1  | {"level":30,"time":1785960705145,"pid":19,"hostname":"ff6bd3101bfb","req":{"id":13377,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":0,"msg":"request completed"}
+api-1  | {"level":30,"time":1785960711385,"pid":19,"hostname":"ff6bd3101bfb","req":{"id":13378,"method":"GET","url":"/nginx_status"},"res":{"statusCode":200},"responseTime":1,"msg":"request completed"}
+api-1  | {"level":30,"time":1785960711458,"pid":19,"hostname":"ff6bd3101bfb","req":{"id":13379,"method":"POST","url":"/api/servers/report"},"res":{"statusCode":401},"responseTime":10,"msg":"request completed"}
+api-1  | {"level":30,"time":1785960725400,"pid":19,"hostname":"ff6bd3101bfb","req":{"id":13380,"method":"POST","url":"/api/servers/report"},"res":{"statusCode":200},"responseTime":16,"msg":"request completed"}
+api-1  | {"level":30,"time":1785960735272,"pid":19,"hostname":"ff6bd3101bfb","req":{"id":13381,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":0,"msg":"request completed"}
+api-1  | {"level":30,"time":1785960741394,"pid":19,"hostname":"ff6bd3101bfb","req":{"id":13382,"method":"GET","url":"/nginx_status"},"res":{"statusCode":200},"responseTime":1,"msg":"request completed"}
+api-1  | {"level":30,"time":1785960741465,"pid":19,"hostname":"ff6bd3101bfb","req":{"id":13383,"method":"POST","url":"/api/servers/report"},"res":{"statusCode":401},"responseTime":9,"msg":"request completed"}
+api-1  | {"level":30,"time":1785960745976,"pid":19,"hostname":"ff6bd3101bfb","count":2,"msg":"Running site checks"}
+api-1  | {"level":30,"time":1785960745998,"pid":19,"hostname":"ff6bd3101bfb","siteId":1,"siteName":"Love Furniture IE","isUp":true,"responseTimeMs":9,"msg":"Site check complete"}
+api-1  | {"level":30,"time":1785960746016,"pid":19,"hostname":"ff6bd3101bfb","siteId":2,"siteName":"Love Furniture UK","isUp":true,"responseTimeMs":13,"msg":"Site check complete"}
+api-1  | {"level":30,"time":1785960755395,"pid":19,"hostname":"ff6bd3101bfb","req":{"id":13384,"method":"POST","url":"/api/servers/report"},"res":{"statusCode":200},"responseTime":6,"msg":"request completed"}
+api-1  | {"level":30,"time":1785960765415,"pid":19,"hostname":"ff6bd3101bfb","req":{"id":13385,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":0,"msg":"request completed"}
+api-1  | {"level":30,"time":1785960771414,"pid":19,"hostname":"ff6bd3101bfb","req":{"id":13386,"method":"GET","url":"/nginx_status"},"res":{"statusCode":200},"responseTime":1,"msg":"request completed"}
+api-1  | {"level":30,"time":1785960771485,"pid":19,"hostname":"ff6bd3101bfb","req":{"id":13387,"method":"POST","url":"/api/servers/report"},"res":{"statusCode":401},"responseTime":9,"msg":"request completed"}
+api-1  | {"level":30,"time":1785960785433,"pid":19,"hostname":"ff6bd3101bfb","req":{"id":13388,"method":"POST","url":"/api/servers/report"},"res":{"statusCode":200},"responseTime":15,"msg":"request completed"}
+api-1  | {"level":30,"time":1785960795559,"pid":19,"hostname":"ff6bd3101bfb","req":{"id":13389,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":0,"msg":"request completed"}
+api-1  | {"level":30,"time":1785960801429,"pid":19,"hostname":"ff6bd3101bfb","req":{"id":13390,"method":"GET","url":"/nginx_status"},"res":{"statusCode":200},"responseTime":0,"msg":"request completed"}
+api-1  | {"level":30,"time":1785960801640,"pid":19,"hostname":"ff6bd3101bfb","req":{"id":13391,"method":"POST","url":"/api/servers/report"},"res":{"statusCode":401},"responseTime":9,"msg":"request completed"}
+api-1  | {"level":30,"time":1785960805981,"pid":19,"hostname":"ff6bd3101bfb","count":2,"msg":"Running site checks"}
+api-1  | {"level":30,"time":1785960806003,"pid":19,"hostname":"ff6bd3101bfb","siteId":2,"siteName":"Love Furniture UK","isUp":true,"responseTimeMs":9,"msg":"Site check complete"}
+api-1  | {"level":30,"time":1785960806024,"pid":19,"hostname":"ff6bd3101bfb","siteId":1,"siteName":"Love Furniture IE","isUp":true,"responseTimeMs":13,"msg":"Site check complete"}
+api-1  | {"level":30,"time":1785960815917,"pid":19,"hostname":"ff6bd3101bfb","req":{"id":13392,"method":"POST","url":"/api/servers/report"},"res":{"statusCode":200},"responseTime":86,"msg":"request completed"}
+api-1  | {"level":30,"time":1785960825695,"pid":19,"hostname":"ff6bd3101bfb","req":{"id":13393,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":0,"msg":"request completed"}
+api-1  | {"level":30,"time":1785960831447,"pid":19,"hostname":"ff6bd3101bfb","req":{"id":13394,"method":"GET","url":"/nginx_status"},"res":{"statusCode":200},"responseTime":2,"msg":"request completed"}
+api-1  | {"level":30,"time":1785960831557,"pid":19,"hostname":"ff6bd3101bfb","req":{"id":13395,"method":"POST","url":"/api/servers/report"},"res":{"statusCode":401},"responseTime":11,"msg":"request completed"}
+api-1  | {"level":30,"time":1785960845477,"pid":19,"hostname":"ff6bd3101bfb","req":{"id":13396,"method":"POST","url":"/api/servers/report"},"res":{"statusCode":200},"responseTime":14,"msg":"request completed"}
+api-1  | {"level":30,"time":1785960855830,"pid":19,"hostname":"ff6bd3101bfb","req":{"id":13397,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":0,"msg":"request completed"}
+api-1  | {"level":30,"time":1785960861463,"pid":19,"hostname":"ff6bd3101bfb","req":{"id":13398,"method":"GET","url":"/nginx_status"},"res":{"statusCode":200},"responseTime":0,"msg":"request completed"}
+api-1  | {"level":30,"time":1785960861534,"pid":19,"hostname":"ff6bd3101bfb","req":{"id":13399,"method":"POST","url":"/api/servers/report"},"res":{"statusCode":401},"responseTime":9,"msg":"request completed"}
+api-1  | {"level":30,"time":1785960865984,"pid":19,"hostname":"ff6bd3101bfb","count":2,"msg":"Running site checks"}
+api-1  | {"level":30,"time":1785960866006,"pid":19,"hostname":"ff6bd3101bfb","siteId":2,"siteName":"Love Furniture UK","isUp":true,"responseTimeMs":13,"msg":"Site check complete"}
+api-1  | {"level":30,"time":1785960866028,"pid":19,"hostname":"ff6bd3101bfb","siteId":1,"siteName":"Love Furniture IE","isUp":true,"responseTimeMs":12,"msg":"Site check complete"}
+api-1  | {"level":30,"time":1785960875465,"pid":19,"hostname":"ff6bd3101bfb","req":{"id":13400,"method":"POST","url":"/api/servers/report"},"res":{"statusCode":200},"responseTime":6,"msg":"request completed"}
+api-1  | {"level":30,"time":1785960885966,"pid":19,"hostname":"ff6bd3101bfb","req":{"id":13401,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":0,"msg":"request completed"}
+api-1  | {"level":30,"time":1785960891491,"pid":19,"hostname":"ff6bd3101bfb","req":{"id":13402,"method":"GET","url":"/nginx_status"},"res":{"statusCode":200},"responseTime":1,"msg":"request completed"}
+api-1  | {"level":30,"time":1785960891563,"pid":19,"hostname":"ff6bd3101bfb","req":{"id":13403,"method":"POST","url":"/api/servers/report"},"res":{"statusCode":401},"responseTime":10,"msg":"request completed"}
+api-1  | {"level":30,"time":1785960905492,"pid":19,"hostname":"ff6bd3101bfb","req":{"id":13404,"method":"POST","url":"/api/servers/report"},"res":{"statusCode":200},"responseTime":14,"msg":"request completed"}
+api-1  | {"level":30,"time":1785960916093,"pid":19,"hostname":"ff6bd3101bfb","req":{"id":13405,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":0,"msg":"request completed"}
+api-1  | {"level":30,"time":1785960921502,"pid":19,"hostname":"ff6bd3101bfb","req":{"id":13406,"method":"GET","url":"/nginx_status"},"res":{"statusCode":200},"responseTime":1,"msg":"request completed"}
+api-1  | {"level":30,"time":1785960921592,"pid":19,"hostname":"ff6bd3101bfb","req":{"id":13407,"method":"POST","url":"/api/servers/report"},"res":{"statusCode":401},"responseTime":10,"msg":"request completed"}
+api-1  | {"level":30,"time":1785960924053,"pid":19,"hostname":"ff6bd3101bfb","url":"https://www.lovefurniture.ie/rest/V1/orders?searchCriteria%5BpageSize%5D=100&searchCriteria%5BcurrentPage%5D=1&searchCriteria%5BsortOrders%5D%5B0%5D%5Bfield%5D=entity_id&searchCriteria%5BsortOrders%5D","apiUrl":"https://www.lovefurniture.ie/rest/V1","endpoint":"/orders?searchCriteria%5BpageSize%5D=100&searchCriteria%5BcurrentPage%5D=1&searc","msg":"Magento API request"}
+api-1  | {"level":30,"time":1785960925374,"pid":19,"hostname":"ff6bd3101bfb","syncType":"orders","count":72,"duration":1322,"msg":"Magento sync complete"}
+api-1  | {"level":30,"time":1785960925376,"pid":19,"hostname":"ff6bd3101bfb","url":"https://www.lovefurniture.ie/rest/V1/carts/search?searchCriteria%5BpageSize%5D=100&searchCriteria%5BcurrentPage%5D=1&searchCriteria%5BsortOrders%5D%5B0%5D%5Bfield%5D=entity_id&searchCriteria%5BsortOrd","apiUrl":"https://www.lovefurniture.ie/rest/V1","endpoint":"/carts/search?searchCriteria%5BpageSize%5D=100&searchCriteria%5BcurrentPage%5D=1","msg":"Magento API request"}
+api-1  | {"level":30,"time":1785960925985,"pid":19,"hostname":"ff6bd3101bfb","count":2,"msg":"Running site checks"}
+api-1  | {"level":30,"time":1785960926009,"pid":19,"hostname":"ff6bd3101bfb","siteId":2,"siteName":"Love Furniture UK","isUp":true,"responseTimeMs":14,"msg":"Site check complete"}
+api-1  | {"level":30,"time":1785960926041,"pid":19,"hostname":"ff6bd3101bfb","siteId":1,"siteName":"Love Furniture IE","isUp":true,"responseTimeMs":14,"msg":"Site check complete"}
+api-1  | {"level":30,"time":1785960927999,"pid":19,"hostname":"ff6bd3101bfb","url":"https://www.lovefurniture.ie/rest/V1/carts/search?searchCriteria%5BpageSize%5D=100&searchCriteria%5BcurrentPage%5D=2&searchCriteria%5BsortOrders%5D%5B0%5D%5Bfield%5D=entity_id&searchCriteria%5BsortOrd","apiUrl":"https://www.lovefurniture.ie/rest/V1","endpoint":"/carts/search?searchCriteria%5BpageSize%5D=100&searchCriteria%5BcurrentPage%5D=2","msg":"Magento API request"}
+api-1  | {"level":30,"time":1785960930948,"pid":19,"hostname":"ff6bd3101bfb","url":"https://www.lovefurniture.ie/rest/V1/carts/search?searchCriteria%5BpageSize%5D=100&searchCriteria%5BcurrentPage%5D=3&searchCriteria%5BsortOrders%5D%5B0%5D%5Bfield%5D=entity_id&searchCriteria%5BsortOrd","apiUrl":"https://www.lovefurniture.ie/rest/V1","endpoint":"/carts/search?searchCriteria%5BpageSize%5D=100&searchCriteria%5BcurrentPage%5D=3","msg":"Magento API request"}
+api-1  | {"level":30,"time":1785960931222,"pid":19,"hostname":"ff6bd3101bfb","syncType":"carts","count":202,"duration":5846,"msg":"Magento sync complete"}
+api-1  | {"level":30,"time":1785960935508,"pid":19,"hostname":"ff6bd3101bfb","req":{"id":13408,"method":"POST","url":"/api/servers/report"},"res":{"statusCode":200},"responseTime":6,"msg":"request completed"}
+api-1  | {"level":30,"time":1785960946228,"pid":19,"hostname":"ff6bd3101bfb","req":{"id":13409,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":0,"msg":"request completed"}
+api-1  | {"level":30,"time":1785960951518,"pid":19,"hostname":"ff6bd3101bfb","req":{"id":13410,"method":"GET","url":"/nginx_status"},"res":{"statusCode":200},"responseTime":1,"msg":"request completed"}
+api-1  | {"level":30,"time":1785960951587,"pid":19,"hostname":"ff6bd3101bfb","req":{"id":13411,"method":"POST","url":"/api/servers/report"},"res":{"statusCode":401},"responseTime":9,"msg":"request completed"}
+api-1  | {"level":30,"time":1785960965547,"pid":19,"hostname":"ff6bd3101bfb","req":{"id":13412,"method":"POST","url":"/api/servers/report"},"res":{"statusCode":200},"responseTime":15,"msg":"request completed"}
+api-1  | {"level":30,"time":1785960976351,"pid":19,"hostname":"ff6bd3101bfb","req":{"id":13413,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":0,"msg":"request completed"}
+api-1  | {"level":30,"time":1785960981535,"pid":19,"hostname":"ff6bd3101bfb","req":{"id":13414,"method":"GET","url":"/nginx_status"},"res":{"statusCode":200},"responseTime":0,"msg":"request completed"}
+api-1  | {"level":30,"time":1785960981611,"pid":19,"hostname":"ff6bd3101bfb","req":{"id":13415,"method":"POST","url":"/api/servers/report"},"res":{"statusCode":401},"responseTime":9,"msg":"request completed"}
+api-1  | {"level":30,"time":1785960985989,"pid":19,"hostname":"ff6bd3101bfb","count":2,"msg":"Running site checks"}
+api-1  | {"level":30,"time":1785960986009,"pid":19,"hostname":"ff6bd3101bfb","siteId":1,"siteName":"Love Furniture IE","isUp":true,"responseTimeMs":9,"msg":"Site check complete"}
+api-1  | {"level":30,"time":1785960986034,"pid":19,"hostname":"ff6bd3101bfb","siteId":2,"siteName":"Love Furniture UK","isUp":true,"responseTimeMs":14,"msg":"Site check complete"}
+api-1  | {"level":30,"time":1785960992249,"pid":19,"hostname":"ff6bd3101bfb","req":{"id":13416,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":0,"msg":"request completed"}
+api-1  | {"level":30,"time":1785960995591,"pid":19,"hostname":"ff6bd3101bfb","req":{"id":13417,"method":"POST","url":"/api/servers/report"},"res":{"statusCode":200},"responseTime":11,"msg":"request completed"}
+api-1  | {"level":30,"time":1785961006475,"pid":19,"hostname":"ff6bd3101bfb","req":{"id":13418,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":0,"msg":"request completed"}
+api-1  | {"level":30,"time":1785961011556,"pid":19,"hostname":"ff6bd3101bfb","req":{"id":13419,"method":"GET","url":"/nginx_status"},"res":{"statusCode":200},"responseTime":1,"msg":"request completed"}
+api-1  | {"level":30,"time":1785961011626,"pid":19,"hostname":"ff6bd3101bfb","req":{"id":13420,"method":"POST","url":"/api/servers/report"},"res":{"statusCode":401},"responseTime":10,"msg":"request completed"}
+api-1  | {"level":30,"time":1785961025595,"pid":19,"hostname":"ff6bd3101bfb","req":{"id":13421,"method":"POST","url":"/api/servers/report"},"res":{"statusCode":200},"responseTime":33,"msg":"request completed"}
+api-1  | {"level":30,"time":1785961036638,"pid":19,"hostname":"ff6bd3101bfb","req":{"id":13422,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":1,"msg":"request completed"}
+api-1  | {"level":30,"time":1785961041403,"pid":19,"hostname":"ff6bd3101bfb","req":{"id":13423,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":1,"msg":"request completed"}
