@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useListAlerts, useAnalyzeAlertIncident } from "@workspace/api-client-react";
 import type { AlertResponse } from "@workspace/api-client-react";
+import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -207,8 +208,10 @@ function getAlertConfig(type: string) {
 }
 
 export default function Alerts() {
-  const { data, isLoading, isError, refetch, isRefetching } = useListAlerts({ limit: 50 });
+  const { user, logout } = useAuth();
+  const { data, error, isLoading, isError, refetch, isRefetching } = useListAlerts({ limit: 50 });
   const [selectedAlert, setSelectedAlert] = useState<AlertResponse | null>(null);
+  const isUnauthorized = error && "status" in error && error.status === 401;
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
@@ -225,7 +228,21 @@ export default function Alerts() {
 
       {isError && (
         <div className="rounded-2xl border border-destructive/20 bg-destructive/5 p-5 text-sm text-destructive">
-          Could not load the alert feed. Try refreshing the page.
+          <p>
+            {isUnauthorized
+              ? "Your session has expired. Sign in again to load the alert feed."
+              : "Could not load the alert feed. Try refreshing the page."}
+          </p>
+          <div className="mt-3 flex gap-2">
+            {isUnauthorized && (
+              <Button size="sm" variant="outline" onClick={logout}>
+                Sign in again
+              </Button>
+            )}
+            <Button size="sm" variant="outline" onClick={() => refetch()} disabled={isRefetching}>
+              Retry
+            </Button>
+          </div>
         </div>
       )}
 

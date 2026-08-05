@@ -30,6 +30,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   });
 
   useEffect(() => {
+    // Keep API requests aligned with the current browser session. Reading
+    // localStorage on each request avoids retaining a token from a previous
+    // login/session after a reload or server-side secret rotation.
+    setAuthTokenGetter(() => localStorage.getItem("sentinel_token"));
+
     // Initialize from localStorage
     const storedToken = localStorage.getItem("sentinel_token");
     const storedUser = localStorage.getItem("sentinel_user");
@@ -39,8 +44,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const user = JSON.parse(storedUser);
         setState({ user, token: storedToken, isLoading: false });
         
-        // Register token getter for the API client
-        setAuthTokenGetter(() => storedToken);
       } catch (e) {
         localStorage.removeItem("sentinel_token");
         localStorage.removeItem("sentinel_user");
@@ -49,6 +52,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } else {
       setState({ user: null, token: null, isLoading: false });
     }
+
+    return () => {
+      setAuthTokenGetter(null);
+    };
   }, []);
 
   const login = (token: string, user: User) => {
