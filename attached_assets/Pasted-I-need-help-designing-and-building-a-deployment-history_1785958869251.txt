@@ -1,0 +1,62 @@
+I need help designing and building a deployment-history page inside the existing Monit application.
+
+Background:
+Management would like better visibility into changes deployed to production. A recent technical change involving double-product pricing on a category page may have contributed to website performance issues, and we want a reliable deployment/change history to support troubleshooting, business continuity, and future development planning.
+
+The proposed feature is a page in Monit that shows deployment activity for systems managed through GitLab, without requiring every Monit user to have GitLab access.
+
+Initial systems to consider:
+- Magento
+- Odoo
+- Phone server / PBX
+- Other Git-managed production systems in the future
+
+Suggested layout:
+- A main “Deployments” or “Change History” page
+- Separate tabs or filters for Magento, Odoo, Phone Server, and other systems
+- Filters for environment, status, date range, branch, and deployer
+- A clear deployment timeline or table
+
+Potential deployment details:
+- System
+- Environment, especially production
+- Deployment date and time
+- Success, failure, or running status
+- Branch
+- Commit SHA and/or release tag
+- Person or automated process that deployed it
+- Commit messages or change summary
+- GitLab pipeline/job link, if available
+- Optional deployment duration and version
+
+Important goals:
+- Make production deployments visible to authorized Monit users
+- Avoid giving all users direct GitLab access
+- Make it easy to identify when a change was deployed
+- Support investigation of performance regressions and incidents
+- Preserve a useful audit trail for business continuity
+- Design the data model so additional systems can be added later
+
+Please first inspect the existing Monit application before making changes. Determine:
+1. Where the Monit frontend and backend are located.
+2. What authentication and user roles already exist.
+3. Whether there is already a deployment, audit-log, activity-log, or system-status feature.
+4. Which database and schema conventions are used.
+5. Whether GitLab is already connected or whether an integration would be needed.
+6. How Magento, Odoo, and the phone server currently deploy.
+7. Whether GitLab CI/CD pipeline data can be retrieved automatically.
+8. Whether a webhook-based approach or scheduled polling would be more appropriate.
+
+Do not request or expose passwords, access tokens, private keys, or other credentials in chat. If GitLab access is needed, use the workspace integration or secrets mechanism.
+
+Before implementing, provide a short implementation proposal covering:
+- Recommended architecture
+- Required GitLab integration or webhook setup
+- Database changes
+- API endpoints
+- Monit UI design
+- Access-control behavior
+- Historical data import options
+- Risks and assumptions
+
+For the first version, prioritize a reliable deployment list and filtering over advanced analytics. Do not modify production systems or delete existing data without explicit approval.
