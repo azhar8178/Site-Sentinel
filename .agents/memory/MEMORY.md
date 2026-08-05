@@ -10,3 +10,4 @@
 - [CloudWatch WAF log action](cloudwatch-waf-log-action.md) — CloudWatch Logs JSON requests use `Logs_20140328`, not the similarly named `AWSLogs_20140328` target.
 - [SPA sensitive paths](spa-sensitive-paths.md) — dashboard fallbacks must reject dotfiles and configuration-like paths instead of returning index.html.
 - [Deployment ingestion](deployment-ingestion.md) — keep deployment history provider-neutral; use per-system GitLab webhooks with hashed secrets and idempotent external IDs.
+- [Dashboard auth sessions](dashboard-auth-sessions.md) — browser API requests should read the current stored token; stale HMR/session state can make healthy endpoints appear broken.
