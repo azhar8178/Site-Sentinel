@@ -234,6 +234,54 @@ try {
     created_at timestamp NOT NULL DEFAULT now()
   )`);
 
+  await run("deployment_status enum",
+    `CREATE TYPE deployment_status AS ENUM ('running', 'successful', 'failed', 'canceled', 'unknown')`
+  ).catch(e => { if (e.code === '42710') console.log("  (already exists)"); else throw e; });
+
+  await run("deployment_systems table", `CREATE TABLE IF NOT EXISTS deployment_systems (
+    id serial PRIMARY KEY,
+    system_key text NOT NULL UNIQUE,
+    name text NOT NULL,
+    provider text NOT NULL DEFAULT 'gitlab',
+    project_path text,
+    default_environment text NOT NULL DEFAULT 'production',
+    webhook_secret_hash text,
+    is_active boolean NOT NULL DEFAULT true,
+    last_webhook_at timestamp,
+    created_at timestamp NOT NULL DEFAULT now(),
+    updated_at timestamp NOT NULL DEFAULT now()
+  )`);
+
+  await run("deployments table", `CREATE TABLE IF NOT EXISTS deployments (
+    id serial PRIMARY KEY,
+    system_id integer NOT NULL REFERENCES deployment_systems(id) ON DELETE CASCADE,
+    provider text NOT NULL DEFAULT 'gitlab',
+    provider_deployment_id text NOT NULL,
+    environment text NOT NULL DEFAULT 'production',
+    status deployment_status NOT NULL DEFAULT 'unknown',
+    ref_name text,
+    commit_sha text,
+    release_tag text,
+    summary text,
+    deployer_name text,
+    pipeline_id text,
+    pipeline_url text,
+    started_at timestamp,
+    completed_at timestamp,
+    duration_ms integer,
+    deployed_at timestamp NOT NULL DEFAULT now(),
+    created_at timestamp NOT NULL DEFAULT now(),
+    updated_at timestamp NOT NULL DEFAULT now(),
+    CONSTRAINT deployments_provider_deployment_unique UNIQUE (provider, provider_deployment_id)
+  )`);
+
+  await run("seed deployment systems", `INSERT INTO deployment_systems (system_key, name)
+    VALUES
+      ('magento', 'Magento'),
+      ('odoo', 'Odoo'),
+      ('phone-server', 'Phone Server')
+    ON CONFLICT (system_key) DO NOTHING`);
+
   await run("seed google_oauth_config", `INSERT INTO google_oauth_config (client_id, client_secret) SELECT '', '' WHERE NOT EXISTS (SELECT 1 FROM google_oauth_config LIMIT 1)`);
   await run("seed health_report_config", `INSERT INTO health_report_config (payment_gateways) SELECT '[]'::jsonb WHERE NOT EXISTS (SELECT 1 FROM health_report_config LIMIT 1)`);
 

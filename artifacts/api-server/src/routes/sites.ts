@@ -21,7 +21,7 @@ router.get("/sites", async (_req, res, next) => {
 
 router.get("/sites/:siteId", async (req, res, next) => {
   try {
-    const siteId = parseSiteId(req.params.siteId);
+    const siteId = parseSiteId(String(req.params.siteId));
     if (!siteId) { res.status(400).json({ error: "Invalid site ID" }); return; }
 
     const sites = await db.select().from(sitesTable).where(eq(sitesTable.id, siteId));
@@ -32,7 +32,7 @@ router.get("/sites/:siteId", async (req, res, next) => {
 
 router.put("/sites/:siteId", requireRole("editor", "admin"), async (req, res, next) => {
   try {
-    const siteId = parseSiteId(req.params.siteId);
+    const siteId = parseSiteId(String(req.params.siteId));
     if (!siteId) { res.status(400).json({ error: "Invalid site ID" }); return; }
 
     const { name, url, isActive, slowThresholdMs } = req.body;
@@ -58,7 +58,7 @@ router.put("/sites/:siteId", requireRole("editor", "admin"), async (req, res, ne
 
 router.post("/sites/:siteId/check", async (req, res, next) => {
   try {
-    const siteId = parseSiteId(req.params.siteId);
+    const siteId = parseSiteId(String(req.params.siteId));
     if (!siteId) { res.status(400).json({ error: "Invalid site ID" }); return; }
 
     const sites = await db.select().from(sitesTable).where(eq(sitesTable.id, siteId));
@@ -81,7 +81,7 @@ router.post("/sites/:siteId/check", async (req, res, next) => {
 
 router.get("/sites/:siteId/checks", async (req, res, next) => {
   try {
-    const siteId = parseSiteId(req.params.siteId);
+    const siteId = parseSiteId(String(req.params.siteId));
     if (!siteId) { res.status(400).json({ error: "Invalid site ID" }); return; }
 
     const hours = Number(req.query.hours) || 24;

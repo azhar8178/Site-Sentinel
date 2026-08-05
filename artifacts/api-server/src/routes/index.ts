@@ -11,6 +11,7 @@ import usersRouter from "./users";
 import healthReportRouter from "./health-report";
 import analyticsRouter, { analyticsPublicRouter } from "./analytics";
 import { requireAuth, requireRole } from "../middleware/auth";
+import deploymentsRouter, { gitlabWebhookRouter } from "./deployments";
 
 const router: IRouter = Router();
 
@@ -18,6 +19,7 @@ router.use(healthRouter);
 router.use(authRouter);
 router.use(reportRouter);
 router.use(agentUpdateRouter);
+router.use(gitlabWebhookRouter);
 router.use(analyticsPublicRouter);  // OAuth callback — must be before requireAuth
 
 router.use(requireAuth);
@@ -28,6 +30,7 @@ router.use(magentoRouter);
 router.use(serversRouter);
 router.use(healthReportRouter);
 router.use(analyticsRouter);
+router.use(deploymentsRouter);
 
 router.use("/", requireRole("editor", "admin"), configRouter);
 

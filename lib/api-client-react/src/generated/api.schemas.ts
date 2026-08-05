@@ -9,6 +9,105 @@ export interface HealthStatus {
   status: string;
 }
 
+export interface DeploymentSystem {
+  id: number;
+  systemKey: string;
+  name: string;
+  provider: string;
+  projectPath?: string | null;
+  defaultEnvironment: string;
+  isActive: boolean;
+  lastWebhookAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateDeploymentSystemInput {
+  /** @minLength 2 */
+  systemKey: string;
+  /** @minLength 2 */
+  name: string;
+  provider?: string;
+  projectPath?: string | null;
+  defaultEnvironment?: string;
+}
+
+export type DeploymentSystemWithSecret = DeploymentSystem & {
+  webhookSecret: string;
+};
+
+export interface WebhookSecretResponse {
+  webhookSecret: string;
+}
+
+export type DeploymentStatus =
+  (typeof DeploymentStatus)[keyof typeof DeploymentStatus];
+
+export const DeploymentStatus = {
+  running: "running",
+  successful: "successful",
+  failed: "failed",
+  canceled: "canceled",
+  unknown: "unknown",
+} as const;
+
+export interface Deployment {
+  id: number;
+  systemId: number;
+  systemKey: string;
+  systemName: string;
+  provider: string;
+  providerDeploymentId: string;
+  environment: string;
+  status: DeploymentStatus;
+  refName?: string | null;
+  commitSha?: string | null;
+  releaseTag?: string | null;
+  summary?: string | null;
+  deployerName?: string | null;
+  pipelineId?: string | null;
+  pipelineUrl?: string | null;
+  startedAt?: string | null;
+  completedAt?: string | null;
+  durationMs?: number | null;
+  deployedAt: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface DeploymentSummary {
+  total: number;
+  successful: number;
+  failed: number;
+  running: number;
+  lastProductionAt?: string | null;
+}
+
+export interface DeploymentListResponse {
+  items: Deployment[];
+  total: number;
+  page: number;
+  limit: number;
+  summary: DeploymentSummary;
+}
+
+export type WebhookAcceptedResponseStatus =
+  (typeof WebhookAcceptedResponseStatus)[keyof typeof WebhookAcceptedResponseStatus];
+
+export const WebhookAcceptedResponseStatus = {
+  running: "running",
+  successful: "successful",
+  failed: "failed",
+  canceled: "canceled",
+  unknown: "unknown",
+} as const;
+
+export interface WebhookAcceptedResponse {
+  success: boolean;
+  deploymentId: number;
+  status: WebhookAcceptedResponseStatus;
+}
+
 export type SiteWithStatusCurrentStatus =
   (typeof SiteWithStatusCurrentStatus)[keyof typeof SiteWithStatusCurrentStatus];
 
@@ -546,3 +645,36 @@ export type GetMagentoOrdersParams = {
 export type GetMagentoCartsParams = {
   limit?: number;
 };
+
+export type ListDeploymentsParams = {
+  system?: string;
+  environment?: string;
+  status?: ListDeploymentsStatus;
+  branch?: string;
+  deployer?: string;
+  from?: string;
+  to?: string;
+  search?: string;
+  /**
+   * @minimum 1
+   */
+  page?: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+};
+
+export type ListDeploymentsStatus =
+  (typeof ListDeploymentsStatus)[keyof typeof ListDeploymentsStatus];
+
+export const ListDeploymentsStatus = {
+  running: "running",
+  successful: "successful",
+  failed: "failed",
+  canceled: "canceled",
+  unknown: "unknown",
+} as const;
+
+export type ReceiveGitlabDeploymentWebhookBody = { [key: string]: unknown };

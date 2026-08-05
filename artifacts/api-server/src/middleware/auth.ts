@@ -75,7 +75,7 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
     req.user = { userId: dbUser.id, username: dbUser.username, role: dbUser.role };
     next();
   } catch (err) {
-    logger.error("Auth DB lookup failed", err);
+    logger.error({ err }, "Auth DB lookup failed");
     res.status(500).json({ error: "Internal server error" });
   }
 }

@@ -1112,3 +1112,177 @@ export const GetMagentoSyncStatusResponseItem = zod.object({
 export const GetMagentoSyncStatusResponse = zod.array(
   GetMagentoSyncStatusResponseItem,
 );
+
+/**
+ * @summary List tracked deployment systems
+ */
+export const ListDeploymentSystemsResponseItem = zod.object({
+  id: zod.number(),
+  systemKey: zod.string(),
+  name: zod.string(),
+  provider: zod.string(),
+  projectPath: zod.string().nullish(),
+  defaultEnvironment: zod.string(),
+  isActive: zod.boolean(),
+  lastWebhookAt: zod.date().nullish(),
+  createdAt: zod.date(),
+  updatedAt: zod.date(),
+});
+export const ListDeploymentSystemsResponse = zod.array(
+  ListDeploymentSystemsResponseItem,
+);
+
+/**
+ * @summary Create a tracked deployment system
+ */
+export const createDeploymentSystemBodySystemKeyMin = 2;
+
+export const createDeploymentSystemBodyNameMin = 2;
+
+export const createDeploymentSystemBodyProviderDefault = `gitlab`;
+export const createDeploymentSystemBodyDefaultEnvironmentDefault = `production`;
+
+export const CreateDeploymentSystemBody = zod.object({
+  systemKey: zod.string().min(createDeploymentSystemBodySystemKeyMin),
+  name: zod.string().min(createDeploymentSystemBodyNameMin),
+  provider: zod.string().default(createDeploymentSystemBodyProviderDefault),
+  projectPath: zod.string().nullish(),
+  defaultEnvironment: zod
+    .string()
+    .default(createDeploymentSystemBodyDefaultEnvironmentDefault),
+});
+
+/**
+ * @summary Rotate a deployment webhook secret
+ */
+export const RotateDeploymentSystemSecretParams = zod.object({
+  systemId: zod.coerce.number(),
+});
+
+export const RotateDeploymentSystemSecretResponse = zod.object({
+  webhookSecret: zod.string(),
+});
+
+/**
+ * @summary List production deployments
+ */
+export const listDeploymentsQueryPageDefault = 1;
+
+export const listDeploymentsQueryLimitDefault = 25;
+export const listDeploymentsQueryLimitMax = 100;
+
+export const ListDeploymentsQueryParams = zod.object({
+  system: zod.coerce.string().optional(),
+  environment: zod.coerce.string().optional(),
+  status: zod
+    .enum(["running", "successful", "failed", "canceled", "unknown"])
+    .optional(),
+  branch: zod.coerce.string().optional(),
+  deployer: zod.coerce.string().optional(),
+  from: zod.date().optional(),
+  to: zod.date().optional(),
+  search: zod.coerce.string().optional(),
+  page: zod.coerce.number().min(1).default(listDeploymentsQueryPageDefault),
+  limit: zod.coerce
+    .number()
+    .min(1)
+    .max(listDeploymentsQueryLimitMax)
+    .default(listDeploymentsQueryLimitDefault),
+});
+
+export const ListDeploymentsResponse = zod.object({
+  items: zod.array(
+    zod.object({
+      id: zod.number(),
+      systemId: zod.number(),
+      systemKey: zod.string(),
+      systemName: zod.string(),
+      provider: zod.string(),
+      providerDeploymentId: zod.string(),
+      environment: zod.string(),
+      status: zod.enum([
+        "running",
+        "successful",
+        "failed",
+        "canceled",
+        "unknown",
+      ]),
+      refName: zod.string().nullish(),
+      commitSha: zod.string().nullish(),
+      releaseTag: zod.string().nullish(),
+      summary: zod.string().nullish(),
+      deployerName: zod.string().nullish(),
+      pipelineId: zod.string().nullish(),
+      pipelineUrl: zod.string().nullish(),
+      startedAt: zod.date().nullish(),
+      completedAt: zod.date().nullish(),
+      durationMs: zod.number().nullish(),
+      deployedAt: zod.date(),
+      createdAt: zod.date(),
+      updatedAt: zod.date(),
+    }),
+  ),
+  total: zod.number(),
+  page: zod.number(),
+  limit: zod.number(),
+  summary: zod.object({
+    total: zod.number(),
+    successful: zod.number(),
+    failed: zod.number(),
+    running: zod.number(),
+    lastProductionAt: zod.date().nullish(),
+  }),
+});
+
+/**
+ * @summary Get deployment details
+ */
+export const GetDeploymentParams = zod.object({
+  deploymentId: zod.coerce.number(),
+});
+
+export const GetDeploymentResponse = zod.object({
+  id: zod.number(),
+  systemId: zod.number(),
+  systemKey: zod.string(),
+  systemName: zod.string(),
+  provider: zod.string(),
+  providerDeploymentId: zod.string(),
+  environment: zod.string(),
+  status: zod.enum(["running", "successful", "failed", "canceled", "unknown"]),
+  refName: zod.string().nullish(),
+  commitSha: zod.string().nullish(),
+  releaseTag: zod.string().nullish(),
+  summary: zod.string().nullish(),
+  deployerName: zod.string().nullish(),
+  pipelineId: zod.string().nullish(),
+  pipelineUrl: zod.string().nullish(),
+  startedAt: zod.date().nullish(),
+  completedAt: zod.date().nullish(),
+  durationMs: zod.number().nullish(),
+  deployedAt: zod.date(),
+  createdAt: zod.date(),
+  updatedAt: zod.date(),
+});
+
+/**
+ * @summary Receive a GitLab deployment webhook
+ */
+export const ReceiveGitlabDeploymentWebhookParams = zod.object({
+  systemKey: zod.coerce.string(),
+});
+
+export const ReceiveGitlabDeploymentWebhookHeader = zod.object({
+  "X-Gitlab-Token": zod.string(),
+});
+
+export const ReceiveGitlabDeploymentWebhookBody = zod.record(
+  zod.string(),
+  zod.unknown(),
+);
+
+export const ReceiveGitlabDeploymentWebhookResponse = zod.object({
+  success: zod.boolean(),
+  deploymentId: zod.number(),
+  status: zod.enum(["running", "successful", "failed", "canceled", "unknown"]),
+});

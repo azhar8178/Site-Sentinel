@@ -24,6 +24,8 @@ tags:
     description: Magento store data operations
   - name: users
     description: User management operations
+  - name: deployments
+    description: Production deployment history operations
 paths:
   /healthz:
     get:
@@ -817,6 +819,183 @@ paths:
                 items:
                   $ref: "#/components/schemas/MagentoSyncLog"
 
+  /deployment-systems:
+    get:
+      operationId: listDeploymentSystems
+      tags: [deployments]
+      summary: List tracked deployment systems
+      responses:
+        "200":
+          description: Deployment systems
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DeploymentSystem"
+    post:
+      operationId: createDeploymentSystem
+      tags: [deployments]
+      summary: Create a tracked deployment system
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateDeploymentSystemInput"
+      responses:
+        "201":
+          description: Created deployment system. The webhook secret is returned once.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeploymentSystemWithSecret"
+
+  /deployment-systems/{systemId}/rotate-secret:
+    post:
+      operationId: rotateDeploymentSystemSecret
+      tags: [deployments]
+      summary: Rotate a deployment webhook secret
+      parameters:
+        - name: systemId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Rotated webhook secret. The secret is returned once.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WebhookSecretResponse"
+
+  /deployments:
+    get:
+      operationId: listDeployments
+      tags: [deployments]
+      summary: List production deployments
+      parameters:
+        - name: system
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: environment
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [running, successful, failed, canceled, unknown]
+        - name: branch
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: deployer
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: from
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - name: search
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 25
+      responses:
+        "200":
+          description: Filtered deployment history
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeploymentListResponse"
+
+  /deployments/{deploymentId}:
+    get:
+      operationId: getDeployment
+      tags: [deployments]
+      summary: Get deployment details
+      parameters:
+        - name: deploymentId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deployment details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Deployment"
+        "404":
+          description: Deployment not found
+
+  /webhooks/gitlab/{systemKey}:
+    post:
+      operationId: receiveGitlabDeploymentWebhook
+      tags: [deployments]
+      summary: Receive a GitLab deployment webhook
+      parameters:
+        - name: systemKey
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: X-Gitlab-Token
+          in: header
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        "200":
+          description: Webhook accepted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WebhookAcceptedResponse"
+        "401":
+          description: Invalid webhook token
+
 components:
   schemas:
     HealthStatus:
@@ -825,6 +1004,216 @@ components:
         status:
           type: string
       required:
+        - status
+
+    DeploymentSystem:
+      type: object
+      properties:
+        id:
+          type: integer
+        systemKey:
+          type: string
+        name:
+          type: string
+        provider:
+          type: string
+        projectPath:
+          type: string
+          nullable: true
+        defaultEnvironment:
+          type: string
+        isActive:
+          type: boolean
+        lastWebhookAt:
+          type: string
+          format: date-time
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - systemKey
+        - name
+        - provider
+        - defaultEnvironment
+        - isActive
+        - createdAt
+        - updatedAt
+
+    CreateDeploymentSystemInput:
+      type: object
+      properties:
+        systemKey:
+          type: string
+          minLength: 2
+        name:
+          type: string
+          minLength: 2
+        provider:
+          type: string
+          default: gitlab
+        projectPath:
+          type: string
+          nullable: true
+        defaultEnvironment:
+          type: string
+          default: production
+      required:
+        - systemKey
+        - name
+
+    DeploymentSystemWithSecret:
+      allOf:
+        - $ref: "#/components/schemas/DeploymentSystem"
+        - type: object
+          properties:
+            webhookSecret:
+              type: string
+          required:
+            - webhookSecret
+
+    WebhookSecretResponse:
+      type: object
+      properties:
+        webhookSecret:
+          type: string
+      required:
+        - webhookSecret
+
+    Deployment:
+      type: object
+      properties:
+        id:
+          type: integer
+        systemId:
+          type: integer
+        systemKey:
+          type: string
+        systemName:
+          type: string
+        provider:
+          type: string
+        providerDeploymentId:
+          type: string
+        environment:
+          type: string
+        status:
+          type: string
+          enum: [running, successful, failed, canceled, unknown]
+        refName:
+          type: string
+          nullable: true
+        commitSha:
+          type: string
+          nullable: true
+        releaseTag:
+          type: string
+          nullable: true
+        summary:
+          type: string
+          nullable: true
+        deployerName:
+          type: string
+          nullable: true
+        pipelineId:
+          type: string
+          nullable: true
+        pipelineUrl:
+          type: string
+          nullable: true
+        startedAt:
+          type: string
+          format: date-time
+          nullable: true
+        completedAt:
+          type: string
+          format: date-time
+          nullable: true
+        durationMs:
+          type: integer
+          nullable: true
+        deployedAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - systemId
+        - systemKey
+        - systemName
+        - provider
+        - providerDeploymentId
+        - environment
+        - status
+        - deployedAt
+        - createdAt
+        - updatedAt
+
+    DeploymentSummary:
+      type: object
+      properties:
+        total:
+          type: integer
+        successful:
+          type: integer
+        failed:
+          type: integer
+        running:
+          type: integer
+        lastProductionAt:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+        - total
+        - successful
+        - failed
+        - running
+
+    DeploymentListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Deployment"
+        total:
+          type: integer
+        page:
+          type: integer
+        limit:
+          type: integer
+        summary:
+          $ref: "#/components/schemas/DeploymentSummary"
+      required:
+        - items
+        - total
+        - page
+        - limit
+        - summary
+
+    WebhookAcceptedResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        deploymentId:
+          type: integer
+        status:
+          type: string
+          enum: [running, successful, failed, canceled, unknown]
+      required:
+        - success
+        - deploymentId
         - status
 
     SiteWithStatus:

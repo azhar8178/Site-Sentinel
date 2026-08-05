@@ -22,8 +22,13 @@ import type {
   AlertListResponse,
   CheckHistoryResponse,
   CheckResultResponse,
+  CreateDeploymentSystemInput,
   CreateServerInput,
   CreateUserInput,
+  Deployment,
+  DeploymentListResponse,
+  DeploymentSystem,
+  DeploymentSystemWithSecret,
   GetCheckHistoryParams,
   GetMagentoCartsParams,
   GetMagentoOrdersParams,
@@ -34,11 +39,13 @@ import type {
   IncidentAnalysis,
   IncidentAnalysisInput,
   ListAlertsParams,
+  ListDeploymentsParams,
   MagentoCart,
   MagentoConfigResponse,
   MagentoOrder,
   MagentoStats,
   MagentoSyncLog,
+  ReceiveGitlabDeploymentWebhookBody,
   RegenerateServerKey200,
   ServerAlertConfigResponse,
   ServerCreateResponse,
@@ -60,6 +67,8 @@ import type {
   UpdateSiteInput,
   UpdateUserInput,
   UserResponse,
+  WebhookAcceptedResponse,
+  WebhookSecretResponse,
 } from "./api.schemas";
 
 import { customFetch } from "../custom-fetch";
@@ -3289,3 +3298,528 @@ export function useGetMagentoSyncStatus<
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
+
+/**
+ * @summary List tracked deployment systems
+ */
+export const getListDeploymentSystemsUrl = () => {
+  return `/api/deployment-systems`;
+};
+
+export const listDeploymentSystems = async (
+  options?: RequestInit,
+): Promise<DeploymentSystem[]> => {
+  return customFetch<DeploymentSystem[]>(getListDeploymentSystemsUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListDeploymentSystemsQueryKey = () => {
+  return [`/api/deployment-systems`] as const;
+};
+
+export const getListDeploymentSystemsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listDeploymentSystems>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listDeploymentSystems>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListDeploymentSystemsQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listDeploymentSystems>>
+  > = ({ signal }) => listDeploymentSystems({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listDeploymentSystems>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListDeploymentSystemsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listDeploymentSystems>>
+>;
+export type ListDeploymentSystemsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List tracked deployment systems
+ */
+
+export function useListDeploymentSystems<
+  TData = Awaited<ReturnType<typeof listDeploymentSystems>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listDeploymentSystems>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListDeploymentSystemsQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Create a tracked deployment system
+ */
+export const getCreateDeploymentSystemUrl = () => {
+  return `/api/deployment-systems`;
+};
+
+export const createDeploymentSystem = async (
+  createDeploymentSystemInput: CreateDeploymentSystemInput,
+  options?: RequestInit,
+): Promise<DeploymentSystemWithSecret> => {
+  return customFetch<DeploymentSystemWithSecret>(
+    getCreateDeploymentSystemUrl(),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(createDeploymentSystemInput),
+    },
+  );
+};
+
+export const getCreateDeploymentSystemMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createDeploymentSystem>>,
+    TError,
+    { data: BodyType<CreateDeploymentSystemInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createDeploymentSystem>>,
+  TError,
+  { data: BodyType<CreateDeploymentSystemInput> },
+  TContext
+> => {
+  const mutationKey = ["createDeploymentSystem"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createDeploymentSystem>>,
+    { data: BodyType<CreateDeploymentSystemInput> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return createDeploymentSystem(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateDeploymentSystemMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createDeploymentSystem>>
+>;
+export type CreateDeploymentSystemMutationBody =
+  BodyType<CreateDeploymentSystemInput>;
+export type CreateDeploymentSystemMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Create a tracked deployment system
+ */
+export const useCreateDeploymentSystem = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createDeploymentSystem>>,
+    TError,
+    { data: BodyType<CreateDeploymentSystemInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createDeploymentSystem>>,
+  TError,
+  { data: BodyType<CreateDeploymentSystemInput> },
+  TContext
+> => {
+  return useMutation(getCreateDeploymentSystemMutationOptions(options));
+};
+
+/**
+ * @summary Rotate a deployment webhook secret
+ */
+export const getRotateDeploymentSystemSecretUrl = (systemId: number) => {
+  return `/api/deployment-systems/${systemId}/rotate-secret`;
+};
+
+export const rotateDeploymentSystemSecret = async (
+  systemId: number,
+  options?: RequestInit,
+): Promise<WebhookSecretResponse> => {
+  return customFetch<WebhookSecretResponse>(
+    getRotateDeploymentSystemSecretUrl(systemId),
+    {
+      ...options,
+      method: "POST",
+    },
+  );
+};
+
+export const getRotateDeploymentSystemSecretMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof rotateDeploymentSystemSecret>>,
+    TError,
+    { systemId: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof rotateDeploymentSystemSecret>>,
+  TError,
+  { systemId: number },
+  TContext
+> => {
+  const mutationKey = ["rotateDeploymentSystemSecret"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof rotateDeploymentSystemSecret>>,
+    { systemId: number }
+  > = (props) => {
+    const { systemId } = props ?? {};
+
+    return rotateDeploymentSystemSecret(systemId, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type RotateDeploymentSystemSecretMutationResult = NonNullable<
+  Awaited<ReturnType<typeof rotateDeploymentSystemSecret>>
+>;
+
+export type RotateDeploymentSystemSecretMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Rotate a deployment webhook secret
+ */
+export const useRotateDeploymentSystemSecret = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof rotateDeploymentSystemSecret>>,
+    TError,
+    { systemId: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof rotateDeploymentSystemSecret>>,
+  TError,
+  { systemId: number },
+  TContext
+> => {
+  return useMutation(getRotateDeploymentSystemSecretMutationOptions(options));
+};
+
+/**
+ * @summary List production deployments
+ */
+export const getListDeploymentsUrl = (params?: ListDeploymentsParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/deployments?${stringifiedParams}`
+    : `/api/deployments`;
+};
+
+export const listDeployments = async (
+  params?: ListDeploymentsParams,
+  options?: RequestInit,
+): Promise<DeploymentListResponse> => {
+  return customFetch<DeploymentListResponse>(getListDeploymentsUrl(params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListDeploymentsQueryKey = (params?: ListDeploymentsParams) => {
+  return [`/api/deployments`, ...(params ? [params] : [])] as const;
+};
+
+export const getListDeploymentsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listDeployments>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: ListDeploymentsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listDeployments>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListDeploymentsQueryKey(params);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listDeployments>>> = ({
+    signal,
+  }) => listDeployments(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listDeployments>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListDeploymentsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listDeployments>>
+>;
+export type ListDeploymentsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List production deployments
+ */
+
+export function useListDeployments<
+  TData = Awaited<ReturnType<typeof listDeployments>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: ListDeploymentsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listDeployments>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListDeploymentsQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Get deployment details
+ */
+export const getGetDeploymentUrl = (deploymentId: number) => {
+  return `/api/deployments/${deploymentId}`;
+};
+
+export const getDeployment = async (
+  deploymentId: number,
+  options?: RequestInit,
+): Promise<Deployment> => {
+  return customFetch<Deployment>(getGetDeploymentUrl(deploymentId), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetDeploymentQueryKey = (deploymentId: number) => {
+  return [`/api/deployments/${deploymentId}`] as const;
+};
+
+export const getGetDeploymentQueryOptions = <
+  TData = Awaited<ReturnType<typeof getDeployment>>,
+  TError = ErrorType<void>,
+>(
+  deploymentId: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getDeployment>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetDeploymentQueryKey(deploymentId);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getDeployment>>> = ({
+    signal,
+  }) => getDeployment(deploymentId, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!deploymentId,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getDeployment>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetDeploymentQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getDeployment>>
+>;
+export type GetDeploymentQueryError = ErrorType<void>;
+
+/**
+ * @summary Get deployment details
+ */
+
+export function useGetDeployment<
+  TData = Awaited<ReturnType<typeof getDeployment>>,
+  TError = ErrorType<void>,
+>(
+  deploymentId: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getDeployment>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetDeploymentQueryOptions(deploymentId, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Receive a GitLab deployment webhook
+ */
+export const getReceiveGitlabDeploymentWebhookUrl = (systemKey: string) => {
+  return `/api/webhooks/gitlab/${systemKey}`;
+};
+
+export const receiveGitlabDeploymentWebhook = async (
+  systemKey: string,
+  receiveGitlabDeploymentWebhookBody: ReceiveGitlabDeploymentWebhookBody,
+  options?: RequestInit,
+): Promise<WebhookAcceptedResponse> => {
+  return customFetch<WebhookAcceptedResponse>(
+    getReceiveGitlabDeploymentWebhookUrl(systemKey),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(receiveGitlabDeploymentWebhookBody),
+    },
+  );
+};
+
+export const getReceiveGitlabDeploymentWebhookMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof receiveGitlabDeploymentWebhook>>,
+    TError,
+    { systemKey: string; data: BodyType<ReceiveGitlabDeploymentWebhookBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof receiveGitlabDeploymentWebhook>>,
+  TError,
+  { systemKey: string; data: BodyType<ReceiveGitlabDeploymentWebhookBody> },
+  TContext
+> => {
+  const mutationKey = ["receiveGitlabDeploymentWebhook"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof receiveGitlabDeploymentWebhook>>,
+    { systemKey: string; data: BodyType<ReceiveGitlabDeploymentWebhookBody> }
+  > = (props) => {
+    const { systemKey, data } = props ?? {};
+
+    return receiveGitlabDeploymentWebhook(systemKey, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ReceiveGitlabDeploymentWebhookMutationResult = NonNullable<
+  Awaited<ReturnType<typeof receiveGitlabDeploymentWebhook>>
+>;
+export type ReceiveGitlabDeploymentWebhookMutationBody =
+  BodyType<ReceiveGitlabDeploymentWebhookBody>;
+export type ReceiveGitlabDeploymentWebhookMutationError = ErrorType<void>;
+
+/**
+ * @summary Receive a GitLab deployment webhook
+ */
+export const useReceiveGitlabDeploymentWebhook = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof receiveGitlabDeploymentWebhook>>,
+    TError,
+    { systemKey: string; data: BodyType<ReceiveGitlabDeploymentWebhookBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof receiveGitlabDeploymentWebhook>>,
+  TError,
+  { systemKey: string; data: BodyType<ReceiveGitlabDeploymentWebhookBody> },
+  TContext
+> => {
+  return useMutation(getReceiveGitlabDeploymentWebhookMutationOptions(options));
+};
