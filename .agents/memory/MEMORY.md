@@ -7,6 +7,7 @@
 - [Incident log safety](incident-log-safety.md) — incident analysis must use allowlisted, redacted, size-capped snapshots rather than arbitrary remote log access.
 - [Agent restart requirement](agent-restart-requirement.md) — replacing the agent file does not reload an active Node process; updates must explicitly restart the systemd service.
 - [Production deploy recovery](production-deploy-recovery.md) — API image rebuild, database schema push, and host-agent restart are separate production steps.
+- [Additive schema migrations](additive-schema-migrations.md) — `CREATE TABLE IF NOT EXISTS` does not reconcile columns on an existing production table.
 - [CloudWatch WAF log action](cloudwatch-waf-log-action.md) — CloudWatch Logs JSON requests use `Logs_20140328`, not the similarly named `AWSLogs_20140328` target.
 - [SPA sensitive paths](spa-sensitive-paths.md) — dashboard fallbacks must reject dotfiles and configuration-like paths instead of returning index.html.
 - [Deployment ingestion](deployment-ingestion.md) — keep deployment history provider-neutral; use per-system GitLab webhooks with hashed secrets and idempotent external IDs.

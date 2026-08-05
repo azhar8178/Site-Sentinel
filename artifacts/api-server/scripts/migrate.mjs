@@ -110,6 +110,7 @@ try {
     response_time_ms integer,
     status_code integer,
     email_sent boolean NOT NULL DEFAULT false,
+    incident_timeline jsonb,
     created_at timestamp NOT NULL DEFAULT now()
   )`);
 
@@ -365,6 +366,11 @@ try {
   const { rows: serverIdCol } = await client.query(`SELECT 1 FROM information_schema.columns WHERE table_name = 'alerts' AND column_name = 'server_id'`);
   if (serverIdCol.length === 0) {
     await run("alerts.server_id column", `ALTER TABLE alerts ADD COLUMN server_id integer REFERENCES servers(id) ON DELETE CASCADE`);
+  }
+
+  const { rows: incidentTimelineCol } = await client.query(`SELECT 1 FROM information_schema.columns WHERE table_name = 'alerts' AND column_name = 'incident_timeline'`);
+  if (incidentTimelineCol.length === 0) {
+    await run("alerts.incident_timeline column", `ALTER TABLE alerts ADD COLUMN incident_timeline jsonb`);
   }
 
   const { rows: roleCol } = await client.query(`SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'role'`);
