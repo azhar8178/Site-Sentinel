@@ -5,6 +5,7 @@
  * Site monitoring and alerting API
  * OpenAPI spec version: 0.1.0
  */
+import type { DeploymentChangedFilesItem } from "./deploymentChangedFilesItem";
 import type { DeploymentStatus } from "./deploymentStatus";
 
 export interface Deployment {
@@ -20,6 +21,14 @@ export interface Deployment {
   commitSha?: string | null;
   releaseTag?: string | null;
   summary?: string | null;
+  commitTitle?: string | null;
+  commitMessage?: string | null;
+  commitAuthorName?: string | null;
+  commitAuthorEmail?: string | null;
+  triggerSource?: string | null;
+  projectUrl?: string | null;
+  commitUrl?: string | null;
+  changedFiles?: DeploymentChangedFilesItem[];
   deployerName?: string | null;
   pipelineId?: string | null;
   pipelineUrl?: string | null;

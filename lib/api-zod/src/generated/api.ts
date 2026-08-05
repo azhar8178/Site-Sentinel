@@ -1211,6 +1211,21 @@ export const ListDeploymentsResponse = zod.object({
       commitSha: zod.string().nullish(),
       releaseTag: zod.string().nullish(),
       summary: zod.string().nullish(),
+      commitTitle: zod.string().nullish(),
+      commitMessage: zod.string().nullish(),
+      commitAuthorName: zod.string().nullish(),
+      commitAuthorEmail: zod.string().nullish(),
+      triggerSource: zod.string().nullish(),
+      projectUrl: zod.string().nullish(),
+      commitUrl: zod.string().nullish(),
+      changedFiles: zod
+        .array(
+          zod.object({
+            path: zod.string(),
+            status: zod.enum(["added", "modified", "removed"]),
+          }),
+        )
+        .optional(),
       deployerName: zod.string().nullish(),
       pipelineId: zod.string().nullish(),
       pipelineUrl: zod.string().nullish(),
@@ -1254,6 +1269,21 @@ export const GetDeploymentResponse = zod.object({
   commitSha: zod.string().nullish(),
   releaseTag: zod.string().nullish(),
   summary: zod.string().nullish(),
+  commitTitle: zod.string().nullish(),
+  commitMessage: zod.string().nullish(),
+  commitAuthorName: zod.string().nullish(),
+  commitAuthorEmail: zod.string().nullish(),
+  triggerSource: zod.string().nullish(),
+  projectUrl: zod.string().nullish(),
+  commitUrl: zod.string().nullish(),
+  changedFiles: zod
+    .array(
+      zod.object({
+        path: zod.string(),
+        status: zod.enum(["added", "modified", "removed"]),
+      }),
+    )
+    .optional(),
   deployerName: zod.string().nullish(),
   pipelineId: zod.string().nullish(),
   pipelineUrl: zod.string().nullish(),

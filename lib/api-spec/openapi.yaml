@@ -1116,6 +1116,38 @@ components:
         summary:
           type: string
           nullable: true
+        commitTitle:
+          type: string
+          nullable: true
+        commitMessage:
+          type: string
+          nullable: true
+        commitAuthorName:
+          type: string
+          nullable: true
+        commitAuthorEmail:
+          type: string
+          nullable: true
+        triggerSource:
+          type: string
+          nullable: true
+        projectUrl:
+          type: string
+          nullable: true
+        commitUrl:
+          type: string
+          nullable: true
+        changedFiles:
+          type: array
+          items:
+            type: object
+            properties:
+              path:
+                type: string
+              status:
+                type: string
+                enum: [added, modified, removed]
+            required: [path, status]
         deployerName:
           type: string
           nullable: true

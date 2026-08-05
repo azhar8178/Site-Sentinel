@@ -1,4 +1,4 @@
-import { pgEnum, pgTable, serial, text, integer, boolean, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
+import { pgEnum, pgTable, serial, text, integer, boolean, timestamp, uniqueIndex, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -44,6 +44,17 @@ export const deploymentsTable = pgTable("deployments", {
   commitSha: text("commit_sha"),
   releaseTag: text("release_tag"),
   summary: text("summary"),
+  commitTitle: text("commit_title"),
+  commitMessage: text("commit_message"),
+  commitAuthorName: text("commit_author_name"),
+  commitAuthorEmail: text("commit_author_email"),
+  triggerSource: text("trigger_source"),
+  projectUrl: text("project_url"),
+  commitUrl: text("commit_url"),
+  changedFiles: jsonb("changed_files").$type<Array<{
+    path: string;
+    status: "added" | "modified" | "removed";
+  }>>().notNull().default([]),
   deployerName: text("deployer_name"),
   pipelineId: text("pipeline_id"),
   pipelineUrl: text("pipeline_url"),

@@ -51,6 +51,20 @@ export const DeploymentStatus = {
   unknown: "unknown",
 } as const;
 
+export type DeploymentChangedFilesItemStatus =
+  (typeof DeploymentChangedFilesItemStatus)[keyof typeof DeploymentChangedFilesItemStatus];
+
+export const DeploymentChangedFilesItemStatus = {
+  added: "added",
+  modified: "modified",
+  removed: "removed",
+} as const;
+
+export type DeploymentChangedFilesItem = {
+  path: string;
+  status: DeploymentChangedFilesItemStatus;
+};
+
 export interface Deployment {
   id: number;
   systemId: number;
@@ -64,6 +78,14 @@ export interface Deployment {
   commitSha?: string | null;
   releaseTag?: string | null;
   summary?: string | null;
+  commitTitle?: string | null;
+  commitMessage?: string | null;
+  commitAuthorName?: string | null;
+  commitAuthorEmail?: string | null;
+  triggerSource?: string | null;
+  projectUrl?: string | null;
+  commitUrl?: string | null;
+  changedFiles?: DeploymentChangedFilesItem[];
   deployerName?: string | null;
   pipelineId?: string | null;
   pipelineUrl?: string | null;

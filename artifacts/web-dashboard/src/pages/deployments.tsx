@@ -18,7 +18,8 @@ import {
   CircleX,
   Ban,
   HelpCircle,
-  KeyRound,
+  FileCode2,
+  GitPullRequest,
 } from "lucide-react";
 import {
   getGetDeploymentQueryKey,
@@ -27,15 +28,12 @@ import {
   useGetDeployment,
   useListDeployments,
   useListDeploymentSystems,
-  useRotateDeploymentSystemSecret,
 } from "@workspace/api-client-react";
-import type { Deployment, DeploymentSystem, ListDeploymentsParams } from "@workspace/api-client-react";
+import type { Deployment, ListDeploymentsParams } from "@workspace/api-client-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { useAuth } from "@/hooks/use-auth";
-import { useToast } from "@/hooks/use-toast";
 
 type StatusValue = "running" | "successful" | "failed" | "canceled" | "unknown";
 
@@ -94,7 +92,8 @@ function shortSha(value?: string | null) {
   return value.length > 10 ? `${value.slice(0, 7)}...${value.slice(-4)}` : value;
 }
 
-function statusBadge(status: string) {
+function statusBadge(status: string, triggerSource?: string | null) {
+  const isCodePush = status === "unknown" && triggerSource === "push";
   const meta = statusMeta[(status as StatusValue) in statusMeta ? status as StatusValue : "unknown"];
   const Icon = meta.icon;
   return (
@@ -104,7 +103,7 @@ function statusBadge(status: string) {
       data-testid={`status-deployment-${status}`}
     >
       <Icon className={`h-3.5 w-3.5 ${status === "running" ? "animate-spin" : ""}`} />
-      {meta.label}
+      {isCodePush ? "Code pushed" : meta.label}
     </Badge>
   );
 }
@@ -190,30 +189,89 @@ function DeploymentDetail({
                 <div className="flex min-w-0 items-center gap-3">
                   <div className="rounded-lg bg-primary/10 p-2.5 text-primary"><PackageCheck className="h-5 w-5" /></div>
                   <div className="min-w-0">
-                    <p className="truncate text-base font-semibold" title={data.summary || data.providerDeploymentId}>
-                      {data.summary || "Production deployment"}
+                    <p className="truncate text-base font-semibold" title={data.commitTitle || data.summary || data.providerDeploymentId}>
+                      {data.commitTitle || data.summary || "Production deployment"}
                     </p>
                     <p className="mt-1 truncate font-mono text-[11px] text-muted-foreground" title={data.providerDeploymentId}>
-                      {data.providerDeploymentId}
+                      {shortSha(data.commitSha)} · {data.triggerSource || "deployment event"}
                     </p>
                   </div>
                 </div>
-                {statusBadge(data.status)}
+                {statusBadge(data.status, data.triggerSource)}
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-x-4 gap-y-5">
-              <DetailField label="System" value={data.systemName || data.systemKey} />
-              <DetailField label="Environment" value={data.environment || "—"} />
-              <DetailField label="Provider" value={data.provider || "—"} />
-              <DetailField label="Deployer" value={data.deployerName || "Unattributed"} />
-              <DetailField label="Branch" value={data.refName || "—"} title={data.refName || undefined} />
-              <DetailField label="Commit" value={shortSha(data.commitSha)} title={data.commitSha || undefined} />
-              <DetailField label="Release tag" value={data.releaseTag || "—"} title={data.releaseTag || undefined} />
-              <DetailField label="Duration" value={formatDuration(data.durationMs)} />
-              <DetailField label="Started" value={formatDate(data.startedAt)} />
-              <DetailField label="Completed" value={formatDate(data.completedAt)} />
-              <DetailField label="Deployed" value={formatDate(data.deployedAt)} />
-              <DetailField label="Pipeline ID" value={data.pipelineId || "—"} title={data.pipelineId || undefined} />
+            <section className="space-y-3">
+              <div className="flex items-center gap-2">
+                <GitPullRequest className="h-4 w-4 text-primary" />
+                <h3 className="text-sm font-semibold">Change intent</h3>
+              </div>
+              <div className="rounded-xl border border-border bg-background p-4">
+                <p className="whitespace-pre-wrap text-sm leading-6 text-foreground">
+                  {data.commitMessage || data.summary || "No commit message was included in the GitLab event."}
+                </p>
+                {(data.commitAuthorName || data.commitAuthorEmail) && (
+                  <p className="mt-3 text-xs text-muted-foreground">
+                    Authored by <span className="font-medium text-foreground">{data.commitAuthorName || "Unknown author"}</span>
+                    {data.commitAuthorEmail ? ` · ${data.commitAuthorEmail}` : ""}
+                  </p>
+                )}
+              </div>
+            </section>
+            <section className="space-y-3">
+              <div className="flex items-center gap-2">
+                <PackageCheck className="h-4 w-4 text-primary" />
+                <h3 className="text-sm font-semibold">Deployment context</h3>
+              </div>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-5">
+                <DetailField label="System" value={data.systemName || data.systemKey} />
+                <DetailField label="Environment" value={data.environment || "—"} />
+                <DetailField label="Provider" value={data.provider || "—"} />
+                <DetailField label="Deployed by" value={data.deployerName || "Unattributed"} />
+                <DetailField label="Branch" value={data.refName || "—"} title={data.refName || undefined} />
+                <DetailField label="Commit" value={shortSha(data.commitSha)} title={data.commitSha || undefined} />
+                <DetailField label="Release tag" value={data.releaseTag || "—"} title={data.releaseTag || undefined} />
+                <DetailField label="Trigger" value={data.triggerSource || "—"} />
+                <DetailField label="Duration" value={formatDuration(data.durationMs)} />
+                <DetailField label="Started" value={formatDate(data.startedAt)} />
+                <DetailField label="Completed" value={formatDate(data.completedAt)} />
+                <DetailField label="Deployed" value={formatDate(data.deployedAt)} />
+                <DetailField label="Pipeline ID" value={data.pipelineId || "—"} title={data.pipelineId || undefined} />
+              </div>
+            </section>
+            <section className="space-y-3">
+              <div className="flex items-center gap-2">
+                <FileCode2 className="h-4 w-4 text-primary" />
+                <h3 className="text-sm font-semibold">Files changed</h3>
+                <span className="text-xs text-muted-foreground">({data.changedFiles?.length ?? 0})</span>
+              </div>
+              {(data.changedFiles?.length ?? 0) > 0 ? (
+                <div className="max-h-56 overflow-y-auto rounded-xl border border-border bg-background">
+                  {data.changedFiles?.map((file) => (
+                    <div key={`${file.status}-${file.path}`} className="flex items-center gap-2 border-b border-border px-3 py-2 last:border-0">
+                      <span className={`w-4 text-center font-mono text-xs font-bold ${file.status === "added" ? "text-success" : file.status === "removed" ? "text-destructive" : "text-warning"}`}>
+                        {file.status === "added" ? "+" : file.status === "removed" ? "−" : "M"}
+                      </span>
+                      <span className="truncate font-mono text-[11px]" title={file.path}>{file.path}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="rounded-xl border border-dashed border-border p-4 text-xs text-muted-foreground">
+                  GitLab did not include a changed-file list in this event.
+                </p>
+              )}
+            </section>
+            <div className="grid grid-cols-1 gap-2 text-xs sm:grid-cols-2">
+              {data.commitUrl && (
+                <a href={data.commitUrl} target="_blank" rel="noreferrer noopener" className="inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-background px-3 py-2.5 font-semibold hover:bg-muted" data-testid="link-open-commit">
+                  Open commit <ExternalLink className="h-3.5 w-3.5" />
+                </a>
+              )}
+              {data.projectUrl && (
+                <a href={data.projectUrl} target="_blank" rel="noreferrer noopener" className="inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-background px-3 py-2.5 font-semibold hover:bg-muted" data-testid="link-open-project">
+                  Open project <ExternalLink className="h-3.5 w-3.5" />
+                </a>
+              )}
             </div>
             {data.pipelineUrl && (
               <a
@@ -227,112 +285,6 @@ function DeploymentDetail({
               </a>
             )}
           </>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
-
-function WebhookSetup({ systems }: { systems?: DeploymentSystem[] }) {
-  const { user } = useAuth();
-  const { toast } = useToast();
-  const rotateSecret = useRotateDeploymentSystemSecret();
-  const [visibleSecret, setVisibleSecret] = useState<{ name: string; value: string } | null>(null);
-  const [copied, setCopied] = useState(false);
-
-  if (!user || (user.role !== "admin" && user.role !== "editor")) return null;
-
-  const rotate = async (systemId: number, name: string) => {
-    try {
-      const result = await rotateSecret.mutateAsync({ systemId });
-      setVisibleSecret({ name, value: result.webhookSecret });
-      setCopied(false);
-      toast({
-        title: "Webhook secret generated",
-        description: "Copy it into the matching GitLab project webhook now. It will not be shown again.",
-      });
-    } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Could not generate secret",
-        description: error instanceof Error ? error.message : "Try again.",
-      });
-    }
-  };
-
-  const copySecret = async () => {
-    if (!visibleSecret) return;
-    await navigator.clipboard.writeText(visibleSecret.value);
-    setCopied(true);
-    toast({ title: "Copied", description: "The webhook secret is ready to paste into GitLab." });
-  };
-
-  return (
-    <Card className="rounded-xl border-primary/15 shadow-none">
-      <CardHeader className="border-b border-border px-5 py-4">
-        <div className="flex items-start gap-3">
-          <div className="rounded-lg bg-primary/10 p-2 text-primary"><KeyRound className="h-4 w-4" /></div>
-          <div>
-            <CardTitle className="text-base">GitLab webhook setup</CardTitle>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Generate a secret for each GitLab project that should report deployments to Monit.
-            </p>
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-3 p-5">
-        {(systems ?? []).length === 0 ? (
-          <p className="text-sm text-muted-foreground">No deployment systems are configured yet.</p>
-        ) : (
-          <div className="grid gap-3 md:grid-cols-3">
-            {(systems ?? []).map((system) => (
-              <div key={system.id} className="rounded-xl border border-border bg-muted/20 p-3">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-semibold">{system.name}</p>
-                    <p className="mt-1 truncate font-mono text-[10px] text-muted-foreground">{system.systemKey}</p>
-                  </div>
-                  <span className={`whitespace-nowrap text-[10px] font-semibold ${system.lastWebhookAt ? "text-success" : "text-muted-foreground"}`}>
-                    {system.lastWebhookAt ? "Receiving" : "Not connected"}
-                  </span>
-                </div>
-                <p className="mt-3 text-[11px] text-muted-foreground">
-                  POST <span className="font-mono">/api/webhooks/gitlab/{system.systemKey}</span>
-                </p>
-                {user.role === "admin" ? (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="mt-3 w-full"
-                    onClick={() => rotate(system.id, system.name)}
-                    disabled={rotateSecret.isPending}
-                  >
-                    <KeyRound className="mr-2 h-3.5 w-3.5" />
-                    {rotateSecret.isPending ? "Generating..." : system.lastWebhookAt ? "Rotate secret" : "Generate secret"}
-                  </Button>
-                ) : (
-                  <p className="mt-3 text-[10px] text-muted-foreground">Ask an administrator to generate the webhook secret.</p>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-        {visibleSecret && (
-          <div className="rounded-xl border border-warning/30 bg-warning/10 p-4">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div className="min-w-0">
-                <p className="text-xs font-semibold text-warning-foreground">Secret for {visibleSecret.name}</p>
-                <p className="mt-1 break-all font-mono text-xs text-foreground">{visibleSecret.value}</p>
-              </div>
-              <Button variant="secondary" size="sm" onClick={copySecret} className="shrink-0">
-                {copied ? <Check className="mr-2 h-3.5 w-3.5 text-success" /> : <Copy className="mr-2 h-3.5 w-3.5" />}
-                {copied ? "Copied" : "Copy secret"}
-              </Button>
-            </div>
-            <p className="mt-2 text-[11px] text-warning-foreground/80">
-              This value is shown once. If it is lost, rotate it again before configuring GitLab.
-            </p>
-          </div>
         )}
       </CardContent>
     </Card>
@@ -512,8 +464,6 @@ export default function Deployments() {
         </CardContent>
       </Card>
 
-      <WebhookSetup systems={systems} />
-
       {isError && (
         <Card className="border-destructive/25 bg-destructive/[0.03] shadow-none" data-testid="error-deployments">
           <CardContent className="flex flex-col items-start justify-between gap-3 p-5 sm:flex-row sm:items-center">
@@ -523,7 +473,7 @@ export default function Deployments() {
         </Card>
       )}
 
-      <div className={selectedId ? "grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1fr)_360px]" : ""}>
+      <div className={selectedId ? "grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1fr)_480px]" : ""}>
         <Card className="overflow-hidden rounded-xl shadow-none" data-testid="deployment-history">
           <CardHeader className="flex-row items-center justify-between border-b border-border px-5 py-4">
             <div><CardTitle className="text-base">Change history</CardTitle><p className="mt-1 text-xs text-muted-foreground">{data ? `${data.total.toLocaleString()} records match the current view` : "Loading production records..."}</p></div>
@@ -546,7 +496,7 @@ export default function Deployments() {
                       <tr key={item.id} tabIndex={0} role="button" onClick={() => selectDeployment(item)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") selectDeployment(item); }} className={`cursor-pointer transition-colors hover:bg-muted/35 focus-visible:bg-muted/35 focus-visible:outline-none ${selectedId === item.id ? "bg-primary/[0.055]" : ""}`} data-testid={`row-deployment-${item.id}`}>
                         <td className="max-w-[340px] px-5 py-4"><div className="flex min-w-0 items-start gap-3"><div className="mt-0.5 rounded-lg bg-muted p-2 text-muted-foreground"><GitBranch className="h-4 w-4" /></div><div className="min-w-0"><p className="truncate font-semibold" title={item.summary || ""}>{item.summary || "Deployment without summary"}</p><p className="mt-1 flex items-center gap-2 truncate font-mono text-[11px] text-muted-foreground" title={item.commitSha || item.providerDeploymentId}><span>{shortSha(item.commitSha)}</span><span className="text-border">/</span><span className="truncate">{item.refName || "unknown ref"}</span></p></div></div></td>
                         <td className="px-3 py-4"><p className="max-w-[150px] truncate font-medium" title={item.systemName}>{item.systemName}</p><p className="mt-1 text-[11px] text-muted-foreground">{item.environment || "—"} · {item.provider || "—"}</p></td>
-                        <td className="px-3 py-4">{statusBadge(item.status)}</td>
+                         <td className="px-3 py-4">{statusBadge(item.status, item.triggerSource)}</td>
                         <td className="whitespace-nowrap px-3 py-4 font-mono text-xs text-muted-foreground">{formatDuration(item.durationMs)}</td>
                         <td className="whitespace-nowrap px-5 py-4 text-right"><p className="text-xs font-medium">{formatDate(item.deployedAt, true)}</p><p className="mt-1 text-[11px] text-muted-foreground">{item.deployerName || "Unattributed"}</p></td>
                       </tr>
@@ -557,7 +507,7 @@ export default function Deployments() {
               <div className="divide-y divide-border md:hidden">
                 {rows.map((item) => (
                   <button type="button" key={item.id} onClick={() => selectDeployment(item)} className={`block w-full p-4 text-left transition-colors hover:bg-muted/35 ${selectedId === item.id ? "bg-primary/[0.055]" : ""}`} data-testid={`card-deployment-${item.id}`}>
-                    <div className="flex items-start justify-between gap-3"><div className="flex min-w-0 items-start gap-3"><div className="rounded-lg bg-muted p-2 text-muted-foreground"><GitBranch className="h-4 w-4" /></div><div className="min-w-0"><p className="truncate text-sm font-semibold" title={item.summary || ""}>{item.summary || "Deployment without summary"}</p><p className="mt-1 truncate font-mono text-[11px] text-muted-foreground" title={item.commitSha || ""}>{shortSha(item.commitSha)} · {item.refName || "unknown ref"}</p></div></div>{statusBadge(item.status)}</div>
+                     <div className="flex items-start justify-between gap-3"><div className="flex min-w-0 items-start gap-3"><div className="rounded-lg bg-muted p-2 text-muted-foreground"><GitBranch className="h-4 w-4" /></div><div className="min-w-0"><p className="truncate text-sm font-semibold" title={item.summary || ""}>{item.summary || "Deployment without summary"}</p><p className="mt-1 truncate font-mono text-[11px] text-muted-foreground" title={item.commitSha || ""}>{shortSha(item.commitSha)} · {item.refName || "unknown ref"}</p></div></div>{statusBadge(item.status, item.triggerSource)}</div>
                     <div className="mt-3 flex items-center justify-between gap-2 text-[11px] text-muted-foreground"><span className="truncate">{item.systemName} · {item.environment || "—"}</span><span className="whitespace-nowrap">{formatDate(item.deployedAt, true)}</span></div>
                   </button>
                 ))}

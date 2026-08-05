@@ -70,35 +70,108 @@ function firstObject(...values: unknown[]): Record<string, any> {
 }
 
 function normalizeGitlabPayload(body: Record<string, any>, system: typeof deploymentSystemsTable.$inferSelect) {
-  const deployment = firstObject(body.deployment, body.object_attributes?.deployment);
-  const pipeline = firstObject(body.pipeline, body.object_attributes?.pipeline);
+  const attributes = firstObject(body.object_attributes);
+  const deployment = firstObject(body.deployment, attributes.deployment, body.deployable);
+  const pipeline = firstObject(
+    body.pipeline,
+    attributes.pipeline,
+    body.object_kind === "pipeline" ? attributes : null,
+    deployment.pipeline,
+  );
   const project = firstObject(body.project);
-  const commit = firstObject(body.commit, pipeline.commit);
-  const user = firstObject(body.user, body.user_username ? { username: body.user_username } : null, deployment.user);
-  const refName = cleanText(deployment.ref ?? pipeline.ref ?? body.ref ?? commit.ref ?? body.ref_name, 255);
+  const pushCommit = Array.isArray(body.commits) ? firstObject(body.commits[0]) : {};
+  const commit = firstObject(body.commit, deployment.commit, pipeline.commit, pushCommit);
+  const user = firstObject(
+    body.user,
+    body.user_name || body.user_username ? { name: body.user_name, username: body.user_username } : null,
+    deployment.user,
+    { name: commit.author_name, email: commit.author_email },
+  );
+  const refName = cleanText(
+    deployment.ref ?? pipeline.ref ?? body.ref ?? body.ref_name ?? attributes.ref ?? body.after,
+    255,
+  );
   const commitSha = cleanText(
-    deployment.sha ?? deployment.commit?.id ?? pipeline.sha ?? commit.id ?? body.sha ?? body.checkout_sha,
+    deployment.sha ?? deployment.commit?.id ?? pipeline.sha ?? commit.id ?? body.sha ?? body.checkout_sha ?? body.after,
     128,
   );
   const pipelineId = deployment.deployable_id ?? deployment.pipeline_id ?? pipeline.id ?? body.build_id ?? body.pipeline_id;
   const providerDeploymentId = String(
-    deployment.id ?? body.deployment_id ?? body.build_id ?? pipeline.id ?? body.pipeline_id ?? `${body.event_name ?? "event"}:${commitSha ?? Date.now()}`,
+    deployment.id
+      ?? body.deployment_id
+      ?? body.build_id
+      ?? pipeline.id
+      ?? body.pipeline_id
+      ?? `${body.event_name ?? "event"}:${commitSha ?? Date.now()}`,
   ).slice(0, 255);
-  const rawStatus = deployment.status ?? deployment.state ?? body.build_status ?? body.status ?? pipeline.status;
+  const rawStatus = deployment.status
+    ?? deployment.state
+    ?? deployment.deployable?.status
+    ?? body.build_status
+    ?? body.status
+    ?? pipeline.status;
   const status = normalizeStatus(rawStatus);
-  const startedAt = parseDate(deployment.created_at ?? deployment.started_at ?? pipeline.created_at ?? body.build_started_at);
-  const completedAt = parseDate(deployment.finished_at ?? deployment.completed_at ?? pipeline.finished_at ?? body.build_finished_at);
+  const startedAt = parseDate(
+    deployment.created_at
+      ?? deployment.started_at
+      ?? deployment.deployable?.created_at
+      ?? pipeline.created_at
+      ?? body.build_started_at
+      ?? body.commits?.[0]?.timestamp
+      ?? attributes.created_at,
+  );
+  const completedAt = parseDate(
+    deployment.finished_at
+      ?? deployment.completed_at
+      ?? deployment.deployable?.finished_at
+      ?? pipeline.finished_at
+      ?? body.build_finished_at
+      ?? body.after_timestamp
+      ?? attributes.finished_at,
+  );
   const durationMs = startedAt && completedAt ? Math.max(0, completedAt.getTime() - startedAt.getTime()) : null;
   const environment = cleanText(
     deployment.environment?.name ?? deployment.environment ?? body.environment ?? body.environment_name ?? system.defaultEnvironment,
     128,
   ) ?? system.defaultEnvironment;
   const pipelineUrl = cleanText(
-    deployment.deployable_url ?? deployment.web_url ?? pipeline.web_url ?? body.build_url ?? body.pipeline_url ?? project.web_url,
+    deployment.deployable_url
+      ?? deployment.web_url
+      ?? deployment.deployable?.web_url
+      ?? pipeline.web_url
+      ?? body.build_url
+      ?? body.pipeline_url
+      ?? project.web_url,
     1000,
   );
+  const changedFiles = [
+    ...(Array.isArray(body.commits) ? body.commits : []),
+    ...(Array.isArray(commit.added) || Array.isArray(commit.modified) || Array.isArray(commit.removed) ? [commit] : []),
+  ].flatMap((item) => [
+    ...(Array.isArray(item.added) ? item.added.map((path: unknown) => ({ path: String(path), status: "added" as const })) : []),
+    ...(Array.isArray(item.modified) ? item.modified.map((path: unknown) => ({ path: String(path), status: "modified" as const })) : []),
+    ...(Array.isArray(item.removed) ? item.removed.map((path: unknown) => ({ path: String(path), status: "removed" as const })) : []),
+  ]).filter((file, index, files) => files.findIndex((candidate) => candidate.path === file.path && candidate.status === file.status) === index).slice(0, 500);
+  const commitTitle = cleanText(commit.title ?? body.commit_title ?? attributes.commit_title, 500);
+  const commitMessage = cleanText(commit.message ?? body.commit_message ?? attributes.commit_message ?? commitTitle, 4000);
+  const commitAuthorName = cleanText(commit.author_name ?? commit.author?.name ?? user.name, 255);
+  const commitAuthorEmail = cleanText(commit.author_email ?? commit.author?.email ?? user.email, 320);
+  const projectUrl = cleanText(project.web_url ?? project.homepage ?? body.project_url, 1000);
+  const commitUrl = cleanText(
+    commit.web_url
+      ?? (projectUrl && commitSha ? `${projectUrl}/-/commit/${commitSha}` : null),
+    1200,
+  );
+  const triggerSource = cleanText(
+    body.event_name
+      ?? body.object_kind
+      ?? deployment.trigger
+      ?? attributes.source
+      ?? (body.commits ? "push" : "deployment"),
+    64,
+  );
   const summary = cleanText(
-    deployment.description ?? body.commit_title ?? commit.title ?? commit.message ?? pipeline.name ?? body.build_name,
+    deployment.description ?? commitTitle ?? commitMessage ?? pipeline.name ?? body.build_name,
     MAX_TEXT,
   );
   const deployerName = cleanText(user.name ?? user.username ?? user.login ?? body.user_name ?? body.user_username, 255);
@@ -114,6 +187,14 @@ function normalizeGitlabPayload(body: Record<string, any>, system: typeof deploy
     commitSha,
     releaseTag,
     summary,
+    commitTitle,
+    commitMessage,
+    commitAuthorName,
+    commitAuthorEmail,
+    triggerSource,
+    projectUrl,
+    commitUrl,
+    changedFiles,
     deployerName,
     pipelineId: pipelineId === undefined || pipelineId === null ? null : String(pipelineId).slice(0, 128),
     pipelineUrl,

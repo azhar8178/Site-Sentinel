@@ -13,12 +13,14 @@ import {
   useTestSlackConnection, useTestWhatsAppConnection,
   useListSites, useUpdateSite,
   useGetServerAlertConfig, useUpdateServerAlertConfig,
+  getListDeploymentSystemsQueryKey, useListDeploymentSystems, useRotateDeploymentSystemSecret,
 } from "@workspace/api-client-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Mail, MessageSquare, Phone, ShoppingBag, Users, Shield,
   Server, Eye, EyeOff, UserPlus, Trash2, Edit2, Save,
   Zap, Send, LogOut, AlertTriangle, Gauge, BarChart2, FileText, Copy, Check,
+  KeyRound,
 } from "lucide-react";
 
 async function apiFetch<T>(url: string, options?: RequestInit): Promise<T> {
@@ -78,6 +80,112 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
       <label className="text-sm font-medium">{label}</label>
       {children}
     </div>
+  );
+}
+
+function GitLabWebhookSettings() {
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const { data: systems, isLoading } = useListDeploymentSystems({
+    query: {
+      queryKey: getListDeploymentSystemsQueryKey(),
+      staleTime: 60000,
+    },
+  });
+  const rotateSecret = useRotateDeploymentSystemSecret();
+  const [visibleSecret, setVisibleSecret] = useState<{ name: string; value: string } | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  if (!user || (user.role !== "admin" && user.role !== "editor")) return null;
+
+  const rotate = async (systemId: number, name: string) => {
+    try {
+      const result = await rotateSecret.mutateAsync({ systemId });
+      setVisibleSecret({ name, value: result.webhookSecret });
+      setCopied(false);
+      toast({
+        title: "Webhook secret generated",
+        description: "Copy it into the matching GitLab project webhook now. It will not be shown again.",
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Could not generate secret",
+        description: error instanceof Error ? error.message : "Try again.",
+      });
+    }
+  };
+
+  const copySecret = async () => {
+    if (!visibleSecret) return;
+    await navigator.clipboard.writeText(visibleSecret.value);
+    setCopied(true);
+    toast({ title: "Copied", description: "The webhook secret is ready to paste into GitLab." });
+  };
+
+  return (
+    <SectionCard icon={KeyRound} title="GitLab Deployment Webhooks" description="Connect GitLab code pushes and deployment events to the audit history">
+      <div className="space-y-4">
+        <div className="rounded-lg border border-primary/15 bg-primary/5 p-3 text-xs text-muted-foreground">
+          Add the generated secret to the matching GitLab project webhook. Enable <strong>Push events</strong> to capture what changed, and <strong>Deployment events</strong> to capture whether it reached an environment. Secrets are hashed in Monit and shown only once after generation.
+        </div>
+        {isLoading ? (
+          <p className="text-sm text-muted-foreground">Loading deployment systems...</p>
+        ) : (systems ?? []).length === 0 ? (
+          <p className="text-sm text-muted-foreground">No deployment systems are configured yet.</p>
+        ) : (
+          <div className="grid gap-3 md:grid-cols-3">
+            {(systems ?? []).map((system) => (
+              <div key={system.id} className="rounded-xl border border-border bg-muted/20 p-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold">{system.name}</p>
+                    <p className="mt-1 truncate font-mono text-[10px] text-muted-foreground">{system.systemKey}</p>
+                  </div>
+                  <span className={`whitespace-nowrap text-[10px] font-semibold ${system.lastWebhookAt ? "text-emerald-600" : "text-muted-foreground"}`}>
+                    {system.lastWebhookAt ? "Receiving" : "Not connected"}
+                  </span>
+                </div>
+                <p className="mt-3 text-[11px] text-muted-foreground">
+                  POST <span className="font-mono">/api/webhooks/gitlab/{system.systemKey}</span>
+                </p>
+                {user.role === "admin" ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="mt-3 w-full"
+                    onClick={() => rotate(system.id, system.name)}
+                    disabled={rotateSecret.isPending}
+                  >
+                    <KeyRound className="mr-2 h-3.5 w-3.5" />
+                    {rotateSecret.isPending ? "Generating..." : system.lastWebhookAt ? "Rotate secret" : "Generate secret"}
+                  </Button>
+                ) : (
+                  <p className="mt-3 text-[10px] text-muted-foreground">Ask an administrator to generate the webhook secret.</p>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+        {visibleSecret && (
+          <div className="rounded-xl border border-amber-300 bg-amber-50 p-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="min-w-0">
+                <p className="text-xs font-semibold text-amber-900">Secret for {visibleSecret.name}</p>
+                <p className="mt-1 break-all font-mono text-xs text-foreground">{visibleSecret.value}</p>
+              </div>
+              <Button variant="secondary" size="sm" onClick={copySecret} className="shrink-0">
+                {copied ? <Check className="mr-2 h-3.5 w-3.5 text-emerald-600" /> : <Copy className="mr-2 h-3.5 w-3.5" />}
+                {copied ? "Copied" : "Copy secret"}
+              </Button>
+            </div>
+            <p className="mt-2 text-[11px] text-amber-800">
+              This value is shown once. If it is lost, rotate it again before configuring GitLab.
+            </p>
+          </div>
+        )}
+      </div>
+    </SectionCard>
   );
 }
 
@@ -650,6 +758,8 @@ export default function Settings() {
           </div>
         </div>
       </SectionCard>
+
+      <GitLabWebhookSettings />
 
       {/* Google Analytics */}
       <SectionCard icon={BarChart2} title="Google Analytics" description="OAuth credentials for the Analytics integration — stored securely in the database">

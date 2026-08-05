@@ -274,6 +274,18 @@ try {
     updated_at timestamp NOT NULL DEFAULT now(),
     CONSTRAINT deployments_provider_deployment_unique UNIQUE (provider, provider_deployment_id)
   )`);
+  for (const column of [
+    ["commit_title", "text"],
+    ["commit_message", "text"],
+    ["commit_author_name", "text"],
+    ["commit_author_email", "text"],
+    ["trigger_source", "text"],
+    ["project_url", "text"],
+    ["commit_url", "text"],
+    ["changed_files", "jsonb NOT NULL DEFAULT '[]'::jsonb"],
+  ]) {
+    await run(`deployments.${column[0]}`, `ALTER TABLE deployments ADD COLUMN IF NOT EXISTS ${column[0]} ${column[1]}`);
+  }
 
   await run("seed deployment systems", `INSERT INTO deployment_systems (system_key, name)
     VALUES

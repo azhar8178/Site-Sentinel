@@ -18,6 +18,8 @@ export * from "./createServerInput";
 export * from "./createUserInput";
 export * from "./createUserInputRole";
 export * from "./deployment";
+export * from "./deploymentChangedFilesItem";
+export * from "./deploymentChangedFilesItemStatus";
 export * from "./deploymentListResponse";
 export * from "./deploymentStatus";
 export * from "./deploymentSummary";
