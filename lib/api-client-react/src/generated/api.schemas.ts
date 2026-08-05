@@ -176,6 +176,14 @@ export interface CheckHistoryResponse {
   total: number;
 }
 
+export type AlertResponseSource =
+  (typeof AlertResponseSource)[keyof typeof AlertResponseSource];
+
+export const AlertResponseSource = {
+  monitoring: "monitoring",
+  gitlab: "gitlab",
+} as const;
+
 export type AlertResponseAlertType =
   (typeof AlertResponseAlertType)[keyof typeof AlertResponseAlertType];
 
@@ -188,10 +196,25 @@ export const AlertResponseAlertType = {
   disk_high: "disk_high",
   server_offline: "server_offline",
   server_recovery: "server_recovery",
+  gitlab_push: "gitlab_push",
+  gitlab_deployment: "gitlab_deployment",
+} as const;
+
+export type AlertResponseDeploymentStatus =
+  | (typeof AlertResponseDeploymentStatus)[keyof typeof AlertResponseDeploymentStatus]
+  | null;
+
+export const AlertResponseDeploymentStatus = {
+  running: "running",
+  successful: "successful",
+  failed: "failed",
+  canceled: "canceled",
+  unknown: "unknown",
 } as const;
 
 export interface AlertResponse {
   id: number;
+  source: AlertResponseSource;
   siteId?: number | null;
   serverId?: number | null;
   siteName: string;
@@ -205,6 +228,26 @@ export interface AlertResponse {
   emailSent: boolean;
   /** Whether this alert has a captured incident timeline available for AI analysis */
   hasTimeline: boolean;
+  deploymentId?: number | null;
+  systemName?: string | null;
+  systemKey?: string | null;
+  provider?: string | null;
+  environment?: string | null;
+  deploymentStatus?: AlertResponseDeploymentStatus;
+  deploymentStatusLabel?: string | null;
+  refName?: string | null;
+  commitSha?: string | null;
+  summary?: string | null;
+  commitTitle?: string | null;
+  commitMessage?: string | null;
+  commitAuthorName?: string | null;
+  commitAuthorEmail?: string | null;
+  triggerSource?: string | null;
+  projectUrl?: string | null;
+  commitUrl?: string | null;
+  pipelineUrl?: string | null;
+  deployerName?: string | null;
+  changedFiles?: DeploymentChangedFilesItem[];
   createdAt: string;
 }
 

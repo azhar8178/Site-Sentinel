@@ -6,9 +6,13 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { AlertResponseAlertType } from "./alertResponseAlertType";
+import type { AlertResponseDeploymentStatus } from "./alertResponseDeploymentStatus";
+import type { AlertResponseSource } from "./alertResponseSource";
+import type { DeploymentChangedFilesItem } from "./deploymentChangedFilesItem";
 
 export interface AlertResponse {
   id: number;
+  source: AlertResponseSource;
   siteId?: number | null;
   serverId?: number | null;
   siteName: string;
@@ -22,5 +26,25 @@ export interface AlertResponse {
   emailSent: boolean;
   /** Whether this alert has a captured incident timeline available for AI analysis */
   hasTimeline: boolean;
+  deploymentId?: number | null;
+  systemName?: string | null;
+  systemKey?: string | null;
+  provider?: string | null;
+  environment?: string | null;
+  deploymentStatus?: AlertResponseDeploymentStatus;
+  deploymentStatusLabel?: string | null;
+  refName?: string | null;
+  commitSha?: string | null;
+  summary?: string | null;
+  commitTitle?: string | null;
+  commitMessage?: string | null;
+  commitAuthorName?: string | null;
+  commitAuthorEmail?: string | null;
+  triggerSource?: string | null;
+  projectUrl?: string | null;
+  commitUrl?: string | null;
+  pipelineUrl?: string | null;
+  deployerName?: string | null;
+  changedFiles?: DeploymentChangedFilesItem[];
   createdAt: Date;
 }

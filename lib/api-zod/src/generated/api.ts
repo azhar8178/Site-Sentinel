@@ -167,6 +167,7 @@ export const ListAlertsResponse = zod.object({
   alerts: zod.array(
     zod.object({
       id: zod.number(),
+      source: zod.enum(["monitoring", "gitlab"]),
       siteId: zod.number().nullish(),
       serverId: zod.number().nullish(),
       siteName: zod.string(),
@@ -182,6 +183,8 @@ export const ListAlertsResponse = zod.object({
         "disk_high",
         "server_offline",
         "server_recovery",
+        "gitlab_push",
+        "gitlab_deployment",
       ]),
       message: zod.string(),
       responseTimeMs: zod.number().nullish(),
@@ -192,6 +195,35 @@ export const ListAlertsResponse = zod.object({
         .describe(
           "Whether this alert has a captured incident timeline available for AI analysis",
         ),
+      deploymentId: zod.number().nullish(),
+      systemName: zod.string().nullish(),
+      systemKey: zod.string().nullish(),
+      provider: zod.string().nullish(),
+      environment: zod.string().nullish(),
+      deploymentStatus: zod
+        .enum(["running", "successful", "failed", "canceled", "unknown"])
+        .nullish(),
+      deploymentStatusLabel: zod.string().nullish(),
+      refName: zod.string().nullish(),
+      commitSha: zod.string().nullish(),
+      summary: zod.string().nullish(),
+      commitTitle: zod.string().nullish(),
+      commitMessage: zod.string().nullish(),
+      commitAuthorName: zod.string().nullish(),
+      commitAuthorEmail: zod.string().nullish(),
+      triggerSource: zod.string().nullish(),
+      projectUrl: zod.string().nullish(),
+      commitUrl: zod.string().nullish(),
+      pipelineUrl: zod.string().nullish(),
+      deployerName: zod.string().nullish(),
+      changedFiles: zod
+        .array(
+          zod.object({
+            path: zod.string(),
+            status: zod.enum(["added", "modified", "removed"]),
+          }),
+        )
+        .optional(),
       createdAt: zod.date(),
     }),
   ),

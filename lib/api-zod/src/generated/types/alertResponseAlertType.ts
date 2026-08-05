@@ -18,4 +18,6 @@ export const AlertResponseAlertType = {
   disk_high: "disk_high",
   server_offline: "server_offline",
   server_recovery: "server_recovery",
+  gitlab_push: "gitlab_push",
+  gitlab_deployment: "gitlab_deployment",
 } as const;

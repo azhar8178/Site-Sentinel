@@ -11,6 +11,8 @@ export * from "./alertIncidentAnalysis";
 export * from "./alertListResponse";
 export * from "./alertResponse";
 export * from "./alertResponseAlertType";
+export * from "./alertResponseDeploymentStatus";
+export * from "./alertResponseSource";
 export * from "./checkHistoryResponse";
 export * from "./checkResultResponse";
 export * from "./createDeploymentSystemInput";

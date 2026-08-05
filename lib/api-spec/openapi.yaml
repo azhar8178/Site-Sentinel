@@ -1347,6 +1347,9 @@ components:
       properties:
         id:
           type: integer
+        source:
+          type: string
+          enum: [monitoring, gitlab]
         siteId:
           type: integer
           nullable: true
@@ -1363,7 +1366,7 @@ components:
           type: string
         alertType:
           type: string
-          enum: [downtime, slow_response, recovery, cpu_high, ram_high, disk_high, server_offline, server_recovery]
+          enum: [downtime, slow_response, recovery, cpu_high, ram_high, disk_high, server_offline, server_recovery, gitlab_push, gitlab_deployment]
         message:
           type: string
         responseTimeMs:
@@ -1377,11 +1380,74 @@ components:
         hasTimeline:
           type: boolean
           description: Whether this alert has a captured incident timeline available for AI analysis
+        deploymentId:
+          type: integer
+          nullable: true
+        systemName:
+          type: string
+          nullable: true
+        systemKey:
+          type: string
+          nullable: true
+        provider:
+          type: string
+          nullable: true
+        environment:
+          type: string
+          nullable: true
+        deploymentStatus:
+          type: string
+          nullable: true
+          enum: [running, successful, failed, canceled, unknown]
+        deploymentStatusLabel:
+          type: string
+          nullable: true
+        refName:
+          type: string
+          nullable: true
+        commitSha:
+          type: string
+          nullable: true
+        summary:
+          type: string
+          nullable: true
+        commitTitle:
+          type: string
+          nullable: true
+        commitMessage:
+          type: string
+          nullable: true
+        commitAuthorName:
+          type: string
+          nullable: true
+        commitAuthorEmail:
+          type: string
+          nullable: true
+        triggerSource:
+          type: string
+          nullable: true
+        projectUrl:
+          type: string
+          nullable: true
+        commitUrl:
+          type: string
+          nullable: true
+        pipelineUrl:
+          type: string
+          nullable: true
+        deployerName:
+          type: string
+          nullable: true
+        changedFiles:
+          type: array
+          items:
+            $ref: "#/components/schemas/DeploymentChangedFilesItem"
         createdAt:
           type: string
           format: date-time
       required:
         - id
+        - source
         - siteName
         - siteUrl
         - serverName
@@ -1391,6 +1457,16 @@ components:
         - emailSent
         - hasTimeline
         - createdAt
+
+    DeploymentChangedFilesItem:
+      type: object
+      properties:
+        path:
+          type: string
+        status:
+          type: string
+          enum: [added, modified, removed]
+      required: [path, status]
 
     AlertIncidentAnalysis:
       type: object

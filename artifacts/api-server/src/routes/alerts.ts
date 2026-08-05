@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { db } from "@workspace/db";
-import { alertsTable, sitesTable } from "@workspace/db/schema";
+import { alertsTable, sitesTable, deploymentSystemsTable, deploymentsTable } from "@workspace/db/schema";
 import { serversTable, serverMetricsTable } from "@workspace/db/schema";
 import { eq, desc, count } from "drizzle-orm";
 import OpenAI from "openai";
@@ -18,33 +18,71 @@ router.get("/alerts", async (req, res, next) => {
 
     const conditions = siteId ? eq(alertsTable.siteId, siteId) : undefined;
 
-    const rows = await db
-      .select({
-        id: alertsTable.id,
-        siteId: alertsTable.siteId,
-        serverId: alertsTable.serverId,
-        alertType: alertsTable.alertType,
-        message: alertsTable.message,
-        responseTimeMs: alertsTable.responseTimeMs,
-        statusCode: alertsTable.statusCode,
-        emailSent: alertsTable.emailSent,
-        incidentTimeline: alertsTable.incidentTimeline,
-        createdAt: alertsTable.createdAt,
-        _siteName: sitesTable.name,
-        _siteUrl: sitesTable.url,
-        _serverName: serversTable.name,
-        _serverHostname: serversTable.hostname,
-      })
-      .from(alertsTable)
-      .leftJoin(sitesTable, eq(alertsTable.siteId, sitesTable.id))
-      .leftJoin(serversTable, eq(alertsTable.serverId, serversTable.id))
-      .where(conditions)
-      .orderBy(desc(alertsTable.createdAt))
-      .limit(limit)
-      .offset(offset);
+    const fetchLimit = Math.min(limit + offset, 400);
+    const [rows, deploymentRows, totalResult, deploymentTotalResult] = await Promise.all([
+      db
+        .select({
+          id: alertsTable.id,
+          siteId: alertsTable.siteId,
+          serverId: alertsTable.serverId,
+          alertType: alertsTable.alertType,
+          message: alertsTable.message,
+          responseTimeMs: alertsTable.responseTimeMs,
+          statusCode: alertsTable.statusCode,
+          emailSent: alertsTable.emailSent,
+          incidentTimeline: alertsTable.incidentTimeline,
+          createdAt: alertsTable.createdAt,
+          _siteName: sitesTable.name,
+          _siteUrl: sitesTable.url,
+          _serverName: serversTable.name,
+          _serverHostname: serversTable.hostname,
+        })
+        .from(alertsTable)
+        .leftJoin(sitesTable, eq(alertsTable.siteId, sitesTable.id))
+        .leftJoin(serversTable, eq(alertsTable.serverId, serversTable.id))
+        .where(conditions)
+        .orderBy(desc(alertsTable.createdAt))
+        .limit(fetchLimit),
+      db
+        .select({
+          id: deploymentsTable.id,
+          systemName: deploymentSystemsTable.name,
+          systemKey: deploymentSystemsTable.systemKey,
+          provider: deploymentsTable.provider,
+          environment: deploymentsTable.environment,
+          deploymentStatus: deploymentsTable.status,
+          refName: deploymentsTable.refName,
+          commitSha: deploymentsTable.commitSha,
+          summary: deploymentsTable.summary,
+          commitTitle: deploymentsTable.commitTitle,
+          commitMessage: deploymentsTable.commitMessage,
+          commitAuthorName: deploymentsTable.commitAuthorName,
+          commitAuthorEmail: deploymentsTable.commitAuthorEmail,
+          triggerSource: deploymentsTable.triggerSource,
+          projectUrl: deploymentsTable.projectUrl,
+          commitUrl: deploymentsTable.commitUrl,
+          pipelineUrl: deploymentsTable.pipelineUrl,
+          deployerName: deploymentsTable.deployerName,
+          changedFiles: deploymentsTable.changedFiles,
+          deployedAt: deploymentsTable.deployedAt,
+          createdAt: deploymentsTable.createdAt,
+        })
+        .from(deploymentsTable)
+        .innerJoin(deploymentSystemsTable, eq(deploymentsTable.systemId, deploymentSystemsTable.id))
+        .orderBy(desc(deploymentsTable.deployedAt))
+        .limit(fetchLimit),
+      db
+        .select({ total: count() })
+        .from(alertsTable)
+        .where(conditions),
+      db
+        .select({ total: count() })
+        .from(deploymentsTable),
+    ]);
 
-    const alerts = rows.map((r) => ({
+    const monitoringEvents = rows.map((r) => ({
       id: r.id,
+      source: "monitoring" as const,
       siteId: r.siteId,
       serverId: r.serverId,
       siteName: r._siteName ?? "",
@@ -60,14 +98,64 @@ router.get("/alerts", async (req, res, next) => {
       createdAt: r.createdAt,
     }));
 
-    const totalResult = await db
-      .select({ total: count() })
-      .from(alertsTable)
-      .where(conditions);
+    const deploymentEvents = deploymentRows.map((r) => {
+      const isPush = r.triggerSource === "push";
+      const statusLabel = r.deploymentStatus === "successful"
+        ? "Successful"
+        : r.deploymentStatus === "failed"
+          ? "Failed"
+          : r.deploymentStatus === "running"
+            ? "Running"
+            : r.deploymentStatus === "canceled"
+              ? "Canceled"
+              : isPush ? "Code pushed" : "Deployment event";
+
+      return {
+        id: r.id,
+        source: "gitlab" as const,
+        siteId: null,
+        serverId: null,
+        siteName: "",
+        siteUrl: "",
+        serverName: "",
+        serverHostname: "",
+        alertType: isPush ? "gitlab_push" : "gitlab_deployment",
+        message: r.commitMessage || r.summary || `${statusLabel} for ${r.systemName}`,
+        responseTimeMs: null,
+        statusCode: null,
+        emailSent: false,
+        hasTimeline: false,
+        createdAt: r.deployedAt ?? r.createdAt,
+        deploymentId: r.id,
+        systemName: r.systemName,
+        systemKey: r.systemKey,
+        provider: r.provider,
+        environment: r.environment,
+        deploymentStatus: r.deploymentStatus,
+        deploymentStatusLabel: statusLabel,
+        refName: r.refName,
+        commitSha: r.commitSha,
+        summary: r.summary,
+        commitTitle: r.commitTitle,
+        commitMessage: r.commitMessage,
+        commitAuthorName: r.commitAuthorName,
+        commitAuthorEmail: r.commitAuthorEmail,
+        triggerSource: r.triggerSource,
+        projectUrl: r.projectUrl,
+        commitUrl: r.commitUrl,
+        pipelineUrl: r.pipelineUrl,
+        deployerName: r.deployerName,
+        changedFiles: r.changedFiles ?? [],
+      };
+    });
+
+    const events = [...monitoringEvents, ...deploymentEvents]
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .slice(offset, offset + limit);
 
     res.json({
-      alerts,
-      total: totalResult[0]?.total ?? 0,
+      alerts: events,
+      total: Number(totalResult[0]?.total ?? 0) + Number(deploymentTotalResult[0]?.total ?? 0),
     });
   } catch (err) { next(err); }
 });
