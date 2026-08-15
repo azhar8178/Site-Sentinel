@@ -690,6 +690,25 @@ export type GetServerLogSnapshotsParams = {
   hours?: number;
 };
 
+export type ExportServerLogSnapshotsParams = {
+  /**
+   * @minimum 1
+   * @maximum 24
+   */
+  hours?: number;
+  format?: ExportServerLogSnapshotsFormat;
+};
+
+export type ExportServerLogSnapshotsFormat =
+  (typeof ExportServerLogSnapshotsFormat)[keyof typeof ExportServerLogSnapshotsFormat];
+
+export const ExportServerLogSnapshotsFormat = {
+  json: "json",
+  csv: "csv",
+} as const;
+
+export type ExportServerLogSnapshots200One = { [key: string]: unknown };
+
 export type GetServerWafEventsParams = {
   /**
    * @minimum 1

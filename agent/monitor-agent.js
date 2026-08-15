@@ -25,6 +25,11 @@ const WAF_LOG_GROUP =
   process.env.MONITOR_WAF_LOG_GROUP || "aws-waf-logs-magento-prod";
 const WAF_COLLECTION_INTERVAL =
   parseInt(process.env.MONITOR_WAF_INTERVAL || "300", 10) * 1000;
+const STRIPE_LOG_PATHS = (process.env.MONITOR_STRIPE_LOG_PATHS || "")
+  .split(",")
+  .map((path) => path.trim())
+  .filter(Boolean)
+  .slice(0, 20);
 
 if (!API_URL || !API_KEY) {
   console.error("ERROR: MONITOR_API_URL and MONITOR_API_KEY are required.");
@@ -833,6 +838,9 @@ function sanitizeLog(value) {
     .replace(/(bearer\s+)[A-Za-z0-9._~+/=-]+/gi, "$1[REDACTED]")
     .replace(/((?:password|passwd|secret|token|api[_-]?key|access[_-]?key)\s*[=:]\s*)["']?[^"'\\s,;]+/gi, "$1[REDACTED]")
     .replace(/([?&](?:password|passwd|token|api[_-]?key|secret)=)[^&\s]+/gi, "$1[REDACTED]")
+    .replace(/\b(?:sk|rk)_(?:live|test)_[A-Za-z0-9]+\b/gi, "[STRIPE_SECRET_KEY]")
+    .replace(/\bwhsec_[A-Za-z0-9]+\b/gi, "[STRIPE_WEBHOOK_SECRET]")
+    .replace(/((?:card_number|cardNumber|cvc|cvv)\s*[=:]\s*)["']?[^"'\\s,;]+/gi, "$1[REDACTED]")
     .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, "[EMAIL]");
 }
 
@@ -840,6 +848,25 @@ function readLogCommand(command, maxChars = 12000) {
   const output = exec(command);
   if (!output || output === "-- No entries --") return "";
   return sanitizeLog(output).slice(-maxChars);
+}
+
+function shellQuote(value) {
+  return `'${String(value).replace(/'/g, "'\\''")}'`;
+}
+
+function getStripeLogSnapshot() {
+  const paths = STRIPE_LOG_PATHS;
+  if (paths.length > 0) {
+    const script = paths
+      .map((path) => `if [ -f ${shellQuote(path)} ]; then echo "=== ${path} ==="; tail -n 160 -- ${shellQuote(path)}; fi`)
+      .join("\n");
+    return readLogCommand(`sh -c ${shellQuote(script)}`, 20000);
+  }
+
+  return readLogCommand(
+    "sh -c 'for root in /var/www/html /var/www/* /home/*/public_html /home/*/www /srv/www/*; do for f in \"$root\"/var/log/*stripe*.log \"$root\"/var/log/*payment*.log; do [ -f \"$f\" ] && { echo \"=== $f ===\"; tail -n 160 -- \"$f\"; }; done; done'",
+    20000,
+  );
 }
 
 function getLogSnapshot() {
@@ -858,6 +885,7 @@ function getLogSnapshot() {
     magento: readLogCommand(
       "sh -c 'for root in /var/www/html /var/www/* /home/*/public_html /home/*/www /srv/www/*; do for name in system exception debug; do f=\"$root/var/log/$name.log\"; [ -f \"$f\" ] && tail -n 120 \"$f\"; done; done' 2>/dev/null"
     ),
+    stripe: getStripeLogSnapshot(),
     kernel: readLogCommand(
       "journalctl -k --since '5 minutes ago' --no-pager -p warning..alert -n 120 2>/dev/null"
     ),
@@ -993,7 +1021,7 @@ async function collect() {
   }
 }
 
-const AGENT_VERSION = "3.5.4";
+const AGENT_VERSION = "3.5.5";
 const UPDATE_CHECK_INTERVAL = 3600000;
 let lastUpdateCheck = 0;
 

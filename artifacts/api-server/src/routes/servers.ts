@@ -147,6 +147,72 @@ serversRouter.get("/servers/:id/log-snapshots", async (req, res, next) => {
   }
 });
 
+serversRouter.get("/servers/:id/log-snapshots/export", async (req, res, next) => {
+  try {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id) || id <= 0) {
+      res.status(400).json({ error: "Invalid server ID" });
+      return;
+    }
+
+    const hours = clampNum(req.query.hours, 1, 24, 6);
+    const format = String(req.query.format || "json").toLowerCase();
+    if (format !== "json" && format !== "csv") {
+      res.status(400).json({ error: "format must be json or csv" });
+      return;
+    }
+
+    const [server] = await db
+      .select({ id: serversTable.id, name: serversTable.name, hostname: serversTable.hostname })
+      .from(serversTable)
+      .where(eq(serversTable.id, id))
+      .limit(1);
+    if (!server) {
+      res.status(404).json({ error: "Server not found" });
+      return;
+    }
+
+    const since = new Date(Date.now() - hours * 60 * 60 * 1000);
+    const snapshots = await db
+      .select()
+      .from(serverLogSnapshotsTable)
+      .where(and(eq(serverLogSnapshotsTable.serverId, id), gte(serverLogSnapshotsTable.recordedAt, since)))
+      .orderBy(serverLogSnapshotsTable.recordedAt);
+
+    const safeName = server.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || `server-${id}`;
+    const suffix = `${safeName}-logs-${hours}h`;
+    res.setHeader("Content-Disposition", `attachment; filename="${suffix}.${format}"`);
+
+    if (format === "json") {
+      res.type("application/json").send(JSON.stringify({
+        exportedAt: new Date().toISOString(),
+        server,
+        hours,
+        snapshots,
+      }, null, 2));
+      return;
+    }
+
+    const csvEscape = (value: unknown) => `"${String(value ?? "").replace(/"/g, '""')}"`;
+    const rows = [["snapshot_id", "recorded_at", "source", "logs"]];
+    for (const snapshot of snapshots) {
+      const sources = snapshot.logs && typeof snapshot.logs === "object"
+        ? (snapshot.logs as Record<string, unknown>).sources
+        : null;
+      if (!sources || typeof sources !== "object") {
+        rows.push([String(snapshot.id), snapshot.recordedAt.toISOString(), "snapshot", JSON.stringify(snapshot.logs)]);
+        continue;
+      }
+      for (const [source, logs] of Object.entries(sources)) {
+        if (logs) rows.push([String(snapshot.id), snapshot.recordedAt.toISOString(), source, String(logs)]);
+      }
+    }
+    res.type("text/csv").send(rows.map((row) => row.map(csvEscape).join(",")).join("\n") + "\n");
+  } catch (err) {
+    next(err);
+  }
+});
+
 serversRouter.get("/servers/:id/waf-events", async (req, res, next): Promise<void> => {
   try {
     const id = Number(req.params.id);

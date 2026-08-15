@@ -5,7 +5,7 @@ import crypto from "crypto";
 
 const router: IRouter = Router();
 
-const AGENT_VERSION = "3.5.4";
+const AGENT_VERSION = "3.5.5";
 
 function getAgentScript(): { content: string; hash: string } | null {
   const paths = [

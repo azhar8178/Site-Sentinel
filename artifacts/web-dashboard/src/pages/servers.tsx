@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useListServers, useCreateServer, useDeleteServer, useUpdateServer, useRegenerateServerKey, useGetServerMetrics, useGetServerLogSnapshots } from "@workspace/api-client-react";
+import { customFetch, useListServers, useCreateServer, useDeleteServer, useUpdateServer, useRegenerateServerKey, useGetServerMetrics, useGetServerLogSnapshots } from "@workspace/api-client-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
@@ -11,7 +11,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import {
   Server as ServerIcon, Cpu, HardDrive, MemoryStick, Trash2,
   Activity, Plus, X, Copy, Check, Edit2, Save, KeyRound, RefreshCw,
-  Gauge, Search, CircleCheck, CircleX, CircleAlert,
+  Gauge, Search, CircleCheck, CircleX, CircleAlert, Download,
 } from "lucide-react";
 import { formatBytes } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
@@ -45,6 +45,7 @@ function ServerDetailModal({
   const [newApiKey, setNewApiKey] = useState<string | null>(null);
   const [copiedKey, setCopiedKey] = useState(false);
   const [showCollectedLogs, setShowCollectedLogs] = useState(false);
+  const [downloadingFormat, setDownloadingFormat] = useState<"json" | "csv" | null>(null);
 
   const handleSaveEdit = async () => {
     try {
@@ -73,6 +74,29 @@ function ServerDetailModal({
       navigator.clipboard.writeText(newApiKey);
       setCopiedKey(true);
       setTimeout(() => setCopiedKey(false), 2000);
+    }
+  };
+
+  const downloadLogs = async (format: "json" | "csv") => {
+    setDownloadingFormat(format);
+    try {
+      const blob = await customFetch<Blob>(
+        `/api/servers/${serverId}/log-snapshots/export?hours=${Math.min(hours, 24)}&format=${format}`,
+        { responseType: "blob" },
+      );
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = `${serverName.toLowerCase().replace(/[^a-z0-9]+/g, "-") || `server-${serverId}`}-logs-${hours}h.${format}`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      URL.revokeObjectURL(url);
+      toast({ title: "Download ready", description: `${format.toUpperCase()} log export downloaded.` });
+    } catch (e: any) {
+      toast({ variant: "destructive", title: "Download failed", description: e.message || "Could not export server logs." });
+    } finally {
+      setDownloadingFormat(null);
     }
   };
 
@@ -183,18 +207,39 @@ function ServerDetailModal({
               <div>
                 <h3 className="font-semibold">Collected performance logs</h3>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Sanitized snapshots from the last {hours}h. Secrets and common credentials are redacted.
+                  Sanitized snapshots from the last {hours}h, including Magento, system, and Stripe sources. Secrets and payment credentials are redacted.
                 </p>
               </div>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setShowCollectedLogs(value => !value)}
-                disabled={!logSnapshots?.length}
-                className="shrink-0"
-              >
-                {showCollectedLogs ? "Hide logs" : `View logs (${logSnapshots?.length ?? 0})`}
-              </Button>
+              <div className="flex flex-wrap gap-2 shrink-0">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setShowCollectedLogs(value => !value)}
+                  disabled={!logSnapshots?.length}
+                >
+                  {showCollectedLogs ? "Hide logs" : `View logs (${logSnapshots?.length ?? 0})`}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => downloadLogs("json")}
+                  disabled={downloadingFormat !== null}
+                  className="gap-1.5"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  {downloadingFormat === "json" ? "Preparing…" : "JSON"}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => downloadLogs("csv")}
+                  disabled={downloadingFormat !== null}
+                  className="gap-1.5"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  {downloadingFormat === "csv" ? "Preparing…" : "CSV"}
+                </Button>
+              </div>
             </div>
             {showCollectedLogs && logSnapshots && logSnapshots.length > 0 && (
               <div className="mt-4 space-y-3">
@@ -206,7 +251,9 @@ function ServerDetailModal({
                     <div className="space-y-3">
                       {Object.entries(snapshot.logs?.sources ?? {}).filter(([, value]) => value).map(([source, value]) => (
                         <div key={source}>
-                          <p className="text-xs font-semibold capitalize mb-1">{source}</p>
+                          <p className="text-xs font-semibold capitalize mb-1">
+                            {source === "stripe" ? "Stripe payments" : source}
+                          </p>
                           <pre className="max-h-48 overflow-auto rounded bg-black/90 text-green-200 p-3 text-[10px] leading-4 whitespace-pre-wrap break-all">
                             {String(value)}
                           </pre>

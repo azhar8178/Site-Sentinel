@@ -29,6 +29,8 @@ import type {
   DeploymentListResponse,
   DeploymentSystem,
   DeploymentSystemWithSecret,
+  ExportServerLogSnapshots200One,
+  ExportServerLogSnapshotsParams,
   GetCheckHistoryParams,
   GetMagentoCartsParams,
   GetMagentoOrdersParams,
@@ -2415,6 +2417,127 @@ export function useGetServerLogSnapshots<
   },
 ): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
   const queryOptions = getGetServerLogSnapshotsQueryOptions(
+    serverId,
+    params,
+    options,
+  );
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Download sanitized server log snapshots
+ */
+export const getExportServerLogSnapshotsUrl = (
+  serverId: number,
+  params?: ExportServerLogSnapshotsParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/servers/${serverId}/log-snapshots/export?${stringifiedParams}`
+    : `/api/servers/${serverId}/log-snapshots/export`;
+};
+
+export const exportServerLogSnapshots = async (
+  serverId: number,
+  params?: ExportServerLogSnapshotsParams,
+  options?: RequestInit,
+): Promise<ExportServerLogSnapshots200One | string> => {
+  return customFetch<ExportServerLogSnapshots200One | string>(
+    getExportServerLogSnapshotsUrl(serverId, params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getExportServerLogSnapshotsQueryKey = (
+  serverId: number,
+  params?: ExportServerLogSnapshotsParams,
+) => {
+  return [
+    `/api/servers/${serverId}/log-snapshots/export`,
+    ...(params ? [params] : []),
+  ] as const;
+};
+
+export const getExportServerLogSnapshotsQueryOptions = <
+  TData = Awaited<ReturnType<typeof exportServerLogSnapshots>>,
+  TError = ErrorType<void>,
+>(
+  serverId: number,
+  params?: ExportServerLogSnapshotsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof exportServerLogSnapshots>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getExportServerLogSnapshotsQueryKey(serverId, params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof exportServerLogSnapshots>>
+  > = ({ signal }) =>
+    exportServerLogSnapshots(serverId, params, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!serverId,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof exportServerLogSnapshots>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ExportServerLogSnapshotsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof exportServerLogSnapshots>>
+>;
+export type ExportServerLogSnapshotsQueryError = ErrorType<void>;
+
+/**
+ * @summary Download sanitized server log snapshots
+ */
+
+export function useExportServerLogSnapshots<
+  TData = Awaited<ReturnType<typeof exportServerLogSnapshots>>,
+  TError = ErrorType<void>,
+>(
+  serverId: number,
+  params?: ExportServerLogSnapshotsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof exportServerLogSnapshots>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getExportServerLogSnapshotsQueryOptions(
     serverId,
     params,
     options,

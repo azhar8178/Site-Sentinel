@@ -936,6 +936,34 @@ export const GetServerLogSnapshotsResponse = zod.array(
 );
 
 /**
+ * @summary Download sanitized server log snapshots
+ */
+export const ExportServerLogSnapshotsParams = zod.object({
+  serverId: zod.coerce.number(),
+});
+
+export const exportServerLogSnapshotsQueryHoursDefault = 6;
+export const exportServerLogSnapshotsQueryHoursMax = 24;
+
+export const exportServerLogSnapshotsQueryFormatDefault = `json`;
+
+export const ExportServerLogSnapshotsQueryParams = zod.object({
+  hours: zod.coerce
+    .number()
+    .min(1)
+    .max(exportServerLogSnapshotsQueryHoursMax)
+    .default(exportServerLogSnapshotsQueryHoursDefault),
+  format: zod
+    .enum(["json", "csv"])
+    .default(exportServerLogSnapshotsQueryFormatDefault),
+});
+
+export const ExportServerLogSnapshotsResponse = zod.record(
+  zod.string(),
+  zod.unknown(),
+);
+
+/**
  * @summary Get recent AWS WAF events
  */
 export const GetServerWafEventsParams = zod.object({
