@@ -1,0 +1,113 @@
+p-172-33-120-248 CRON[2201300]: pam_unix(cron:session): session opened for user www-data(uid=33) by (uid=0)
+Aug 15 23:13:05 ip-172-33-120-248 CRON[2201300]: pam_unix(cron:session): session closed for user www-data
+Aug 15 23:14:01 ip-172-33-120-248 CRON[2201468]: pam_unix(cron:session): session opened for user www-data(uid=33) by (uid=0)
+Aug 15 23:14:02 ip-172-33-120-248 CRON[2201468]: pam_unix(cron:session): session closed for user www-data
+Aug 15 23:15:01 ip-172-33-120-248 CRON[2208330]: pam_unix(cron:session): session opened for user root(uid=0) by (uid=0)
+Aug 15 23:15:01 ip-172-33-120-248 CRON[2208331]: pam_unix(cron:session): session opened for user root(uid=0) by (uid=0)
+Aug 15 23:15:01 ip-172-33-120-248 CRON[2208332]: pam_unix(cron:session): session opened for user www-data(uid=33) by (uid=0)
+Aug 15 23:15:01 ip-172-33-120-248 CRON[2208330]: pam_unix(cron:session): session closed for user root
+Aug 15 23:15:01 ip-172-33-120-248 sudo:     root : PWD=/root ; USER=root ; COMMAND=/usr/bin/supervisorctl status
+Aug 15 23:15:01 ip-172-33-120-248 sudo: pam_unix(sudo:session): session opened for user root(uid=0) by (uid=0)
+Aug 15 23:15:02 ip-172-33-120-248 sudo: pam_unix(sudo:session): session closed for user root
+Aug 15 23:15:02 ip-172-33-120-248 CRON[2208331]: pam_unix(cron:session): session closed for user root
+Aug 15 23:15:03 ip-172-33-120-248 CRON[2208332]: pam_unix(cron:session): session closed for user www-data
+Aug 15 23:16:01 ip-172-33-120-248 CRON[2208500]: pam_unix(cron:session): session opened for user www-data(uid=33) by (uid=0)
+Aug 15 23:16:03 ip-172-33-120-248 CRON[2208500]: pam_unix(cron:session): session closed for user www-data
+Aug 15 23:17:01 ip-172-33-120-248 CRON[2208680]: pam_unix(cron:session): session opened for user root(uid=0) by (uid=0)
+Aug 15 23:17:01 ip-172-33-120-248 CRON[2208681]: pam_unix(cron:session): session opened for user www-data(uid=33) by (uid=0)
+Aug 15 23:17:01 ip-172-33-120-248 CRON[2208680]: pam_unix(cron:session): session closed for user root
+Aug 15 23:17:03 ip-172-33-120-248 CRON[2208681]: pam_unix(cron:session): session closed for user www-data
+Aug 15 23:18:01 ip-172-33-120-248 CRON[2208886]: pam_unix(cron:session): session opened for user www-data(uid=33) by (uid=0)
+Aug 15 23:18:02 ip-172-33-120-248 CRON[2208886]: pam_unix(cron:session): session closed for user www-data
+Aug 15 23:19:01 ip-172-33-120-248 CRON[2209065]: pam_unix(cron:session): session opened for user www-data(uid=33) by (uid=0)
+Aug 15 23:19:03 ip-172-33-120-248 CRON[2209065]: pam_unix(cron:session): session closed for user www-data
+Aug 15 23:20:01 ip-172-33-120-248 CRON[2209248]: pam_unix(cron:session): session opened for user www-data(uid=33) by (uid=0)
+Aug 15 23:20:03 ip-172-33-120-248 CRON[2209248]: pam_unix(cron:session): session closed for user www-data
+Aug 15 23:21:01 ip-172-33-120-248 CRON[2209431]: pam_unix(cron:session): session opened for user www-data(uid=33) by (uid=0)
+Aug 15 23:21:02 ip-172-33-120-248 CRON[2209431]: pam_unix(cron:session): session closed for user www-data
+Aug 15 23:22:01 ip-172-33-120-248 CRON[2209644]: pam_unix(cron:session): session opened for user www-data(uid=33) by (uid=0)
+Aug 15 23:22:03 ip-172-33-120-248 CRON[2209644]: pam_unix(cron:session): session closed for user www-data
+Aug 15 23:23:01 ip-172-33-120-248 CRON[2209817]: pam_unix(cron:session): session opened for user www-data(uid=33) by (uid=0)
+Aug 15 23:23:03 ip-172-33-120-248 CRON[2209817]: pam_unix(cron:session): session closed for user www-data
+Aug 15 23:24:01 ip-172-33-120-248 CRON[2209998]: pam_unix(cron:session): session opened for user www-data(uid=33) by (uid=0)
+Aug 15 23:24:03 ip-172-33-120-248 CRON[2209998]: pam_unix(cron:session): session closed for user www-data
+Aug 15 23:25:01 ip-172-33-120-248 CRON[2216841]: pam_unix(cron:session): session opened for user root(uid=0) by (uid=0)
+Aug 15 23:25:01 ip-172-33-120-248 CRON[2216842]: pam_unix(cron:session): session opened for user www-data(uid=33) by (uid=0)
+Aug 15 23:25:01 ip-172-33-120-248 CRON[2216841]: pam_unix(cron:session): session closed for user root
+Aug 15 23:25:03 ip-172-33-120-248 CRON[2216842]: pam_unix(cron:session): session closed for user www-data
+Aug 15 23:26:01 ip-172-33-120-248 CRON[2217025]: pam_unix(cron:session): session opened for user www-data(uid=33) by (uid=0)
+Aug 15 23:26:02 ip-172-33-120-248 CRON[2217025]: pam_unix(cron:session): session closed for user www-data
+Aug 15 23:27:01 ip-172-33-120-248 CRON[2217235]: pam_unix(cron:session): session opened for user www-data(uid=33) by (uid=0)
+Aug 15 23:27:03 ip-172-33-120-248 CRON[2217235]: pam_unix(cron:session): session closed for user www-data
+Aug 15 23:28:01 ip-172-33-120-248 CRON[2217408]: pam_unix(cron:session): session opened for user www-data(uid=33) by (uid=0)
+Aug 15 23:28:04 ip-172-33-120-248 CRON[2217408]: pam_unix(cron:session): session closed for user www-data
+Aug 15 23:29:01 ip-172-33-120-248 CRON[2217603]: pam_unix(cron:session): session opened for user www-data(uid=33) by (uid=0)
+Aug 15 23:29:03 ip-172-33-120-248 CRON[2217603]: pam_unix(cron:session): session closed for user www-data
+Aug 15 23:30:01 ip-172-33-120-248 CRON[2217774]: pam_unix(cron:session): session opened for user root(uid=0) by (uid=0)
+Aug 15 23:30:01 ip-172-33-120-248 CRON[2217775]: pam_unix(cron:session): session opened for user root(uid=0) by (uid=0)
+Aug 15 23:30:01 ip-172-33-120-248 CRON[2217776]: pam_unix(cron:session): session opened for user www-data(uid=33) by (uid=0)
+Aug 15 23:30:01 ip-172-33-120-248 sudo:     root : PWD=/root ; USER=root ; COMMAND=/usr/bin/supervisorctl status
+Aug 15 23:30:01 ip-172-33-120-248 sudo: pam_unix(sudo:session): session opened for user root(uid=0) by (uid=0)
+Aug 15 23:30:01 ip-172-33-120-248 sudo: pam_unix(sudo:session): session closed for user root
+Aug 15 23:30:01 ip-172-33-120-248 CRON[2217774]: pam_unix(cron:session): session closed for user root
+Aug 15 23:30:04 ip-172-33-120-248 CRON[2217776]: pam_unix(cron:session): session closed for user www-data
+Aug 15 23:30:10 ip-172-33-120-248 CRON[2217775]: pam_unix(cron:session): session closed for user root
+Aug 15 23:31:01 ip-172-33-120-248 CRON[2217970]: pam_unix(cron:session): session opened for user www-data(uid=33) by (uid=0)
+Aug 15 23:31:03 ip-172-33-120-248 CRON[2217970]: pam_unix(cron:session): session closed for user www-data
+Aug 15 23:32:01 ip-172-33-120-248 CRON[2218153]: pam_unix(cron:session): session opened for user www-data(uid=33) by (uid=0)
+Aug 15 23:32:02 ip-172-33-120-248 CRON[2218153]: pam_unix(cron:session): session closed for user www-data
+Aug 15 23:33:01 ip-172-33-120-248 CRON[2218356]: pam_unix(cron:session): session opened for user www-data(uid=33) by (uid=0)
+Aug 15 23:33:03 ip-172-33-120-248 CRON[2218356]: pam_unix(cron:session): session closed for user www-data
+Aug 15 23:34:01 ip-172-33-120-248 CRON[2218535]: pam_unix(cron:session): session opened for user www-data(uid=33) by (uid=0)
+Aug 15 23:34:03 ip-172-33-120-248 CRON[2218535]: pam_unix(cron:session): session closed for user www-data
+Aug 15 23:35:01 ip-172-33-120-248 CRON[2225380]: pam_unix(cron:session): session opened for user root(uid=0) by (uid=0)
+Aug 15 23:35:01 ip-172-33-120-248 CRON[2225381]: pam_unix(cron:session): session opened for user www-data(uid=33) by (uid=0)
+Aug 15 23:35:01 ip-172-33-120-248 CRON[2225380]: pam_unix(cron:session): session closed for user root
+Aug 15 23:35:03 ip-172-33-120-248 CRON[2225381]: pam_unix(cron:session): session closed for user www-data
+Aug 15 23:36:01 ip-172-33-120-248 CRON[2225566]: pam_unix(cron:session): session opened for user www-data(uid=33) by (uid=0)
+Aug 15 23:36:02 ip-172-33-120-248 CRON[2225566]: pam_unix(cron:session): session closed for user www-data
+Aug 15 23:37:01 ip-172-33-120-248 CRON[2225746]: pam_unix(cron:session): session opened for user www-data(uid=33) by (uid=0)
+Aug 15 23:37:03 ip-172-33-120-248 CRON[2225746]: pam_unix(cron:session): session closed for user www-data
+Aug 15 23:38:01 ip-172-33-120-248 CRON[2225949]: pam_unix(cron:session): session opened for user www-data(uid=33) by (uid=0)
+Aug 15 23:38:02 ip-172-33-120-248 CRON[2225949]: pam_unix(cron:session): session closed for user www-data
+Aug 15 23:39:01 ip-172-33-120-248 CRON[2226199]: pam_unix(cron:session): session opened for user root(uid=0) by (uid=0)
+Aug 15 23:39:01 ip-172-33-120-248 CRON[2226200]: pam_unix(cron:session): session opened for user www-data(uid=33) by (uid=0)
+Aug 15 23:39:01 ip-172-33-120-248 CRON[2226199]: pam_unix(cron:session): session closed for user root
+Aug 15 23:39:03 ip-172-33-120-248 CRON[2226200]: pam_unix(cron:session): session closed for user www-data
+Aug 15 23:40:01 ip-172-33-120-248 CRON[2226367]: pam_unix(cron:session): session opened for user www-data(uid=33) by (uid=0)
+Aug 15 23:40:03 ip-172-33-120-248 CRON[2226367]: pam_unix(cron:session): session closed for user www-data
+Aug 15 23:41:01 ip-172-33-120-248 CRON[2226549]: pam_unix(cron:session): session opened for user www-data(uid=33) by (uid=0)
+Aug 15 23:41:03 ip-172-33-120-248 CRON[2226549]: pam_unix(cron:session): session closed for user www-data
+Aug 15 23:42:01 ip-172-33-120-248 CRON[2226728]: pam_unix(cron:session): session opened for user www-data(uid=33) by (uid=0)
+Aug 15 23:42:02 ip-172-33-120-248 CRON[2226728]: pam_unix(cron:session): session closed for user www-data
+Aug 15 23:43:01 ip-172-33-120-248 CRON[2226958]: pam_unix(cron:session): session opened for user www-data(uid=33) by (uid=0)
+Aug 15 23:43:05 ip-172-33-120-248 CRON[2226958]: pam_unix(cron:session): session closed for user www-data
+Aug 15 23:44:01 ip-172-33-120-248 CRON[2227110]: pam_unix(cron:session): session opened for user www-data(uid=33) by (uid=0)
+Aug 15 23:44:03 ip-172-33-120-248 CRON[2227110]: pam_unix(cron:session): session closed for user www-data
+Aug 15 23:45:01 ip-172-33-120-248 CRON[2233987]: pam_unix(cron:session): session opened for user root(uid=0) by (uid=0)
+Aug 15 23:45:01 ip-172-33-120-248 CRON[2233986]: pam_unix(cron:session): session opened for user root(uid=0) by (uid=0)
+Aug 15 23:45:01 ip-172-33-120-248 CRON[2233988]: pam_unix(cron:session): session opened for user www-data(uid=33) by (uid=0)
+Aug 15 23:45:01 ip-172-33-120-248 CRON[2233986]: pam_unix(cron:session): session closed for user root
+Aug 15 23:45:01 ip-172-33-120-248 sudo:     root : PWD=/root ; USER=root ; COMMAND=/usr/bin/supervisorctl status
+Aug 15 23:45:01 ip-172-33-120-248 sudo: pam_unix(sudo:session): session opened for user root(uid=0) by (uid=0)
+Aug 15 23:45:01 ip-172-33-120-248 sudo: pam_unix(sudo:session): session closed for user root
+Aug 15 23:45:01 ip-172-33-120-248 CRON[2233987]: pam_unix(cron:session): session closed for user root
+Aug 15 23:45:03 ip-172-33-120-248 CRON[2233988]: pam_unix(cron:session): session closed for user www-data
+Aug 15 23:46:01 ip-172-33-120-248 CRON[2234182]: pam_unix(cron:session): session opened for user www-data(uid=33) by (uid=0)
+Aug 15 23:46:02 ip-172-33-120-248 CRON[2234182]: pam_unix(cron:session): session closed for user www-data
+Aug 15 23:46:40 ip-172-33-120-248 sshd[2234321]: Accepted publickey for ubuntu from 172.33.176.69 port 64454 ssh2: RSA SHA256:gU2ZjiVPjxVZKOO+ThGWnLwuPh/JhMlRjU08oGd/LiA
+Aug 15 23:46:40 ip-172-33-120-248 sshd[2234321]: pam_unix(sshd:session): session opened for user ubuntu(uid=1000) by (uid=0)
+Aug 15 23:46:40 ip-172-33-120-248 systemd-logind[516]: New session 247576 of user ubuntu.
+Aug 15 23:46:40 ip-172-33-120-248 systemd: pam_unix(systemd-user:session): session opened for user ubuntu(uid=1000) by (uid=0)
+Aug 15 23:47:00 ip-172-33-120-248 sudo:   ubuntu : TTY=pts/0 ; PWD=/home/ubuntu ; USER=root ; COMMAND=/usr/bin/systemctl restart monitor-agent
+Aug 15 23:47:00 ip-172-33-120-248 sudo: pam_unix(sudo:session): session opened for user root(uid=0) by ubuntu(uid=1000)
+Aug 15 23:47:00 ip-172-33-120-248 sudo: pam_unix(sudo:session): session closed for user root
+Aug 15 23:47:01 ip-172-33-120-248 CRON[2234503]: pam_unix(cron:session): session opened for user www-data(uid=33) by (uid=0)
+journal
+
+Aug 15 23:42:02 ip-172-33-120-248 CRON[2226728]: pam_unix(cron:session): session closed for user www-data
+Aug 15 23:42:30 ip-172-33-120-248 node[203107]: [2026-08-15T23:42:30.012Z] CPU: 6.72% | Mem: 60.7% | Disk: 48.1% | Load: 1.07 | PHP: 11/11 | Nginx:up(?conn) | Varnish:up(93%hit)
+Aug 15 23:42:59 ip-172-33-120-248 node[203107]: [2026-08-15T23:42:59.974Z] CPU: 1.81% | Mem: 60.2% | Disk: 48.1% | Load: 0.65 | PHP: 11/11 | Nginx:up(?conn) | Varnish:up(93%hit)
+Aug 15 23:43:01 ip-172-33-120-248 CRON[2226958]: pam_unix(cron:session): session opened for user www-data(uid=33) by (uid=0)
+Aug 15 23:43:01 ip-172-33-120-248 CRON[2226960]: (www-data) CMD (flock -w 59 /tmp/magento-cron.lock /usr/bin/php8.2 /var/www/magento/bin/magento cron:run 2>&1 | grep -v "Ran jobs by schedule" >> /var/www/magento/var/log/magento.cron.log)
+Aug 15 23:43:05 ip-172-33-120-248 CRON[2226958]: pam_unix(cron:session): session closed for user www-data
