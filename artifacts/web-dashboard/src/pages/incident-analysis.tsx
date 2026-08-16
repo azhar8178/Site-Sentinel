@@ -220,7 +220,9 @@ export default function IncidentAnalysis() {
                           .filter(([, value]) => value)
                           .map(([source, value]) => (
                             <div key={source}>
-                              <p className="text-xs font-semibold capitalize mb-1">{source}</p>
+                              <p className="text-xs font-semibold capitalize mb-1">
+                                {source === "stripe" ? "Stripe payments" : source === "meta" ? "Meta / Facebook feed" : source}
+                              </p>
                               <pre className="max-h-64 overflow-auto rounded bg-black/90 text-green-200 p-3 text-[10px] leading-4 whitespace-pre-wrap break-all">
                                 {String(value)}
                               </pre>

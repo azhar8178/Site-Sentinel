@@ -597,6 +597,36 @@ paths:
                 items:
                   $ref: "#/components/schemas/ServerLogSnapshot"
 
+  /servers/{serverId}/meta-status:
+    get:
+      operationId: getServerMetaStatus
+      tags: [servers]
+      summary: Get Meta and Facebook feed status from sanitized logs
+      parameters:
+        - name: serverId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: hours
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 6
+            minimum: 1
+            maximum: 24
+          description: Number of hours of log history
+      responses:
+        "200":
+          description: Meta and Facebook feed status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MetaFeedStatus"
+        "404":
+          description: Server not found
+
   /servers/{serverId}/log-snapshots/export:
     get:
       operationId: exportServerLogSnapshots
@@ -2027,6 +2057,64 @@ components:
         - serverId
         - logs
         - recordedAt
+
+    MetaFeedStatusEvent:
+      type: object
+      properties:
+        line:
+          type: string
+        recordedAt:
+          type: string
+          format: date-time
+      required: [line, recordedAt]
+
+    MetaFeedStatus:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [unknown, healthy, warning, error]
+        source:
+          type: string
+          enum: [agent-log]
+        hours:
+          type: number
+        snapshotCount:
+          type: integer
+        matchingSnapshotCount:
+          type: integer
+        errorCount:
+          type: integer
+        warningCount:
+          type: integer
+        successCount:
+          type: integer
+        lastEventAt:
+          type: string
+          format: date-time
+          nullable: true
+        recentErrors:
+          type: array
+          items:
+            $ref: "#/components/schemas/MetaFeedStatusEvent"
+        recentEvents:
+          type: array
+          items:
+            $ref: "#/components/schemas/MetaFeedStatusEvent"
+        message:
+          type: string
+      required:
+        - status
+        - source
+        - hours
+        - snapshotCount
+        - matchingSnapshotCount
+        - errorCount
+        - warningCount
+        - successCount
+        - recentErrors
+        - recentEvents
+        - message
 
     IncidentAnalysisInput:
       type: object

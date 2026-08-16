@@ -30,6 +30,11 @@ const STRIPE_LOG_PATHS = (process.env.MONITOR_STRIPE_LOG_PATHS || "")
   .map((path) => path.trim())
   .filter(Boolean)
   .slice(0, 20);
+const META_LOG_PATHS = (process.env.MONITOR_META_LOG_PATHS || "")
+  .split(",")
+  .map((path) => path.trim())
+  .filter(Boolean)
+  .slice(0, 20);
 
 if (!API_URL || !API_KEY) {
   console.error("ERROR: MONITOR_API_URL and MONITOR_API_KEY are required.");
@@ -840,6 +845,7 @@ function sanitizeLog(value) {
     .replace(/([?&](?:password|passwd|token|api[_-]?key|secret)=)[^&\s]+/gi, "$1[REDACTED]")
     .replace(/\b(?:sk|rk)_(?:live|test)_[A-Za-z0-9]+\b/gi, "[STRIPE_SECRET_KEY]")
     .replace(/\bwhsec_[A-Za-z0-9]+\b/gi, "[STRIPE_WEBHOOK_SECRET]")
+    .replace(/\bEA[A-Za-z0-9_-]{20,}\b/g, "[META_ACCESS_TOKEN]")
     .replace(/((?:card_number|cardNumber|cvc|cvv)\s*[=:]\s*)["']?[^"'\\s,;]+/gi, "$1[REDACTED]")
     .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, "[EMAIL]");
 }
@@ -869,6 +875,20 @@ function getStripeLogSnapshot() {
   );
 }
 
+function getMetaLogSnapshot() {
+  if (META_LOG_PATHS.length > 0) {
+    const script = META_LOG_PATHS
+      .map((path) => `if [ -f ${shellQuote(path)} ]; then echo "=== ${path} ==="; tail -n 160 -- ${shellQuote(path)}; fi`)
+      .join("\n");
+    return readLogCommand(`sh -c ${shellQuote(script)}`, 20000);
+  }
+
+  return readLogCommand(
+    "sh -c 'for root in /var/www/html /var/www/* /home/*/public_html /home/*/www /srv/www/*; do for f in \"$root\"/var/log/*meta*.log \"$root\"/var/log/*facebook*.log \"$root\"/var/log/*catalog*.log \"$root\"/var/log/*feed*.log; do [ -f \"$f\" ] && { echo \"=== $f ===\"; tail -n 160 -- \"$f\"; }; done; for f in \"$root\"/var/log/system.log \"$root\"/var/log/exception.log \"$root\"/var/log/debug.log; do [ -f \"$f\" ] && grep -Ei \"facebook|meta([ _-]?business)?|instagram|catalog.{0,20}feed|product.{0,20}feed|commerce manager|graphql.{0,30}(catalog|feed)|feed.{0,30}(error|fail|reject)\" \"$f\" | tail -n 160; done; done; journalctl --since \"5 minutes ago\" --no-pager -n 160 2>/dev/null | grep -Ei \"facebook|meta([ _-]?business)?|instagram|catalog.{0,20}feed|product.{0,20}feed|commerce manager\" | tail -n 160'",
+    20000,
+  );
+}
+
 function getLogSnapshot() {
   const sources = {
     journal: readLogCommand(
@@ -886,6 +906,7 @@ function getLogSnapshot() {
       "sh -c 'for root in /var/www/html /var/www/* /home/*/public_html /home/*/www /srv/www/*; do for name in system exception debug; do f=\"$root/var/log/$name.log\"; [ -f \"$f\" ] && tail -n 120 \"$f\"; done; done' 2>/dev/null"
     ),
     stripe: getStripeLogSnapshot(),
+    meta: getMetaLogSnapshot(),
     kernel: readLogCommand(
       "journalctl -k --since '5 minutes ago' --no-pager -p warning..alert -n 120 2>/dev/null"
     ),
@@ -1021,7 +1042,7 @@ async function collect() {
   }
 }
 
-const AGENT_VERSION = "3.5.5";
+const AGENT_VERSION = "3.5.6";
 const UPDATE_CHECK_INTERVAL = 3600000;
 let lastUpdateCheck = 0;
 

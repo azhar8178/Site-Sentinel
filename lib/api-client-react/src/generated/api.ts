@@ -35,6 +35,7 @@ import type {
   GetMagentoCartsParams,
   GetMagentoOrdersParams,
   GetServerLogSnapshotsParams,
+  GetServerMetaStatusParams,
   GetServerMetricsParams,
   GetServerWafEventsParams,
   HealthStatus,
@@ -47,6 +48,7 @@ import type {
   MagentoOrder,
   MagentoStats,
   MagentoSyncLog,
+  MetaFeedStatus,
   ReceiveGitlabDeploymentWebhookBody,
   RegenerateServerKey200,
   ServerAlertConfigResponse,
@@ -2417,6 +2419,126 @@ export function useGetServerLogSnapshots<
   },
 ): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
   const queryOptions = getGetServerLogSnapshotsQueryOptions(
+    serverId,
+    params,
+    options,
+  );
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Get Meta and Facebook feed status from sanitized logs
+ */
+export const getGetServerMetaStatusUrl = (
+  serverId: number,
+  params?: GetServerMetaStatusParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/servers/${serverId}/meta-status?${stringifiedParams}`
+    : `/api/servers/${serverId}/meta-status`;
+};
+
+export const getServerMetaStatus = async (
+  serverId: number,
+  params?: GetServerMetaStatusParams,
+  options?: RequestInit,
+): Promise<MetaFeedStatus> => {
+  return customFetch<MetaFeedStatus>(
+    getGetServerMetaStatusUrl(serverId, params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getGetServerMetaStatusQueryKey = (
+  serverId: number,
+  params?: GetServerMetaStatusParams,
+) => {
+  return [
+    `/api/servers/${serverId}/meta-status`,
+    ...(params ? [params] : []),
+  ] as const;
+};
+
+export const getGetServerMetaStatusQueryOptions = <
+  TData = Awaited<ReturnType<typeof getServerMetaStatus>>,
+  TError = ErrorType<void>,
+>(
+  serverId: number,
+  params?: GetServerMetaStatusParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getServerMetaStatus>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetServerMetaStatusQueryKey(serverId, params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getServerMetaStatus>>
+  > = ({ signal }) =>
+    getServerMetaStatus(serverId, params, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!serverId,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getServerMetaStatus>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetServerMetaStatusQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getServerMetaStatus>>
+>;
+export type GetServerMetaStatusQueryError = ErrorType<void>;
+
+/**
+ * @summary Get Meta and Facebook feed status from sanitized logs
+ */
+
+export function useGetServerMetaStatus<
+  TData = Awaited<ReturnType<typeof getServerMetaStatus>>,
+  TError = ErrorType<void>,
+>(
+  serverId: number,
+  params?: GetServerMetaStatusParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getServerMetaStatus>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetServerMetaStatusQueryOptions(
     serverId,
     params,
     options,

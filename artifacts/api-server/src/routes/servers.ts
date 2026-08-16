@@ -16,6 +16,86 @@ function clampNum(val: unknown, min: number, max: number, fallback: number): num
   return Math.max(min, Math.min(max, n));
 }
 
+const META_SIGNAL_RE = /\b(?:facebook|meta(?:[ _-]?business)?|instagram|catalog|product[ _-]?feed|commerce manager|graphql)\b/i;
+const META_ERROR_RE = /\b(?:error|critical|fatal|exception|failed|failure|rejected|invalid|denied|forbidden|timeout|unavailable|not found)\b/i;
+const META_WARNING_RE = /\b(?:warn(?:ing)?|retry|delayed|pending|partial|throttl(?:e|ed|ing)|rate limit)\b/i;
+const META_SUCCESS_RE = /\b(?:success(?:ful|fully)?|completed|processed|synced|uploaded|published|exported|created|updated|ready)\b/i;
+
+type MetaStatus = "unknown" | "healthy" | "warning" | "error";
+
+function getSnapshotSources(snapshot: typeof serverLogSnapshotsTable.$inferSelect): Record<string, string> {
+  if (!snapshot.logs || typeof snapshot.logs !== "object") return {};
+  const sources = (snapshot.logs as Record<string, unknown>).sources;
+  if (!sources || typeof sources !== "object") return {};
+  return Object.fromEntries(
+    Object.entries(sources)
+      .filter(([, value]) => typeof value === "string")
+      .map(([source, value]) => [source, String(value)]),
+  );
+}
+
+function extractMetaLines(snapshot: typeof serverLogSnapshotsTable.$inferSelect): string[] {
+  const sources = getSnapshotSources(snapshot);
+  const directMeta = (sources.meta || "")
+    .split(/\r?\n/)
+    .map(line => line.trim())
+    .filter(Boolean);
+
+  if (directMeta.length > 0) return directMeta;
+
+  return Object.entries(sources)
+    .filter(([source]) => source !== "stripe")
+    .flatMap(([, value]) => value.split(/\r?\n/).map(line => line.trim()).filter(line => META_SIGNAL_RE.test(line)));
+}
+
+function summarizeMetaStatus(
+  snapshots: typeof serverLogSnapshotsTable.$inferSelect[],
+  hours: number,
+) {
+  const events: Array<{ line: string; recordedAt: string }> = [];
+  for (const snapshot of snapshots) {
+    for (const line of extractMetaLines(snapshot)) {
+      events.push({ line: line.slice(0, 500), recordedAt: snapshot.recordedAt.toISOString() });
+    }
+  }
+
+  const errorEvents = events.filter(event => META_ERROR_RE.test(event.line));
+  const warningEvents = events.filter(event => META_WARNING_RE.test(event.line));
+  const successEvents = events.filter(event => META_SUCCESS_RE.test(event.line));
+  const status: MetaStatus = events.length === 0
+    ? "unknown"
+    : errorEvents.length > 0
+      ? "error"
+      : warningEvents.length > 0
+        ? "warning"
+        : successEvents.length > 0
+          ? "healthy"
+          : "warning";
+
+  const message = status === "unknown"
+    ? "No Meta or Facebook feed entries were found in the selected log window."
+    : status === "error"
+      ? "Meta or Facebook feed errors were found in the selected log window."
+      : status === "warning"
+        ? "Meta or Facebook feed activity needs review."
+        : "Recent Meta or Facebook feed activity completed without detected errors.";
+
+  return {
+    status,
+    source: "agent-log",
+    hours,
+    snapshotCount: snapshots.length,
+    matchingSnapshotCount: new Set(events.map(event => event.recordedAt)).size,
+    errorCount: errorEvents.length,
+    warningCount: warningEvents.length,
+    successCount: successEvents.length,
+    lastEventAt: events.length > 0 ? events[events.length - 1].recordedAt : null,
+    recentErrors: errorEvents.slice(-8).reverse(),
+    recentEvents: events.slice(-8).reverse(),
+    message,
+  };
+}
+
 function wrapPdfText(value: string, maxLength = 92): string[] {
   const words = value.replace(/[^\x20-\x7E]/g, "?").split(/\s+/).filter(Boolean);
   const lines: string[] = [];
@@ -87,7 +167,7 @@ function createManagementPdf(
         : "No error or warning indicators were detected in the collected sanitized logs.";
   const sortedSources = [...sourceCounts.entries()]
     .sort((a, b) => b[1] - a[1])
-    .map(([source, count]) => `${source === "stripe" ? "Stripe payments" : source}: ${count} snapshot(s)`);
+    .map(([source, count]) => `${source === "stripe" ? "Stripe payments" : source === "meta" ? "Meta / Facebook feed" : source}: ${count} snapshot(s)`);
   const recommendation = snapshots.length === 0
     ? "Confirm the agent service is active and has successfully posted a report."
     : errorCount > 0
@@ -297,6 +377,38 @@ serversRouter.get("/servers/:id/log-snapshots", async (req, res, next) => {
       .orderBy(serverLogSnapshotsTable.recordedAt);
 
     res.json(snapshots);
+  } catch (err) {
+    next(err);
+  }
+});
+
+serversRouter.get("/servers/:id/meta-status", async (req, res, next) => {
+  try {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id) || id <= 0) {
+      res.status(400).json({ error: "Invalid server ID" });
+      return;
+    }
+
+    const [server] = await db
+      .select({ id: serversTable.id })
+      .from(serversTable)
+      .where(eq(serversTable.id, id))
+      .limit(1);
+    if (!server) {
+      res.status(404).json({ error: "Server not found" });
+      return;
+    }
+
+    const hours = clampNum(req.query.hours, 1, 24, 6);
+    const since = new Date(Date.now() - hours * 60 * 60 * 1000);
+    const snapshots = await db
+      .select()
+      .from(serverLogSnapshotsTable)
+      .where(and(eq(serverLogSnapshotsTable.serverId, id), gte(serverLogSnapshotsTable.recordedAt, since)))
+      .orderBy(serverLogSnapshotsTable.recordedAt);
+
+    res.json(summarizeMetaStatus(snapshots, hours));
   } catch (err) {
     next(err);
   }

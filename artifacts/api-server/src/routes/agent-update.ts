@@ -5,7 +5,7 @@ import crypto from "crypto";
 
 const router: IRouter = Router();
 
-const AGENT_VERSION = "3.5.5";
+const AGENT_VERSION = "3.5.6";
 
 function getAgentScript(): { content: string; hash: string } | null {
   const paths = [
@@ -64,6 +64,7 @@ MONITOR_OPENSEARCH_AUTH="\${5:-none}"
 MONITOR_WAF_REGION="\${6:-eu-west-2}"
 MONITOR_WAF_WEB_ACL_NAME="\${7:-CreatedByALB-magento-prod-ALB}"
 MONITOR_WAF_LOG_GROUP="\${8:-aws-waf-logs-magento-prod}"
+MONITOR_META_LOG_PATHS="\${9:-}"
 INSTALL_DIR="/opt/monitor-agent"
 
 echo "Installing Site Sentinel Monitor Agent..."
@@ -92,6 +93,7 @@ MONITOR_OPENSEARCH_AUTH=\$MONITOR_OPENSEARCH_AUTH
 MONITOR_WAF_REGION=\$MONITOR_WAF_REGION
 MONITOR_WAF_WEB_ACL_NAME=\$MONITOR_WAF_WEB_ACL_NAME
 MONITOR_WAF_LOG_GROUP=\$MONITOR_WAF_LOG_GROUP
+MONITOR_META_LOG_PATHS=\$MONITOR_META_LOG_PATHS
 EOF
 
 sudo tee /etc/systemd/system/monitor-agent.service > /dev/null <<EOF

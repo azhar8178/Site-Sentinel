@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { customFetch, useListServers, useCreateServer, useDeleteServer, useUpdateServer, useRegenerateServerKey, useGetServerMetrics, useGetServerLogSnapshots } from "@workspace/api-client-react";
+import { customFetch, useListServers, useCreateServer, useDeleteServer, useUpdateServer, useRegenerateServerKey, useGetServerMetrics, useGetServerLogSnapshots, useGetServerMetaStatus } from "@workspace/api-client-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
@@ -11,7 +11,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import {
   Server as ServerIcon, Cpu, HardDrive, MemoryStick, Trash2,
   Activity, Plus, X, Copy, Check, Edit2, Save, KeyRound, RefreshCw,
-  Gauge, Search, CircleCheck, CircleX, CircleAlert, Download,
+  Gauge, Search, CircleCheck, CircleX, CircleAlert, Download, Rss,
 } from "lucide-react";
 import { formatBytes } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
@@ -34,6 +34,13 @@ function ServerDetailModal({
   });
   const { data: logSnapshots } = useGetServerLogSnapshots(serverId, { hours: Math.min(hours, 24) }, {
     query: { enabled: true, refetchInterval: 300000 },
+  });
+  const { data: metaStatus, isLoading: metaStatusLoading } = useGetServerMetaStatus(serverId, { hours: Math.min(hours, 24) }, {
+    query: {
+      queryKey: [`/api/servers/${serverId}/meta-status`, { hours: Math.min(hours, 24) }],
+      enabled: true,
+      refetchInterval: 300000,
+    },
   });
   const updateServer = useUpdateServer();
   const queryClient = useQueryClient();
@@ -147,6 +154,14 @@ function ServerDetailModal({
     }
     return <span className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground"><CircleAlert className="w-3.5 h-3.5" /> No data</span>;
   };
+  const metaStatusMeta = {
+    healthy: { label: "Healthy", icon: CircleCheck, className: "text-success", badge: "success" as const },
+    warning: { label: "Warning", icon: CircleAlert, className: "text-warning", badge: "warning" as const },
+    error: { label: "Errors found", icon: CircleX, className: "text-destructive", badge: "destructive" as const },
+    unknown: { label: "No feed data", icon: CircleAlert, className: "text-muted-foreground", badge: "outline" as const },
+  } as const;
+  const metaView = metaStatusMeta[metaStatus?.status ?? "unknown"];
+  const MetaStatusIcon = metaView.icon;
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
@@ -206,11 +221,72 @@ function ServerDetailModal({
           )}
 
           <div className="rounded-xl border border-border bg-muted/20 p-4">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="rounded-lg bg-blue-500/10 p-2 text-blue-600">
+                  <Rss className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-semibold">Meta / Facebook feed</h3>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Feed activity and errors from sanitized server logs
+                  </p>
+                </div>
+              </div>
+              <Badge variant={metaView.badge} className="gap-1">
+                <MetaStatusIcon className={`w-3.5 h-3.5 ${metaView.className}`} />
+                {metaStatusLoading ? "Checking…" : metaView.label}
+              </Badge>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
+              <div className="bg-secondary/50 rounded-lg p-3 border">
+                <p className="text-xs text-muted-foreground">Successful activity</p>
+                <p className="text-lg font-bold">{metaStatus?.successCount ?? "—"}</p>
+              </div>
+              <div className="bg-secondary/50 rounded-lg p-3 border">
+                <p className="text-xs text-muted-foreground">Errors</p>
+                <p className="text-lg font-bold text-destructive">{metaStatus?.errorCount ?? "—"}</p>
+              </div>
+              <div className="bg-secondary/50 rounded-lg p-3 border">
+                <p className="text-xs text-muted-foreground">Warnings</p>
+                <p className="text-lg font-bold text-warning">{metaStatus?.warningCount ?? "—"}</p>
+              </div>
+              <div className="bg-secondary/50 rounded-lg p-3 border">
+                <p className="text-xs text-muted-foreground">Window</p>
+                <p className="text-lg font-bold">{Math.min(hours, 24)}h</p>
+              </div>
+            </div>
+
+            <p className="text-sm text-muted-foreground mt-4">
+              {metaStatus?.message ?? "Checking recent Meta feed activity…"}
+            </p>
+            {metaStatus?.lastEventAt && (
+              <p className="text-xs text-muted-foreground mt-1">
+                Last detected activity: {new Date(metaStatus.lastEventAt).toLocaleString()}
+              </p>
+            )}
+            {metaStatus?.recentErrors?.length ? (
+              <div className="mt-4 rounded-lg border border-destructive/20 bg-destructive/5 p-3">
+                <p className="text-xs font-semibold text-destructive mb-2">Recent feed errors</p>
+                <ul className="space-y-1.5">
+                  {metaStatus.recentErrors.slice(0, 3).map((event, index) => (
+                    <li key={`${event.recordedAt}-${index}`} className="text-xs text-muted-foreground">
+                      <span className="font-mono text-[10px] mr-2">{new Date(event.recordedAt).toLocaleTimeString()}</span>
+                      <span className="break-all">{event.line}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+          </div>
+
+          <div className="rounded-xl border border-border bg-muted/20 p-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
                 <h3 className="font-semibold">Collected performance logs</h3>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Sanitized snapshots from the last {hours}h, including Magento, system, and Stripe sources. Secrets and payment credentials are redacted.
+                  Sanitized snapshots from the last {hours}h, including Magento, system, Stripe, and Meta/Facebook sources. Secrets and payment credentials are redacted.
                 </p>
               </div>
               <div className="flex flex-wrap gap-2 shrink-0">
@@ -265,7 +341,7 @@ function ServerDetailModal({
                       {Object.entries(snapshot.logs?.sources ?? {}).filter(([, value]) => value).map(([source, value]) => (
                         <div key={source}>
                           <p className="text-xs font-semibold capitalize mb-1">
-                            {source === "stripe" ? "Stripe payments" : source}
+                            {source === "stripe" ? "Stripe payments" : source === "meta" ? "Meta / Facebook feed" : source}
                           </p>
                           <pre className="max-h-48 overflow-auto rounded bg-black/90 text-green-200 p-3 text-[10px] leading-4 whitespace-pre-wrap break-all">
                             {String(value)}

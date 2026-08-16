@@ -478,6 +478,43 @@ export interface ServerLogSnapshot {
   recordedAt: string;
 }
 
+export interface MetaFeedStatusEvent {
+  line: string;
+  recordedAt: string;
+}
+
+export type MetaFeedStatusStatus =
+  (typeof MetaFeedStatusStatus)[keyof typeof MetaFeedStatusStatus];
+
+export const MetaFeedStatusStatus = {
+  unknown: "unknown",
+  healthy: "healthy",
+  warning: "warning",
+  error: "error",
+} as const;
+
+export type MetaFeedStatusSource =
+  (typeof MetaFeedStatusSource)[keyof typeof MetaFeedStatusSource];
+
+export const MetaFeedStatusSource = {
+  "agent-log": "agent-log",
+} as const;
+
+export interface MetaFeedStatus {
+  status: MetaFeedStatusStatus;
+  source: MetaFeedStatusSource;
+  hours: number;
+  snapshotCount: number;
+  matchingSnapshotCount: number;
+  errorCount: number;
+  warningCount: number;
+  successCount: number;
+  lastEventAt?: string | null;
+  recentErrors: MetaFeedStatusEvent[];
+  recentEvents: MetaFeedStatusEvent[];
+  message: string;
+}
+
 export interface IncidentAnalysisInput {
   /**
    * @minimum 1
@@ -682,6 +719,15 @@ export type GetServerMetricsParams = {
 };
 
 export type GetServerLogSnapshotsParams = {
+  /**
+   * Number of hours of log history
+   * @minimum 1
+   * @maximum 24
+   */
+  hours?: number;
+};
+
+export type GetServerMetaStatusParams = {
   /**
    * Number of hours of log history
    * @minimum 1

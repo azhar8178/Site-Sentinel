@@ -936,6 +936,50 @@ export const GetServerLogSnapshotsResponse = zod.array(
 );
 
 /**
+ * @summary Get Meta and Facebook feed status from sanitized logs
+ */
+export const GetServerMetaStatusParams = zod.object({
+  serverId: zod.coerce.number(),
+});
+
+export const getServerMetaStatusQueryHoursDefault = 6;
+export const getServerMetaStatusQueryHoursMax = 24;
+
+export const GetServerMetaStatusQueryParams = zod.object({
+  hours: zod.coerce
+    .number()
+    .min(1)
+    .max(getServerMetaStatusQueryHoursMax)
+    .default(getServerMetaStatusQueryHoursDefault)
+    .describe("Number of hours of log history"),
+});
+
+export const GetServerMetaStatusResponse = zod.object({
+  status: zod.enum(["unknown", "healthy", "warning", "error"]),
+  source: zod.enum(["agent-log"]),
+  hours: zod.number(),
+  snapshotCount: zod.number(),
+  matchingSnapshotCount: zod.number(),
+  errorCount: zod.number(),
+  warningCount: zod.number(),
+  successCount: zod.number(),
+  lastEventAt: zod.date().nullish(),
+  recentErrors: zod.array(
+    zod.object({
+      line: zod.string(),
+      recordedAt: zod.date(),
+    }),
+  ),
+  recentEvents: zod.array(
+    zod.object({
+      line: zod.string(),
+      recordedAt: zod.date(),
+    }),
+  ),
+  message: zod.string(),
+});
+
+/**
  * @summary Download sanitized server log snapshots
  */
 export const ExportServerLogSnapshotsParams = zod.object({
