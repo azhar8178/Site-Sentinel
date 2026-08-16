@@ -28,7 +28,10 @@ app.use(
   }),
 );
 app.use(cors());
-app.use(express.json());
+// Agent reports include bounded multi-source log snapshots. Keep the limit
+// conservative, but above Express's 100 KB default so those reports can be
+// accepted without requiring the agent to omit diagnostics.
+app.use(express.json({ limit: "1mb" }));
 app.use(express.urlencoded({ extended: true }));
 
 // Older agents may retain a trailing slash in MONITOR_API_URL and request
