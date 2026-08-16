@@ -1,16 +1,24 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { getGetServerMetricsQueryKey, useGetServerMetrics } from "@workspace/api-client-react";
+import {
+  getGetServerLogSummaryQueryKey,
+  getGetServerMetricsQueryKey,
+  useGetServerLogSummary,
+  useGetServerMetrics,
+  type ServerLogSummary,
+} from "@workspace/api-client-react";
 import { format, formatDistanceToNow } from "date-fns";
 import { motion } from "framer-motion";
 import {
   Activity,
+  BarChart3,
   AlertTriangle,
   CheckCircle2,
   ChevronRight,
   Clock3,
   Cpu,
   Database,
+  FileWarning,
   Globe2,
   HardDrive,
   LockKeyhole,
@@ -411,6 +419,191 @@ function ServiceHealth({ servers }: { servers: HealthReport["servers"] }) {
   );
 }
 
+function formatLogSource(source: string) {
+  const labels: Record<string, string> = {
+    nginxError: "Nginx",
+    phpFpm: "PHP-FPM",
+    failedServices: "Failed services",
+    meta: "Meta / Facebook",
+    stripe: "Stripe",
+  };
+  return labels[source] ?? source.replace(/([a-z])([A-Z])/g, "$1 $2");
+}
+
+function LogSummaryBar({ summary }: { summary: ServerLogSummary }) {
+  const classifiedCount = summary.errorCount + summary.warningCount;
+  const safeTotal = Math.max(summary.totalEntries, classifiedCount, 1);
+  const errorWidth = (summary.errorCount / safeTotal) * 100;
+  const warningWidth = (summary.warningCount / safeTotal) * 100;
+  const neutralWidth = Math.max(0, 100 - errorWidth - warningWidth);
+
+  return (
+    <div className="space-y-2" aria-label="Log severity distribution">
+      <div className="flex h-2 overflow-hidden rounded-full bg-muted" role="img" aria-label={`${summary.errorCount} errors and ${summary.warningCount} warnings`}>
+        <div className="bg-destructive transition-all" style={{ width: `${errorWidth}%` }} />
+        <div className="bg-warning transition-all" style={{ width: `${warningWidth}%` }} />
+        <div className="bg-success/60 transition-all" style={{ width: `${neutralWidth}%` }} />
+      </div>
+      <div className="flex flex-wrap gap-x-4 gap-y-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+        <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-destructive" />{summary.errorCount} errors</span>
+        <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-warning" />{summary.warningCount} warnings</span>
+        <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-success/60" />{Math.max(0, summary.totalEntries - classifiedCount)} normal</span>
+      </div>
+    </div>
+  );
+}
+
+function ServerLogIntelligence({ server }: { server: HealthReport["servers"][number] }) {
+  const hours = 6;
+  const { data: summary, isLoading, isError } = useGetServerLogSummary(server.id, { hours }, {
+    query: {
+      queryKey: getGetServerLogSummaryQueryKey(server.id, { hours }),
+      refetchInterval: 300000,
+    },
+  });
+
+  if (isLoading) {
+    return <div className="h-[250px] animate-pulse rounded-xl bg-muted/40" aria-label={`Loading log summary for ${server.name}`} />;
+  }
+
+  if (isError || !summary) {
+    return (
+      <div className="rounded-xl border border-dashed border-destructive/30 bg-destructive/5 p-5" data-testid={`log-summary-error-${server.id}`}>
+        <div className="flex items-center gap-2 text-sm font-bold text-destructive">
+          <FileWarning className="h-4 w-4" aria-hidden="true" />
+          Log analysis unavailable
+        </div>
+        <p className="mt-2 text-xs leading-5 text-muted-foreground">The dashboard could not load the analyzed log summary for this server.</p>
+      </div>
+    );
+  }
+
+  const issueTone = summary.errorCount > 0
+    ? { label: "Needs attention", className: "border-destructive/30 bg-destructive/5 text-destructive" }
+    : summary.warningCount > 0
+      ? { label: "Review warnings", className: "border-warning/30 bg-warning/5 text-warning" }
+      : { label: "No classified issues", className: "border-success/30 bg-success/5 text-success" };
+
+  return (
+    <div className="rounded-xl border border-border bg-muted/10 p-4" data-testid={`log-summary-${server.id}`}>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <p className="truncate text-sm font-bold text-foreground">{server.name}</p>
+          <p className="mt-1 truncate font-mono text-[10px] text-muted-foreground">{server.hostname}</p>
+        </div>
+        <span className={cn("inline-flex shrink-0 items-center gap-1.5 rounded-md border px-2 py-1 text-[10px] font-bold uppercase tracking-wider", issueTone.className)}>
+          {summary.errorCount > 0 ? <AlertTriangle className="h-3 w-3" aria-hidden="true" /> : <CheckCircle2 className="h-3 w-3" aria-hidden="true" />}
+          {issueTone.label}
+        </span>
+      </div>
+
+      <div className="mt-5 grid grid-cols-3 gap-2">
+        <div className="rounded-lg border border-border bg-card p-3">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Snapshots</p>
+          <p className="mt-1 font-display text-xl font-bold text-foreground">{summary.snapshotCount}</p>
+        </div>
+        <div className="rounded-lg border border-border bg-card p-3">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Entries</p>
+          <p className="mt-1 font-display text-xl font-bold text-foreground">{summary.totalEntries.toLocaleString()}</p>
+        </div>
+        <div className="rounded-lg border border-border bg-card p-3">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Sources</p>
+          <p className="mt-1 font-display text-xl font-bold text-foreground">{summary.sourceCounts.length}</p>
+        </div>
+      </div>
+
+      <div className="mt-4">
+        <LogSummaryBar summary={summary} />
+      </div>
+
+      <div className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+        <div>
+          <div className="mb-2 flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+            <BarChart3 className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
+            Log volume by source
+          </div>
+          <div className="space-y-2.5">
+            {summary.sourceCounts.slice(0, 5).map((source) => {
+              const width = summary.totalEntries > 0 ? Math.max(4, (source.entries / summary.totalEntries) * 100) : 0;
+              return (
+                <div key={source.source}>
+                  <div className="mb-1 flex items-center justify-between gap-3 text-xs">
+                    <span className="truncate text-muted-foreground">{formatLogSource(source.source)}</span>
+                    <span className="font-mono font-semibold text-foreground">{source.entries.toLocaleString()}</span>
+                  </div>
+                  <div className="h-1.5 overflow-hidden rounded-full bg-muted">
+                    <div className="h-full rounded-full bg-primary/70" style={{ width: `${width}%` }} />
+                  </div>
+                </div>
+              );
+            })}
+            {summary.sourceCounts.length === 0 && <p className="text-xs text-muted-foreground">No log sources detected yet.</p>}
+          </div>
+        </div>
+
+        <div>
+          <div className="mb-2 flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+            <FileWarning className="h-3.5 w-3.5 text-warning" aria-hidden="true" />
+            Recent signals
+          </div>
+          {summary.recentIssues.length === 0 ? (
+            <p className="rounded-lg border border-dashed border-border p-3 text-xs text-muted-foreground">{summary.message}</p>
+          ) : (
+            <div className="space-y-2">
+              {summary.recentIssues.slice(0, 3).map((issue, index) => (
+                <div key={`${issue.recordedAt}-${issue.source}-${index}`} className="rounded-lg border border-border bg-card px-3 py-2">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className={cn("text-[10px] font-bold uppercase tracking-wider", issue.severity === "error" ? "text-destructive" : "text-warning")}>
+                      {issue.severity} · {formatLogSource(issue.source)}
+                    </span>
+                    <span className="shrink-0 font-mono text-[10px] text-muted-foreground">{formatDateTime(issue.recordedAt)}</span>
+                  </div>
+                  <p className="mt-1 line-clamp-2 text-xs leading-5 text-muted-foreground">{issue.line}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function LogIntelligence({ servers }: { servers: HealthReport["servers"] }) {
+  return (
+    <Card className="order-4 flex flex-col xl:col-span-12" data-testid="card-log-intelligence">
+      <CardHeader className="border-b border-border/50 px-5 pb-4 pt-5">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <CardTitle className="flex items-center gap-2 text-[15px]">
+              <div className="rounded-lg bg-primary/10 p-1.5 text-primary"><BarChart3 className="h-4 w-4" aria-hidden="true" /></div>
+              Log Intelligence
+            </CardTitle>
+            <p className="mt-1 text-xs text-muted-foreground">Analyzed sanitized logs from the last 6 hours, summarized by server</p>
+          </div>
+          <a href="/incident-analysis" className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline">
+            Open Incident Analysis
+            <ChevronRight className="h-3.5 w-3.5" aria-hidden="true" />
+          </a>
+        </div>
+      </CardHeader>
+      <CardContent className="p-5">
+        {servers.length === 0 ? (
+          <div className="rounded-xl border border-dashed border-border bg-muted/20 px-4 py-10 text-center">
+            <FileWarning className="mx-auto mb-3 h-8 w-8 text-muted-foreground/40" aria-hidden="true" />
+            <p className="text-sm font-bold text-foreground">No logs to analyze</p>
+            <p className="mt-1 text-xs text-muted-foreground">Register a server and install its monitoring agent to begin.</p>
+          </div>
+        ) : (
+          <div className="grid gap-4 xl:grid-cols-2">
+            {servers.map((server) => <ServerLogIntelligence key={server.id} server={server} />)}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function Dashboard() {
   const { data, isLoading, isError, error, refetch, isFetching, dataUpdatedAt } = useQuery<HealthReport>({
     queryKey: ["/api/health-report"],
@@ -623,6 +816,7 @@ export default function Dashboard() {
 
       {/* Grid: Availability & Fleet */}
       <section className="contents">
+        <LogIntelligence servers={data.servers} />
         <Card className="order-8 flex flex-col xl:col-span-6" data-testid="card-site-availability">
           <CardHeader className="px-5 sm:px-6 pt-6 pb-4 border-b border-border/50 shrink-0">
             <div className="flex items-center justify-between gap-3">

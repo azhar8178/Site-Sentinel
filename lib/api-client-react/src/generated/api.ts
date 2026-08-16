@@ -35,6 +35,7 @@ import type {
   GetMagentoCartsParams,
   GetMagentoOrdersParams,
   GetServerLogSnapshotsParams,
+  GetServerLogSummaryParams,
   GetServerMetaStatusParams,
   GetServerMetricsParams,
   GetServerWafEventsParams,
@@ -54,6 +55,7 @@ import type {
   ServerAlertConfigResponse,
   ServerCreateResponse,
   ServerLogSnapshot,
+  ServerLogSummary,
   ServerMetric,
   ServerWafEvent,
   ServerWithMetrics,
@@ -2539,6 +2541,126 @@ export function useGetServerMetaStatus<
   },
 ): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
   const queryOptions = getGetServerMetaStatusQueryOptions(
+    serverId,
+    params,
+    options,
+  );
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Get analyzed log summary for the dashboard
+ */
+export const getGetServerLogSummaryUrl = (
+  serverId: number,
+  params?: GetServerLogSummaryParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/servers/${serverId}/log-summary?${stringifiedParams}`
+    : `/api/servers/${serverId}/log-summary`;
+};
+
+export const getServerLogSummary = async (
+  serverId: number,
+  params?: GetServerLogSummaryParams,
+  options?: RequestInit,
+): Promise<ServerLogSummary> => {
+  return customFetch<ServerLogSummary>(
+    getGetServerLogSummaryUrl(serverId, params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getGetServerLogSummaryQueryKey = (
+  serverId: number,
+  params?: GetServerLogSummaryParams,
+) => {
+  return [
+    `/api/servers/${serverId}/log-summary`,
+    ...(params ? [params] : []),
+  ] as const;
+};
+
+export const getGetServerLogSummaryQueryOptions = <
+  TData = Awaited<ReturnType<typeof getServerLogSummary>>,
+  TError = ErrorType<void>,
+>(
+  serverId: number,
+  params?: GetServerLogSummaryParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getServerLogSummary>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetServerLogSummaryQueryKey(serverId, params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getServerLogSummary>>
+  > = ({ signal }) =>
+    getServerLogSummary(serverId, params, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!serverId,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getServerLogSummary>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetServerLogSummaryQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getServerLogSummary>>
+>;
+export type GetServerLogSummaryQueryError = ErrorType<void>;
+
+/**
+ * @summary Get analyzed log summary for the dashboard
+ */
+
+export function useGetServerLogSummary<
+  TData = Awaited<ReturnType<typeof getServerLogSummary>>,
+  TError = ErrorType<void>,
+>(
+  serverId: number,
+  params?: GetServerLogSummaryParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getServerLogSummary>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetServerLogSummaryQueryOptions(
     serverId,
     params,
     options,

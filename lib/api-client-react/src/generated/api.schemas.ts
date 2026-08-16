@@ -515,6 +515,38 @@ export interface MetaFeedStatus {
   message: string;
 }
 
+export interface LogSummarySource {
+  source: string;
+  entries: number;
+}
+
+export type LogSummaryIssueSeverity =
+  (typeof LogSummaryIssueSeverity)[keyof typeof LogSummaryIssueSeverity];
+
+export const LogSummaryIssueSeverity = {
+  error: "error",
+  warning: "warning",
+} as const;
+
+export interface LogSummaryIssue {
+  severity: LogSummaryIssueSeverity;
+  source: string;
+  line: string;
+  recordedAt: string;
+}
+
+export interface ServerLogSummary {
+  hours: number;
+  snapshotCount: number;
+  totalEntries: number;
+  errorCount: number;
+  warningCount: number;
+  latestSnapshotAt?: string | null;
+  sourceCounts: LogSummarySource[];
+  recentIssues: LogSummaryIssue[];
+  message: string;
+}
+
 export interface IncidentAnalysisInput {
   /**
    * @minimum 1
@@ -728,6 +760,15 @@ export type GetServerLogSnapshotsParams = {
 };
 
 export type GetServerMetaStatusParams = {
+  /**
+   * Number of hours of log history
+   * @minimum 1
+   * @maximum 24
+   */
+  hours?: number;
+};
+
+export type GetServerLogSummaryParams = {
   /**
    * Number of hours of log history
    * @minimum 1

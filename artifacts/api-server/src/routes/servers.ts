@@ -20,6 +20,8 @@ const META_SIGNAL_RE = /\b(?:facebook|meta(?:[ _-]?business)?|instagram|catalog|
 const META_ERROR_RE = /\b(?:error|critical|fatal|exception|failed|failure|rejected|invalid|denied|forbidden|timeout|unavailable|not found)\b/i;
 const META_WARNING_RE = /\b(?:warn(?:ing)?|retry|delayed|pending|partial|throttl(?:e|ed|ing)|rate limit)\b/i;
 const META_SUCCESS_RE = /\b(?:success(?:ful|fully)?|completed|processed|synced|uploaded|published|exported|created|updated|ready)\b/i;
+const LOG_ERROR_RE = /\b(?:error|critical|fatal|exception|failed|failure|rejected|invalid|denied|forbidden|timeout|unavailable)\b/i;
+const LOG_WARNING_RE = /\b(?:warn(?:ing)?|retry|delayed|pending|partial|throttl(?:e|ed|ing)|rate limit)\b/i;
 
 type MetaStatus = "unknown" | "healthy" | "warning" | "error";
 
@@ -92,6 +94,71 @@ function summarizeMetaStatus(
     lastEventAt: events.length > 0 ? events[events.length - 1].recordedAt : null,
     recentErrors: errorEvents.slice(-8).reverse(),
     recentEvents: events.slice(-8).reverse(),
+    message,
+  };
+}
+
+function summarizeServerLogs(
+  snapshots: typeof serverLogSnapshotsTable.$inferSelect[],
+  hours: number,
+) {
+  const sourceCounts = new Map<string, number>();
+  const issues: Array<{
+    severity: "error" | "warning";
+    source: string;
+    line: string;
+    recordedAt: string;
+  }> = [];
+  let totalEntries = 0;
+  let errorCount = 0;
+  let warningCount = 0;
+
+  for (const snapshot of snapshots) {
+    for (const [source, value] of Object.entries(getSnapshotSources(snapshot))) {
+      const lines = value.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
+      if (lines.length === 0) continue;
+      sourceCounts.set(source, (sourceCounts.get(source) || 0) + lines.length);
+      totalEntries += lines.length;
+
+      for (const line of lines) {
+        const severity = LOG_ERROR_RE.test(line)
+          ? "error"
+          : LOG_WARNING_RE.test(line)
+            ? "warning"
+            : null;
+        if (!severity) continue;
+        if (severity === "error") errorCount += 1;
+        else warningCount += 1;
+        issues.push({
+          severity,
+          source,
+          line: line.slice(0, 320),
+          recordedAt: snapshot.recordedAt.toISOString(),
+        });
+      }
+    }
+  }
+
+  const sourceSummary = Array.from(sourceCounts.entries())
+    .map(([source, entries]) => ({ source, entries }))
+    .sort((a, b) => b.entries - a.entries);
+  const message = snapshots.length === 0
+    ? "No analyzed log snapshots are available in this window."
+    : errorCount > 0
+      ? "Recent logs contain errors that need attention."
+      : warningCount > 0
+        ? "Recent logs contain warnings or retry signals."
+        : "Recent logs contain no classified errors or warnings.";
+
+  return {
+    hours,
+    snapshotCount: snapshots.length,
+    totalEntries,
+    errorCount,
+    warningCount,
+    latestSnapshotAt: snapshots.length > 0 ? snapshots[snapshots.length - 1].recordedAt.toISOString() : null,
+    sourceCounts: sourceSummary,
+    recentIssues: issues.slice(-8).reverse(),
     message,
   };
 }
@@ -409,6 +476,38 @@ serversRouter.get("/servers/:id/meta-status", async (req, res, next) => {
       .orderBy(serverLogSnapshotsTable.recordedAt);
 
     res.json(summarizeMetaStatus(snapshots, hours));
+  } catch (err) {
+    next(err);
+  }
+});
+
+serversRouter.get("/servers/:id/log-summary", async (req, res, next) => {
+  try {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id) || id <= 0) {
+      res.status(400).json({ error: "Invalid server ID" });
+      return;
+    }
+
+    const [server] = await db
+      .select({ id: serversTable.id })
+      .from(serversTable)
+      .where(eq(serversTable.id, id))
+      .limit(1);
+    if (!server) {
+      res.status(404).json({ error: "Server not found" });
+      return;
+    }
+
+    const hours = clampNum(req.query.hours, 1, 24, 6);
+    const since = new Date(Date.now() - hours * 60 * 60 * 1000);
+    const snapshots = await db
+      .select()
+      .from(serverLogSnapshotsTable)
+      .where(and(eq(serverLogSnapshotsTable.serverId, id), gte(serverLogSnapshotsTable.recordedAt, since)))
+      .orderBy(serverLogSnapshotsTable.recordedAt);
+
+    res.json(summarizeServerLogs(snapshots, hours));
   } catch (err) {
     next(err);
   }

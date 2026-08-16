@@ -980,6 +980,49 @@ export const GetServerMetaStatusResponse = zod.object({
 });
 
 /**
+ * @summary Get analyzed log summary for the dashboard
+ */
+export const GetServerLogSummaryParams = zod.object({
+  serverId: zod.coerce.number(),
+});
+
+export const getServerLogSummaryQueryHoursDefault = 6;
+export const getServerLogSummaryQueryHoursMax = 24;
+
+export const GetServerLogSummaryQueryParams = zod.object({
+  hours: zod.coerce
+    .number()
+    .min(1)
+    .max(getServerLogSummaryQueryHoursMax)
+    .default(getServerLogSummaryQueryHoursDefault)
+    .describe("Number of hours of log history"),
+});
+
+export const GetServerLogSummaryResponse = zod.object({
+  hours: zod.number(),
+  snapshotCount: zod.number(),
+  totalEntries: zod.number(),
+  errorCount: zod.number(),
+  warningCount: zod.number(),
+  latestSnapshotAt: zod.date().nullish(),
+  sourceCounts: zod.array(
+    zod.object({
+      source: zod.string(),
+      entries: zod.number(),
+    }),
+  ),
+  recentIssues: zod.array(
+    zod.object({
+      severity: zod.enum(["error", "warning"]),
+      source: zod.string(),
+      line: zod.string(),
+      recordedAt: zod.date(),
+    }),
+  ),
+  message: zod.string(),
+});
+
+/**
  * @summary Download sanitized server log snapshots
  */
 export const ExportServerLogSnapshotsParams = zod.object({
