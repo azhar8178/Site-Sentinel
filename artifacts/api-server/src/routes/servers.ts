@@ -163,6 +163,35 @@ function summarizeServerLogs(
   };
 }
 
+function compactIncidentSnapshots(
+  snapshots: typeof serverLogSnapshotsTable.$inferSelect[],
+) {
+  const maxSnapshots = 8;
+  const maxCharsPerSource = 2400;
+  const maxTotalChars = 60000;
+  let remainingChars = maxTotalChars;
+
+  return snapshots.slice(-maxSnapshots).map(snapshot => {
+    const rawSources = getSnapshotSources(snapshot);
+    const sources: Record<string, string> = {};
+
+    for (const [source, value] of Object.entries(rawSources)) {
+      if (remainingChars <= 0) break;
+      const maxChars = Math.min(maxCharsPerSource, remainingChars);
+      const compactValue = value.length > maxChars ? value.slice(-maxChars) : value;
+      if (!compactValue) continue;
+      sources[source] = compactValue;
+      remainingChars -= compactValue.length;
+    }
+
+    return {
+      id: snapshot.id,
+      recordedAt: snapshot.recordedAt,
+      logs: { sources },
+    };
+  });
+}
+
 function wrapPdfText(value: string, maxLength = 92): string[] {
   const words = value.replace(/[^\x20-\x7E]/g, "?").split(/\s+/).filter(Boolean);
   const lines: string[] = [];
@@ -657,8 +686,8 @@ serversRouter.post("/servers/:id/incident-analysis", async (req, res, next) => {
       input: JSON.stringify({
         server,
         windowHours: hours,
-        metrics: metrics.slice(-720),
-        logSnapshots: snapshots.slice(-24),
+        metrics: metrics.slice(-240),
+        logSnapshots: compactIncidentSnapshots(snapshots),
       }),
     });
 
@@ -669,6 +698,17 @@ serversRouter.post("/servers/:id/incident-analysis", async (req, res, next) => {
       windowHours: hours,
     });
   } catch (err) {
+    const providerStatus = typeof err === "object" && err !== null && "status" in err
+      ? Number((err as { status?: unknown }).status)
+      : null;
+    if (providerStatus === 400 || providerStatus === 413) {
+      req.log.warn({ serverId: Number(req.params.id), providerStatus }, "AI provider rejected incident analysis request");
+      res.status(502).json({
+        error: "The AI provider rejected this analysis request. Try a shorter analysis window.",
+      });
+      return;
+    }
+    req.log.error({ err, serverId: Number(req.params.id) }, "Incident analysis failed");
     next(err);
   }
 });

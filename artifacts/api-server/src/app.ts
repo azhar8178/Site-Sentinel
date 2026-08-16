@@ -70,4 +70,19 @@ if (existsSync(webDistPath)) {
   });
 }
 
+app.use((err: unknown, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  if (res.headersSent) {
+    next(err);
+    return;
+  }
+
+  req.log?.error({ err }, "Unhandled request error");
+  if (req.path.startsWith("/api")) {
+    res.status(500).json({ error: "The request could not be completed." });
+    return;
+  }
+
+  next(err);
+});
+
 export default app;

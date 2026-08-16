@@ -764,6 +764,8 @@ paths:
                 $ref: "#/components/schemas/IncidentAnalysis"
         "400":
           description: Invalid analysis window
+        "502":
+          description: AI provider rejected the bounded analysis request
         "503":
           description: AI analysis is not configured
 

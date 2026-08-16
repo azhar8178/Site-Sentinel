@@ -1,16 +1,29 @@
 import { useEffect, useState } from "react";
-import { useListServers, useGetServerLogSnapshots, useAnalyzeServerIncident } from "@workspace/api-client-react";
+import {
+  customFetch,
+  getGetServerLogSnapshotsQueryKey,
+  getListServersQueryKey,
+  useListServers,
+  useGetServerLogSnapshots,
+  useAnalyzeServerIncident,
+} from "@workspace/api-client-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { AlertTriangle, BrainCircuit, ChevronDown, FileText, Server, Sparkles } from "lucide-react";
+import { AlertTriangle, BrainCircuit, ChevronDown, Download, FileText, Server, Sparkles } from "lucide-react";
 
 export default function IncidentAnalysis() {
-  const { data: servers, isLoading: serversLoading } = useListServers({ query: { refetchInterval: 30000 } });
+  const { data: servers, isLoading: serversLoading } = useListServers({
+    query: {
+      queryKey: getListServersQueryKey(),
+      refetchInterval: 30000,
+    },
+  });
   const [selectedServerId, setSelectedServerId] = useState<number | null>(null);
   const [hours, setHours] = useState(6);
   const [analysis, setAnalysis] = useState<string | null>(null);
   const [showLogs, setShowLogs] = useState(false);
+  const [downloadingFormat, setDownloadingFormat] = useState<"json" | "csv" | "pdf" | null>(null);
   const { toast } = useToast();
   const analyzeIncident = useAnalyzeServerIncident();
 
@@ -24,7 +37,13 @@ export default function IncidentAnalysis() {
   const { data: logSnapshots, isLoading: logsLoading } = useGetServerLogSnapshots(
     selectedServerId ?? 0,
     { hours },
-    { query: { enabled: selectedServerId !== null, refetchInterval: 300000 } },
+    {
+      query: {
+        queryKey: getGetServerLogSnapshotsQueryKey(selectedServerId ?? 0, { hours }),
+        enabled: selectedServerId !== null,
+        refetchInterval: 300000,
+      },
+    },
   );
 
   const handleServerChange = (value: string) => {
@@ -43,11 +62,46 @@ export default function IncidentAnalysis() {
       });
       setAnalysis(result.analysis);
     } catch (error: any) {
+      const rawData = error?.data;
+      const providerRejected = typeof rawData === "string" && /<!doctype|<html|bad request/i.test(rawData);
       toast({
         variant: "destructive",
         title: "Analysis unavailable",
-        description: error?.data?.error || error?.message || "Could not analyze this incident.",
+        description: providerRejected
+          ? "The AI analysis service rejected the request. Try the 1h window or retry in a moment."
+          : error?.data?.error || error?.message || "Could not analyze this incident.",
       });
+    }
+  };
+
+  const downloadLogs = async (format: "json" | "csv" | "pdf") => {
+    if (selectedServerId === null || !logSnapshots?.length || !selectedServer) return;
+    setDownloadingFormat(format);
+    try {
+      const blob = await customFetch<Blob>(
+        `/api/servers/${selectedServerId}/log-snapshots/export?hours=${Math.min(hours, 24)}&format=${format}`,
+        { responseType: "blob" },
+      );
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = `${selectedServer.name.toLowerCase().replace(/[^a-z0-9]+/g, "-") || `server-${selectedServerId}`}-logs-${hours}h.${format}`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      URL.revokeObjectURL(url);
+      toast({
+        title: "Download ready",
+        description: format === "pdf" ? "Management PDF report downloaded." : `${format.toUpperCase()} log export downloaded.`,
+      });
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Download failed",
+        description: error?.data?.error || error?.message || "Could not export server logs.",
+      });
+    } finally {
+      setDownloadingFormat(null);
     }
   };
 
@@ -189,16 +243,31 @@ export default function IncidentAnalysis() {
                     </p>
                   </div>
                 </div>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setShowLogs(value => !value)}
-                  disabled={!logSnapshots?.length}
-                  className="gap-2 shrink-0"
-                >
-                  {showLogs ? "Hide logs" : "View logs"}
-                  <ChevronDown className={`w-4 h-4 transition-transform ${showLogs ? "rotate-180" : ""}`} />
-                </Button>
+                <div className="flex flex-wrap gap-2 shrink-0">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setShowLogs(value => !value)}
+                    disabled={!logSnapshots?.length}
+                    className="gap-2"
+                  >
+                    {showLogs ? "Hide logs" : `View logs (${logSnapshots?.length ?? 0})`}
+                    <ChevronDown className={`w-4 h-4 transition-transform ${showLogs ? "rotate-180" : ""}`} />
+                  </Button>
+                  {(["json", "csv", "pdf"] as const).map(format => (
+                    <Button
+                      key={format}
+                      size="sm"
+                      variant="outline"
+                      onClick={() => downloadLogs(format)}
+                      disabled={!logSnapshots?.length || downloadingFormat !== null}
+                      className="gap-1.5"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      {downloadingFormat === format ? "Preparing…" : format === "pdf" ? "PDF report" : format.toUpperCase()}
+                    </Button>
+                  ))}
+                </div>
               </div>
 
               {!logsLoading && !logSnapshots?.length && (
