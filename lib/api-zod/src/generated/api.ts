@@ -954,7 +954,7 @@ export const ExportServerLogSnapshotsQueryParams = zod.object({
     .max(exportServerLogSnapshotsQueryHoursMax)
     .default(exportServerLogSnapshotsQueryHoursDefault),
   format: zod
-    .enum(["json", "csv"])
+    .enum(["json", "csv", "pdf"])
     .default(exportServerLogSnapshotsQueryFormatDefault),
 });
 

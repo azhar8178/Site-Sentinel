@@ -12,4 +12,5 @@ export type ExportServerLogSnapshotsFormat =
 export const ExportServerLogSnapshotsFormat = {
   json: "json",
   csv: "csv",
+  pdf: "pdf",
 } as const;

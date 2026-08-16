@@ -45,7 +45,7 @@ function ServerDetailModal({
   const [newApiKey, setNewApiKey] = useState<string | null>(null);
   const [copiedKey, setCopiedKey] = useState(false);
   const [showCollectedLogs, setShowCollectedLogs] = useState(false);
-  const [downloadingFormat, setDownloadingFormat] = useState<"json" | "csv" | null>(null);
+  const [downloadingFormat, setDownloadingFormat] = useState<"json" | "csv" | "pdf" | null>(null);
 
   const handleSaveEdit = async () => {
     try {
@@ -77,7 +77,7 @@ function ServerDetailModal({
     }
   };
 
-  const downloadLogs = async (format: "json" | "csv") => {
+  const downloadLogs = async (format: "json" | "csv" | "pdf") => {
     setDownloadingFormat(format);
     try {
       const blob = await customFetch<Blob>(
@@ -92,7 +92,10 @@ function ServerDetailModal({
       anchor.click();
       anchor.remove();
       URL.revokeObjectURL(url);
-      toast({ title: "Download ready", description: `${format.toUpperCase()} log export downloaded.` });
+      toast({
+        title: "Download ready",
+        description: format === "pdf" ? "Management PDF report downloaded." : `${format.toUpperCase()} log export downloaded.`,
+      });
     } catch (e: any) {
       toast({ variant: "destructive", title: "Download failed", description: e.message || "Could not export server logs." });
     } finally {
@@ -238,6 +241,16 @@ function ServerDetailModal({
                 >
                   <Download className="w-3.5 h-3.5" />
                   {downloadingFormat === "csv" ? "Preparing…" : "CSV"}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => downloadLogs("pdf")}
+                  disabled={downloadingFormat !== null}
+                  className="gap-1.5"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  {downloadingFormat === "pdf" ? "Preparing…" : "PDF report"}
                 </Button>
               </div>
             </div>

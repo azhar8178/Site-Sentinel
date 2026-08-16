@@ -16,6 +16,161 @@ function clampNum(val: unknown, min: number, max: number, fallback: number): num
   return Math.max(min, Math.min(max, n));
 }
 
+function wrapPdfText(value: string, maxLength = 92): string[] {
+  const words = value.replace(/[^\x20-\x7E]/g, "?").split(/\s+/).filter(Boolean);
+  const lines: string[] = [];
+  let line = "";
+  for (const word of words) {
+    if (!line) {
+      line = word;
+    } else if (line.length + word.length + 1 <= maxLength) {
+      line += ` ${word}`;
+    } else {
+      lines.push(line);
+      line = word;
+    }
+  }
+  if (line) lines.push(line);
+  return lines.length > 0 ? lines : [""];
+}
+
+function escapePdfText(value: string): string {
+  return value
+    .replace(/[^\x20-\x7E]/g, "?")
+    .replace(/\\/g, "\\\\")
+    .replace(/\(/g, "\\(")
+    .replace(/\)/g, "\\)");
+}
+
+function createManagementPdf(
+  server: { id: number; name: string; hostname: string },
+  hours: number,
+  snapshots: typeof serverLogSnapshotsTable.$inferSelect[],
+): Buffer {
+  const sourceCounts = new Map<string, number>();
+  let totalEntries = 0;
+  let errorCount = 0;
+  let warningCount = 0;
+  let paymentCount = 0;
+
+  for (const snapshot of snapshots) {
+    const sources = snapshot.logs && typeof snapshot.logs === "object"
+      ? (snapshot.logs as Record<string, unknown>).sources
+      : null;
+    if (!sources || typeof sources !== "object") continue;
+
+    for (const [source, value] of Object.entries(sources)) {
+      const text = String(value || "");
+      if (!text.trim()) continue;
+      sourceCounts.set(source, (sourceCounts.get(source) || 0) + 1);
+      const entries = text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+      totalEntries += entries.length;
+      errorCount += (text.match(/\b(?:error|critical|fatal|alert|emerg|panic)\b/gi) || []).length;
+      warningCount += (text.match(/\b(?:warn(?:ing)?|degraded|timeout|failed)\b/gi) || []).length;
+      paymentCount += (text.match(/\b(?:stripe|payment|checkout|charge|refund|webhook)\b/gi) || []).length;
+    }
+  }
+
+  const status = snapshots.length === 0
+    ? "NO DATA"
+    : errorCount > 0
+      ? "REQUIRES ATTENTION"
+      : warningCount > 0
+        ? "MONITOR"
+        : "NO CRITICAL INDICATORS";
+  const statusExplanation = snapshots.length === 0
+    ? "No log snapshots were collected during the selected period. Confirm that the monitoring agent is reporting."
+    : errorCount > 0
+      ? "Error or critical indicators were found and should be reviewed by the technical team."
+      : warningCount > 0
+        ? "Warnings or degraded-service indicators were found. Review recurring items and confirm business impact."
+        : "No error or warning indicators were detected in the collected sanitized logs.";
+  const sortedSources = [...sourceCounts.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .map(([source, count]) => `${source === "stripe" ? "Stripe payments" : source}: ${count} snapshot(s)`);
+  const recommendation = snapshots.length === 0
+    ? "Confirm the agent service is active and has successfully posted a report."
+    : errorCount > 0
+      ? "Review critical/error entries with engineering and correlate them with customer or order impact."
+      : warningCount > 0
+        ? "Review recurring warnings and confirm whether any customer-facing services were affected."
+        : "Continue normal monitoring; retain the technical export if further investigation is needed.";
+
+  const rawLines = [
+    "Site Sentinel - Management Log Summary",
+    `Server: ${server.name} (${server.hostname})`,
+    `Server ID: ${server.id}`,
+    `Reporting period: Last ${hours} hour(s)`,
+    `Generated: ${new Date().toISOString()}`,
+    "",
+    "Executive status",
+    `Status: ${status}`,
+    statusExplanation,
+    "",
+    "Activity overview",
+    `Snapshots collected: ${snapshots.length}`,
+    `Log entries reviewed: ${totalEntries}`,
+    `Error/critical indicators: ${errorCount}`,
+    `Warning/degraded indicators: ${warningCount}`,
+    `Payment-related indicators: ${paymentCount}`,
+    "",
+    "Sources with collected data",
+    ...(sortedSources.length > 0 ? sortedSources.map((source) => `- ${source}`) : ["- None"]),
+    "",
+    "Recommended next action",
+    recommendation,
+    "",
+    "Report note",
+    "This management report contains summary counts only. Use the sanitized JSON or CSV export for technical investigation and event-level analysis.",
+  ];
+
+  const wrappedLines = rawLines.flatMap((line) => line ? wrapPdfText(line) : [""]);
+  const linesPerPage = 50;
+  const pages: string[][] = [];
+  for (let index = 0; index < wrappedLines.length; index += linesPerPage) {
+    pages.push(wrappedLines.slice(index, index + linesPerPage));
+  }
+  if (pages.length === 0) pages.push(["No report data available."]);
+
+  const objects: Array<string | null> = [null];
+  objects[1] = "<< /Type /Catalog /Pages 2 0 R >>";
+  objects[2] = `<< /Type /Pages /Kids [${pages.map((_, index) => `${4 + index * 2} 0 R`).join(" ")}] /Count ${pages.length} >>`;
+  objects[3] = "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>";
+
+  pages.forEach((pageLines, pageIndex) => {
+    const pageObjectId = 4 + pageIndex * 2;
+    const contentObjectId = pageObjectId + 1;
+    const commands = [
+      "BT",
+      "/F1 16 Tf",
+      "42 790 Td",
+      `(${escapePdfText(pageIndex === 0 ? pageLines[0] || "Site Sentinel" : "Site Sentinel - Management Log Summary")}) Tj`,
+      "/F1 10 Tf",
+      "0 -28 Td",
+      ...pageLines.slice(pageIndex === 0 ? 1 : 0).flatMap((line) => [
+        `(${escapePdfText(line)}) Tj`,
+        "0 -14 Td",
+      ]),
+      "ET",
+    ].join("\n");
+
+    objects[pageObjectId] = `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents ${contentObjectId} 0 R >>`;
+    objects[contentObjectId] = `<< /Length ${Buffer.byteLength(commands, "ascii")} >>\nstream\n${commands}\nendstream`;
+  });
+
+  let pdf = "%PDF-1.4\n";
+  const offsets = [0];
+  for (let index = 1; index < objects.length; index++) {
+    offsets[index] = Buffer.byteLength(pdf, "binary");
+    pdf += `${index} 0 obj\n${objects[index]}\nendobj\n`;
+  }
+  const xrefOffset = Buffer.byteLength(pdf, "binary");
+  pdf += `xref\n0 ${objects.length}\n0000000000 65535 f \n`;
+  pdf += offsets.slice(1).map((offset) => `${String(offset).padStart(10, "0")} 00000 n \n`).join("");
+  pdf += `trailer\n<< /Size ${objects.length} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF\n`;
+  return Buffer.from(pdf, "binary");
+}
+
 export const serversRouter: IRouter = Router();
 
 serversRouter.get("/servers", async (_req, res, next) => {
@@ -157,8 +312,8 @@ serversRouter.get("/servers/:id/log-snapshots/export", async (req, res, next) =>
 
     const hours = clampNum(req.query.hours, 1, 24, 6);
     const format = String(req.query.format || "json").toLowerCase();
-    if (format !== "json" && format !== "csv") {
-      res.status(400).json({ error: "format must be json or csv" });
+    if (format !== "json" && format !== "csv" && format !== "pdf") {
+      res.status(400).json({ error: "format must be json, csv, or pdf" });
       return;
     }
 
@@ -182,6 +337,11 @@ serversRouter.get("/servers/:id/log-snapshots/export", async (req, res, next) =>
     const safeName = server.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || `server-${id}`;
     const suffix = `${safeName}-logs-${hours}h`;
     res.setHeader("Content-Disposition", `attachment; filename="${suffix}.${format}"`);
+
+    if (format === "pdf") {
+      res.type("application/pdf").send(createManagementPdf(server, hours, snapshots));
+      return;
+    }
 
     if (format === "json") {
       res.type("application/json").send(JSON.stringify({

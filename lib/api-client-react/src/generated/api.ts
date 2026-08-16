@@ -2455,8 +2455,8 @@ export const exportServerLogSnapshots = async (
   serverId: number,
   params?: ExportServerLogSnapshotsParams,
   options?: RequestInit,
-): Promise<ExportServerLogSnapshots200One | string> => {
-  return customFetch<ExportServerLogSnapshots200One | string>(
+): Promise<ExportServerLogSnapshots200One | string | Blob> => {
+  return customFetch<ExportServerLogSnapshots200One | string | Blob>(
     getExportServerLogSnapshotsUrl(serverId, params),
     {
       ...options,
