@@ -45,6 +45,25 @@ export default function IncidentAnalysis() {
       },
     },
   );
+  const sourceCoverage = (["meta", "stripe"] as const).map(source => {
+    const entries = (logSnapshots ?? []).flatMap(snapshot => {
+      const value = snapshot.logs && typeof snapshot.logs === "object"
+        ? (snapshot.logs as Record<string, unknown>).sources
+        : null;
+      const sources = value && typeof value === "object"
+        ? value as Record<string, unknown>
+        : {};
+      const text = typeof sources[source] === "string"
+        ? sources[source]
+        : "";
+      return text.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
+    });
+    return {
+      source,
+      entryCount: entries.length,
+      label: source === "meta" ? "Meta / Facebook feed" : "Stripe payments",
+    };
+  });
 
   const handleServerChange = (value: string) => {
     setSelectedServerId(Number(value));
@@ -228,6 +247,37 @@ export default function IncidentAnalysis() {
               </CardContent>
             </Card>
           )}
+
+          <Card className="border-border/80">
+            <CardContent className="p-5">
+              <div className="flex items-start gap-3 mb-4">
+                <Sparkles className="w-5 h-5 text-primary mt-0.5" />
+                <div>
+                  <h2 className="font-semibold">AI evidence coverage</h2>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Source-specific sanitized log evidence supplied to the analysis.
+                  </p>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {sourceCoverage.map(({ source, entryCount, label }) => (
+                  <div key={source} className="rounded-lg border border-border bg-muted/20 p-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-sm font-medium">{label}</span>
+                      <span className={`text-xs font-medium ${entryCount > 0 ? "text-success" : "text-muted-foreground"}`}>
+                        {entryCount > 0 ? "Evidence captured" : "No entries captured"}
+                      </span>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {logsLoading
+                        ? "Collecting sanitized snapshots…"
+                        : `${entryCount} log entr${entryCount === 1 ? "y" : "ies"} in the last ${hours}h`}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
 
           <Card>
             <CardContent className="p-5">

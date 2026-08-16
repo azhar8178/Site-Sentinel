@@ -163,6 +163,50 @@ function summarizeServerLogs(
   };
 }
 
+function summarizeIncidentSource(
+  snapshots: typeof serverLogSnapshotsTable.$inferSelect[],
+  sourceName: string,
+) {
+  const entries = snapshots.flatMap(snapshot => {
+    const value = getSnapshotSources(snapshot)[sourceName] || "";
+    return value
+      .split(/\r?\n/)
+      .map(line => line.trim())
+      .filter(Boolean)
+      .map(line => ({
+        line: line.slice(0, 500),
+        recordedAt: snapshot.recordedAt.toISOString(),
+      }));
+  });
+
+  return {
+    source: sourceName,
+    snapshotCount: new Set(entries.map(entry => entry.recordedAt)).size,
+    entryCount: entries.length,
+    latestEventAt: entries.length > 0 ? entries[entries.length - 1].recordedAt : null,
+    recentEntries: entries.slice(-8).reverse(),
+  };
+}
+
+function buildIncidentEvidence(
+  snapshots: typeof serverLogSnapshotsTable.$inferSelect[],
+  hours: number,
+) {
+  const sourceNames = new Set(["meta", "stripe"]);
+  for (const snapshot of snapshots) {
+    for (const source of Object.keys(getSnapshotSources(snapshot))) {
+      sourceNames.add(source);
+    }
+  }
+
+  const sourceCoverage = Array.from(sourceNames).map(source => summarizeIncidentSource(snapshots, source));
+  return {
+    sourceCoverage,
+    metaStatus: summarizeMetaStatus(snapshots, hours),
+    logSummary: summarizeServerLogs(snapshots, hours),
+  };
+}
+
 function compactIncidentSnapshots(
   snapshots: typeof serverLogSnapshotsTable.$inferSelect[],
 ) {
@@ -174,13 +218,19 @@ function compactIncidentSnapshots(
   return snapshots.slice(-maxSnapshots).map(snapshot => {
     const rawSources = getSnapshotSources(snapshot);
     const sources: Record<string, string> = {};
+    const priority = ["meta", "stripe", "magento", "phpFpm", "nginxError", "varnish", "journal", "syslog"];
 
-    for (const [source, value] of Object.entries(rawSources)) {
+    for (const [source, value] of Object.entries(rawSources).sort(([left], [right]) => {
+      const leftIndex = priority.indexOf(left);
+      const rightIndex = priority.indexOf(right);
+      return (leftIndex < 0 ? priority.length : leftIndex) - (rightIndex < 0 ? priority.length : rightIndex);
+    })) {
       if (remainingChars <= 0) break;
       const maxChars = Math.min(maxCharsPerSource, remainingChars);
       const compactValue = value.length > maxChars ? value.slice(-maxChars) : value;
-      if (!compactValue) continue;
-      sources[source] = compactValue;
+      if (compactValue || source === "meta" || source === "stripe") {
+        sources[source] = compactValue;
+      }
       remainingChars -= compactValue.length;
     }
 
@@ -677,16 +727,20 @@ serversRouter.post("/servers/:id/incident-analysis", async (req, res, next) => {
       model: "gpt-5.4-mini",
       max_output_tokens: 1800,
       instructions: [
-        "You are a senior Linux, Nginx, Varnish, PHP-FPM, MySQL, and Magento production incident analyst.",
+        "You are a senior Linux, Nginx, Varnish, PHP-FPM, MySQL, Magento, Meta/Facebook feed, and Stripe payments production incident analyst.",
         "Analyze only the supplied telemetry and sanitized logs. Do not invent facts.",
         "Return concise Markdown with exactly these headings: Summary, Evidence, Likely causes, Recommended checks, Severity.",
         "Separate observed evidence from hypotheses. Prioritize actionable checks and mention when evidence is insufficient.",
+        "In the Evidence section, always include explicit bullets for Meta / Facebook feed and Stripe payments, even when their entryCount is zero.",
+        "If a source has entryCount zero, say that no sanitized evidence was captured for that source and do not infer that the service is healthy.",
+        "Cover the sourceCoverage list and the main metric groups; do not silently omit a supplied source.",
         "Never request credentials, API keys, or unrestricted server access.",
       ].join(" "),
       input: JSON.stringify({
         server,
         windowHours: hours,
         metrics: metrics.slice(-240),
+        evidence: buildIncidentEvidence(snapshots, hours),
         logSnapshots: compactIncidentSnapshots(snapshots),
       }),
     });

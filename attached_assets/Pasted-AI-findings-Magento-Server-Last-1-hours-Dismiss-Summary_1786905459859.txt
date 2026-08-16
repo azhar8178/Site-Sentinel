@@ -1,0 +1,63 @@
+AI findings
+Magento Server · Last 1 hours
+
+Dismiss
+## Summary
+The server appears healthy overall. There is no sign of infrastructure saturation, service outage, or SSL/WAF failure. The main issue in the telemetry is that PHP-FPM is fully occupied (`11/11 active, 0 idle`) while the overall system load stays low, suggesting request worker contention rather than host-level resource exhaustion. The logs also show recurring Magento GraphQL validation errors and scheduled cron activity, plus periodic high-CPU `find` scans of `pub/media` from Magento media scan jobs.
+
+## Evidence
+- **Observed health**
+  - CPU is low-to-moderate: roughly **0.6%–12.7%**
+  - Load averages are low: about **0.05–0.52**
+  - Nginx is running
+  - Varnish is running with **93% hit rate**
+  - Elasticsearch is **green**
+  - SSL certificates are not expiring soon
+  - WAF is healthy
+- **PHP-FPM**
+  - `phpFpm: active=11, idle=0, total=11`
+  - Repeated across the window
+  - `maxChildren: 0` is reported in telemetry, so evidence for configured pool headroom is insufficient
+- **Logs**
+  - Repeated Magento GraphQL error:
+    - `Field "items" of type "[CustomAttributeMetadataInterface]!" must have a sub selection.`
+  - Repeated cron execution every minute:
+    - `bin/magento cron:run`
+  - Scheduled maintenance/job activity seen:
+    - `/usr/local/bin/magento-media-scan.sh`
+    - `/usr/local/bin/magento-consumer-watchdog.sh`
+  - High-CPU `find` commands scanning `pub/media`:
+    - `find /var/www/magento/pub/media -type f ...`
+- **Traffic / WAF**
+  - Bot-heavy traffic varies by window, but WAF remains healthy and mostly allows traffic
+  - No evidence of a WAF outage or broad blocking problem
+
+## Likely causes
+- **PHP-FPM worker saturation under concurrent Magento requests**
+  - Supported by `11/11 active` and `0 idle` with otherwise low host load.
+- **Background Magento jobs contributing to intermittent CPU spikes**
+  - `cron:run`, `magento-media-scan.sh`, `consumer-watchdog.sh`, and `async.operations.all` are active in logs/ პროცეს list.
+- **Bad GraphQL query from application/client side**
+  - Repeated validation errors indicate an application-level issue, not an infrastructure failure.
+- **Possible pool sizing or process-management issue**
+  - Evidence is insufficient to confirm misconfiguration, but `maxChildren: 0` in telemetry may warrant checking actual PHP-FPM config and effective limits.
+
+## Recommended checks
+- Check PHP-FPM pool configuration and saturation:
+  - `pm`, `pm.max_children`, `listen.backlog`, slow log, and status page
+  - Confirm whether `11/11 active` is normal for this pool size
+- Review PHP-FPM logs for slow requests and queueing:
+  - Look for request duration spikes, timeouts, or backlog
+- Correlate Magento cron/consumer jobs with traffic spikes:
+  - Especially `cron:run`, `magento-media-scan.sh`, and `async.operations.all`
+- Investigate the recurring GraphQL validation error:
+  - Identify the caller or template generating the invalid query
+  - Fix the query to select subfields for `items`
+- Check whether the media scan job is expensive:
+  - The `find /var/www/magento/pub/media ...` process reached high CPU in snapshots
+- Verify if user-facing latency or 5xxs were present:
+  - Not shown in supplied telemetry, so impact remains unconfirmed
+
+## Severity
+**Medium.**  
+Infrastructure is stable, but PHP-FPM appears fully utilized and application-side errors/background jobs are present. There is insufficient evidence of an outage or host exhaustion, but this could become user-visible under higher traffic.
