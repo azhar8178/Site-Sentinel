@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useLocation } from "wouter";
 import {
   customFetch,
   getGetServerLogSnapshotsQueryKey,
@@ -13,25 +14,47 @@ import { useToast } from "@/hooks/use-toast";
 import { AlertTriangle, BrainCircuit, ChevronDown, Download, FileText, Server, Sparkles } from "lucide-react";
 
 export default function IncidentAnalysis() {
+  const [location] = useLocation();
+  const deepLink = useMemo(() => {
+    const query = location.includes("?") ? location.slice(location.indexOf("?") + 1) : "";
+    const params = new URLSearchParams(query);
+    const requestedServerId = Number(params.get("serverId"));
+    const requestedHours = Number(params.get("hours"));
+    return {
+      serverId: Number.isInteger(requestedServerId) && requestedServerId > 0 ? requestedServerId : null,
+      hours: [1, 6, 24].includes(requestedHours) ? requestedHours : 6,
+      focus: params.get("focus") === "meta" ? "meta" : null,
+      error: params.get("error") || null,
+    };
+  }, [location]);
   const { data: servers, isLoading: serversLoading } = useListServers({
     query: {
       queryKey: getListServersQueryKey(),
       refetchInterval: 30000,
     },
   });
-  const [selectedServerId, setSelectedServerId] = useState<number | null>(null);
-  const [hours, setHours] = useState(6);
+  const [selectedServerId, setSelectedServerId] = useState<number | null>(deepLink.serverId);
+  const [hours, setHours] = useState(deepLink.hours);
   const [analysis, setAnalysis] = useState<string | null>(null);
-  const [showLogs, setShowLogs] = useState(false);
+  const [showLogs, setShowLogs] = useState(deepLink.focus === "meta");
+  const [focusedError, setFocusedError] = useState<string | null>(deepLink.error);
   const [downloadingFormat, setDownloadingFormat] = useState<"json" | "csv" | "pdf" | null>(null);
   const { toast } = useToast();
   const analyzeIncident = useAnalyzeServerIncident();
 
   useEffect(() => {
-    if (selectedServerId === null && servers?.length) {
-      setSelectedServerId(servers[0].id);
+    if (servers?.length && (selectedServerId === null || !servers.some(server => server.id === selectedServerId))) {
+      const requestedServer = deepLink.serverId && servers.some(server => server.id === deepLink.serverId)
+        ? deepLink.serverId
+        : servers[0].id;
+      setSelectedServerId(requestedServer);
     }
-  }, [servers, selectedServerId]);
+  }, [deepLink.serverId, selectedServerId, servers]);
+
+  useEffect(() => {
+    setFocusedError(deepLink.error);
+    if (deepLink.focus === "meta") setShowLogs(true);
+  }, [deepLink.error, deepLink.focus]);
 
   const selectedServer = servers?.find(server => server.id === selectedServerId);
   const { data: logSnapshots, isLoading: logsLoading } = useGetServerLogSnapshots(
@@ -69,6 +92,7 @@ export default function IncidentAnalysis() {
     setSelectedServerId(Number(value));
     setAnalysis(null);
     setShowLogs(false);
+    setFocusedError(null);
   };
 
   const handleAnalyze = async () => {
@@ -142,6 +166,12 @@ export default function IncidentAnalysis() {
             </p>
           </div>
         </div>
+        {deepLink.focus === "meta" && (
+          <div className="mt-4 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 text-xs text-muted-foreground">
+            <span className="font-semibold text-primary">Meta / Facebook focus</span>
+            {focusedError ? " · Showing the selected error context below." : " · Showing Meta evidence in the selected window."}
+          </div>
+        )}
       </div>
 
       <Card className="border-primary/20 bg-primary/5">
@@ -183,7 +213,7 @@ export default function IncidentAnalysis() {
                   <button
                     key={windowHours}
                     type="button"
-                    onClick={() => { setHours(windowHours); setAnalysis(null); }}
+                    onClick={() => { setHours(windowHours); setAnalysis(null); setFocusedError(null); }}
                     className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                       hours === windowHours
                         ? "bg-primary text-primary-foreground"
@@ -336,13 +366,20 @@ export default function IncidentAnalysis() {
                       </p>
                       <div className="space-y-3">
                         {Object.entries(snapshot.logs?.sources ?? {})
-                          .filter(([, value]) => value)
+                          .filter(([source, value]) => value && (!deepLink.focus || source === deepLink.focus))
                           .map(([source, value]) => (
                             <div key={source}>
                               <p className="text-xs font-semibold capitalize mb-1">
                                 {source === "stripe" ? "Stripe payments" : source === "meta" ? "Meta / Facebook feed" : source}
                               </p>
-                              <pre className="max-h-64 overflow-auto rounded bg-black/90 text-green-200 p-3 text-[10px] leading-4 whitespace-pre-wrap break-all">
+                              <pre
+                                className={`max-h-64 overflow-auto rounded bg-black/90 p-3 text-[10px] leading-4 whitespace-pre-wrap break-all ${
+                                  focusedError && String(value).includes(focusedError)
+                                    ? "text-green-100 ring-2 ring-primary ring-offset-2 ring-offset-background"
+                                    : "text-green-200"
+                                }`}
+                                data-testid={focusedError && String(value).includes(focusedError) ? "focused-meta-log" : undefined}
+                              >
                                 {String(value)}
                               </pre>
                             </div>

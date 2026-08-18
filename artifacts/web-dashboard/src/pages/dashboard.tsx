@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import {
   getGetServerLogSummaryQueryKey,
@@ -21,6 +22,7 @@ import {
   Cpu,
   CreditCard,
   Database,
+  ArrowUpRight,
   Globe2,
   HardDrive,
   LockKeyhole,
@@ -131,6 +133,16 @@ function formatDateTime(value: string | null | undefined) {
   if (!value) return "No reading";
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? "No reading" : format(date, "dd MMM, HH:mm");
+}
+
+function getMetaIncidentHref(serverId: number, error?: string | null) {
+  const params = new URLSearchParams({
+    serverId: String(serverId),
+    hours: "24",
+    focus: "meta",
+  });
+  if (error) params.set("error", error);
+  return `/incident-analysis?${params.toString()}`;
 }
 
 function statusLabel(status: string) {
@@ -530,6 +542,7 @@ function ServerSignalTiles({ server }: { server: HealthReport["servers"][number]
 }
 
 function MetaHealthTile({ server }: { server: HealthReport["servers"][number] }) {
+  const [, setLocation] = useLocation();
   const {
     data: health,
     isLoading,
@@ -597,6 +610,21 @@ function MetaHealthTile({ server }: { server: HealthReport["servers"][number] })
     },
   } as const;
   const style = toneStyles[tone];
+  const openMetaDetails = (error?: string | null) => {
+    setLocation(getMetaIncidentHref(server.id, error));
+  };
+  const handleTileClick = (event: React.MouseEvent<HTMLDivElement>) => {
+    const target = event.target as HTMLElement;
+    if (target.closest("button, a, [data-meta-interaction='true']")) return;
+    openMetaDetails();
+  };
+  const handleTileKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (event.target !== event.currentTarget) return;
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      openMetaDetails();
+    }
+  };
   const statusLabel =
     health?.status === "error"
       ? "Errors detected"
@@ -608,7 +636,15 @@ function MetaHealthTile({ server }: { server: HealthReport["servers"][number] })
 
   return (
     <Card
-      className={cn("relative overflow-hidden border shadow-sm", style.border)}
+      className={cn(
+        "relative cursor-pointer overflow-hidden border shadow-sm transition-shadow hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
+        style.border,
+      )}
+      onClick={handleTileClick}
+      onKeyDown={handleTileKeyDown}
+      role="link"
+      tabIndex={0}
+      aria-label={`Open Meta and Facebook incident details for ${server.name}`}
       data-testid={`meta-health-tile-${server.id}`}
     >
       <div className={cn("absolute inset-x-0 top-0 h-1", style.bar)} />
@@ -631,6 +667,10 @@ function MetaHealthTile({ server }: { server: HealthReport["servers"][number] })
             </div>
           </div>
           <div className="flex items-center gap-2 self-start">
+            <span className="hidden items-center gap-1 text-[10px] font-semibold text-primary sm:flex">
+              Open details
+              <ArrowUpRight className="h-3 w-3" aria-hidden="true" />
+            </span>
             <span className={cn("rounded-md border px-2 py-1 text-[10px] font-bold uppercase tracking-wider", style.status)}>
               {isLoading ? "Checking" : statusLabel}
             </span>
@@ -746,11 +786,23 @@ function MetaHealthTile({ server }: { server: HealthReport["servers"][number] })
                 {health.latestError ? (
                   <div className="mt-3 space-y-3">
                     <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-3">
-                      <p className="line-clamp-3 break-words font-mono text-[11px] leading-relaxed text-foreground">{health.latestError.line}</p>
-                      <p className="mt-2 flex items-center gap-1.5 text-[10px] text-muted-foreground">
-                        <Clock3 className="h-3 w-3" aria-hidden="true" />
-                        {formatDateTime(health.latestError.recordedAt)}
-                      </p>
+                      <button
+                        type="button"
+                        className="w-full text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          openMetaDetails(health.latestError?.line);
+                        }}
+                        data-meta-interaction="true"
+                        data-testid={`button-latest-meta-error-${server.id}`}
+                      >
+                        <p className="line-clamp-3 break-words font-mono text-[11px] leading-relaxed text-foreground">{health.latestError.line}</p>
+                        <p className="mt-2 flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                          <Clock3 className="h-3 w-3" aria-hidden="true" />
+                          {formatDateTime(health.latestError.recordedAt)}
+                          <ArrowUpRight className="ml-auto h-3 w-3 text-primary" aria-hidden="true" />
+                        </p>
+                      </button>
                     </div>
                     <div className="grid grid-cols-2 gap-2">
                       <div className="min-w-0 rounded-lg bg-muted/50 p-2.5">
@@ -797,7 +849,26 @@ function MetaHealthTile({ server }: { server: HealthReport["servers"][number] })
                     </thead>
                     <tbody className="divide-y divide-border/50 text-[11px]">
                       {health.recentErrors.map((item, index) => (
-                        <tr key={`${item.recordedAt}-${item.line}-${index}`} className="align-top">
+                        <tr
+                          key={`${item.recordedAt}-${item.line}-${index}`}
+                          className="cursor-pointer align-top transition-colors hover:bg-muted/40 focus-visible:bg-muted/40 focus-visible:outline-none"
+                          role="button"
+                          tabIndex={0}
+                          aria-label={`Open Meta incident details for ${item.errorType || "error"}: ${item.line}`}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            openMetaDetails(item.line);
+                          }}
+                          onKeyDown={(event) => {
+                            if (event.key === "Enter" || event.key === " ") {
+                              event.preventDefault();
+                              event.stopPropagation();
+                              openMetaDetails(item.line);
+                            }
+                          }}
+                          data-meta-interaction="true"
+                          data-testid={`row-meta-error-${server.id}-${index}`}
+                        >
                           <td className="max-w-[280px] px-3 py-3">
                             <p className="line-clamp-2 break-words font-mono leading-relaxed text-foreground">{item.line}</p>
                           </td>
