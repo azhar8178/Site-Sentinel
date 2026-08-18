@@ -6,17 +6,24 @@ WORKDIR /app
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY artifacts/api-server/package.json ./artifacts/api-server/package.json
+COPY artifacts/web-dashboard/package.json ./artifacts/web-dashboard/package.json
+COPY lib/api-client-react/package.json ./lib/api-client-react/package.json
 COPY lib/db/package.json ./lib/db/package.json
 COPY lib/api-zod/package.json ./lib/api-zod/package.json
 
-RUN pnpm install --frozen-lockfile --filter @workspace/api-server...
+RUN pnpm install --frozen-lockfile \
+  --filter @workspace/api-server... \
+  --filter @workspace/web-dashboard...
 
 COPY tsconfig.base.json ./
 COPY lib/db/ ./lib/db/
 COPY lib/api-zod/ ./lib/api-zod/
+COPY lib/api-client-react/ ./lib/api-client-react/
 COPY artifacts/api-server/ ./artifacts/api-server/
+COPY artifacts/web-dashboard/ ./artifacts/web-dashboard/
 
 RUN pnpm --filter @workspace/api-server run build
+RUN pnpm --filter @workspace/web-dashboard run build
 RUN rm -rf /tmp/runtime \
   && mkdir -p /tmp/runtime/artifacts/api-server \
   && pnpm --filter @workspace/api-server deploy --prod --legacy /tmp/runtime/artifacts/api-server
@@ -27,7 +34,7 @@ ENV CI=true NODE_ENV=production
 WORKDIR /app
 
 COPY --from=api-builder /tmp/runtime ./
-COPY artifacts/web-dashboard/dist ./artifacts/web-dashboard/dist
+COPY --from=api-builder /app/artifacts/web-dashboard/dist ./artifacts/web-dashboard/dist
 COPY agent ./agent
 
 EXPOSE 8080
