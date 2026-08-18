@@ -2,9 +2,11 @@ import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   getGetServerLogSummaryQueryKey,
+  getGetServerMetaHealthQueryKey,
   getGetServerMetaStatusQueryKey,
   getGetServerMetricsQueryKey,
   useGetServerLogSummary,
+  useGetServerMetaHealth,
   useGetServerMetaStatus,
   useGetServerMetrics,
 } from "@workspace/api-client-react";
@@ -522,7 +524,298 @@ function ServerSignalTiles({ server }: { server: HealthReport["servers"][number]
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {tiles.map((tile) => <SignalTile key={tile.label} {...tile} />)}
       </div>
+      <MetaHealthTile server={server} />
     </div>
+  );
+}
+
+function MetaHealthTile({ server }: { server: HealthReport["servers"][number] }) {
+  const {
+    data: health,
+    isLoading,
+    isError,
+    refetch,
+    isFetching,
+  } = useGetServerMetaHealth(server.id, { hours: 24 }, {
+    query: {
+      queryKey: getGetServerMetaHealthQueryKey(server.id, { hours: 24 }),
+      refetchInterval: 300000,
+    },
+  });
+
+  const chartData = useMemo(() => {
+    if (!health) return [];
+    return health.trend
+      .filter((point) => !Number.isNaN(new Date(point.recordedAt).getTime()))
+      .map((point) => ({
+        time: format(new Date(point.recordedAt), health.hours <= 6 ? "HH:mm" : "dd MMM"),
+        Errors: point.errorCount,
+        Warnings: point.warningCount,
+      }));
+  }, [health]);
+
+  const hasEvidence = Boolean(
+    health &&
+      health.totalEvents > 0,
+  );
+  const tone =
+    health?.status === "error"
+      ? "danger"
+      : health?.status === "warning"
+        ? "warning"
+        : health?.status === "healthy"
+          ? "good"
+          : "muted";
+  const toneStyles = {
+    good: {
+      border: "border-success/30",
+      wash: "bg-success/5",
+      icon: "bg-success/10 text-success",
+      status: "bg-success/10 text-success border-success/20",
+      bar: "bg-success",
+    },
+    warning: {
+      border: "border-warning/35",
+      wash: "bg-warning/5",
+      icon: "bg-warning/10 text-warning",
+      status: "bg-warning/10 text-warning border-warning/25",
+      bar: "bg-warning",
+    },
+    danger: {
+      border: "border-destructive/35",
+      wash: "bg-destructive/5",
+      icon: "bg-destructive/10 text-destructive",
+      status: "bg-destructive/10 text-destructive border-destructive/25",
+      bar: "bg-destructive",
+    },
+    muted: {
+      border: "border-border",
+      wash: "bg-muted/10",
+      icon: "bg-muted text-muted-foreground",
+      status: "bg-muted text-muted-foreground border-border",
+      bar: "bg-muted-foreground/30",
+    },
+  } as const;
+  const style = toneStyles[tone];
+  const statusLabel =
+    health?.status === "error"
+      ? "Errors detected"
+      : health?.status === "warning"
+        ? "Review needed"
+        : health?.status === "healthy"
+          ? "Healthy"
+          : "No data";
+
+  return (
+    <Card
+      className={cn("relative overflow-hidden border shadow-sm", style.border)}
+      data-testid={`meta-health-tile-${server.id}`}
+    >
+      <div className={cn("absolute inset-x-0 top-0 h-1", style.bar)} />
+      <CardHeader className="border-b border-border/50 bg-muted/10 px-5 pb-4 pt-5">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div className="flex min-w-0 items-start gap-3">
+            <div className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-xl", style.icon)}>
+              <Rss className="h-5 w-5" aria-hidden="true" />
+            </div>
+            <div className="min-w-0">
+              <CardTitle className="flex flex-wrap items-center gap-2 text-[15px]">
+                Meta / Facebook error health
+                <Badge variant="outline" className="font-mono text-[9px] uppercase tracking-wider">
+                  24h
+                </Badge>
+              </CardTitle>
+              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                Sanitized agent-log evidence for {server.name}; not a live Meta API feed.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 self-start">
+            <span className={cn("rounded-md border px-2 py-1 text-[10px] font-bold uppercase tracking-wider", style.status)}>
+              {isLoading ? "Checking" : statusLabel}
+            </span>
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              className="h-7 w-7 rounded-lg"
+              onClick={() => refetch()}
+              disabled={isFetching}
+              aria-label={`Refresh Meta health for ${server.name}`}
+              data-testid={`button-refresh-meta-health-${server.id}`}
+            >
+              <RefreshCw className={cn("h-3 w-3", isFetching && "animate-spin")} aria-hidden="true" />
+            </Button>
+          </div>
+        </div>
+      </CardHeader>
+
+      <CardContent className="p-5">
+        {isLoading ? (
+          <div className="grid animate-pulse gap-4 lg:grid-cols-[0.85fr_1.15fr]">
+            <div className="space-y-3">
+              <div className="h-20 rounded-xl bg-muted" />
+              <div className="h-12 rounded-xl bg-muted" />
+            </div>
+            <div className="h-36 rounded-xl bg-muted" />
+          </div>
+        ) : isError ? (
+          <div className="flex min-h-[180px] flex-col items-center justify-center rounded-xl border border-dashed border-destructive/30 bg-destructive/5 px-5 text-center" data-testid={`error-meta-health-${server.id}`}>
+            <AlertTriangle className="mb-2 h-8 w-8 text-destructive" aria-hidden="true" />
+            <p className="text-sm font-bold text-foreground">Meta evidence unavailable</p>
+            <p className="mt-1 max-w-sm text-xs leading-relaxed text-muted-foreground">
+              The sanitized agent-log health report could not be loaded.
+            </p>
+            <Button type="button" variant="outline" size="sm" className="mt-4" onClick={() => refetch()} data-testid={`button-retry-meta-health-${server.id}`}>
+              Retry
+            </Button>
+          </div>
+        ) : !health || !hasEvidence ? (
+          <div className="flex min-h-[180px] flex-col items-center justify-center rounded-xl border border-dashed border-border bg-muted/20 px-5 text-center" data-testid={`empty-meta-health-${server.id}`}>
+            <Rss className="mb-3 h-8 w-8 text-muted-foreground/40" aria-hidden="true" />
+            <p className="text-sm font-bold text-foreground">No Meta log evidence yet</p>
+            <p className="mt-1 max-w-sm text-xs leading-relaxed text-muted-foreground">
+              {health?.message || "Awaiting a sanitized agent-log snapshot containing Meta or Facebook events."}
+            </p>
+            <span className="mt-3 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+              Source: {health?.source || "agent-log"}
+            </span>
+          </div>
+        ) : (
+          <div className="space-y-5">
+            <div className="grid gap-3 sm:grid-cols-3">
+              <div className={cn("rounded-xl border p-4", style.wash, style.border)}>
+                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">Total errors</p>
+                <p className={cn("mt-2 font-mono text-3xl font-bold tracking-tight", health.totalErrors > 0 ? "text-destructive" : "text-foreground")}>
+                  {health.totalErrors.toLocaleString()}
+                </p>
+                <p className="mt-1 text-[11px] text-muted-foreground">
+                  {health.totalWarnings.toLocaleString()} warnings · {health.totalEvents.toLocaleString()} events
+                </p>
+              </div>
+              <div className="rounded-xl border border-border bg-card p-4">
+                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">Latest event</p>
+                <p className="mt-2 font-mono text-sm font-bold text-foreground">
+                  {health.latestEventAt ? formatDateTime(health.latestEventAt) : "No reading"}
+                </p>
+                <p className="mt-1 text-[11px] text-muted-foreground">
+                  {health.snapshotCount.toLocaleString()} snapshots · {health.hours}h window
+                </p>
+              </div>
+              <div className="rounded-xl border border-border bg-card p-4">
+                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">Evidence source</p>
+                <p className="mt-2 truncate font-mono text-sm font-bold text-foreground">{health.source}</p>
+                <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">Sanitized agent-log observations</p>
+              </div>
+            </div>
+
+            <div className="grid gap-5 lg:grid-cols-[1.15fr_0.85fr]">
+              <div className="min-w-0 rounded-xl border border-border bg-muted/10 p-4">
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-bold text-foreground">Error trend</p>
+                    <p className="mt-1 text-[10px] text-muted-foreground">Grouped agent-log events over the selected window</p>
+                  </div>
+                  <div className="flex items-center gap-3 text-[10px] font-semibold text-muted-foreground">
+                    <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-destructive" />Errors</span>
+                    <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-warning" />Warnings</span>
+                  </div>
+                </div>
+                {chartData.length === 0 ? (
+                  <div className="flex h-32 items-center justify-center rounded-lg border border-dashed border-border text-xs text-muted-foreground">
+                    No trend points returned for this window.
+                  </div>
+                ) : (
+                  <div className="h-36" data-testid={`chart-meta-health-${server.id}`}>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={chartData} margin={{ top: 5, right: 4, bottom: 0, left: -28 }}>
+                        <CartesianGrid strokeDasharray="4 4" vertical={false} stroke={CHART_COLORS.grid} />
+                        <XAxis dataKey="time" tick={{ fontSize: 9, fill: CHART_COLORS.tick }} tickLine={false} axisLine={false} minTickGap={24} dy={8} />
+                        <YAxis allowDecimals={false} domain={[0, "auto"]} tick={{ fontSize: 9, fill: CHART_COLORS.tick, fontFamily: "monospace" }} tickLine={false} axisLine={false} dx={-8} />
+                        <Tooltip content={<ChartTooltipContent />} cursor={{ stroke: CHART_COLORS.grid, strokeWidth: 1 }} isAnimationActive={false} />
+                        <Line type="monotone" dataKey="Errors" stroke="hsl(var(--destructive))" strokeWidth={2.5} dot={false} isAnimationActive={false} />
+                        <Line type="monotone" dataKey="Warnings" stroke="hsl(var(--warning))" strokeWidth={2} dot={false} isAnimationActive={false} />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                )}
+              </div>
+
+              <div className="rounded-xl border border-border bg-card p-4">
+                <p className="text-xs font-bold text-foreground">Latest error context</p>
+                {health.latestError ? (
+                  <div className="mt-3 space-y-3">
+                    <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-3">
+                      <p className="line-clamp-3 break-words font-mono text-[11px] leading-relaxed text-foreground">{health.latestError.line}</p>
+                      <p className="mt-2 flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                        <Clock3 className="h-3 w-3" aria-hidden="true" />
+                        {formatDateTime(health.latestError.recordedAt)}
+                      </p>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="min-w-0 rounded-lg bg-muted/50 p-2.5">
+                        <p className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">Operation</p>
+                        <p className="mt-1 truncate font-mono text-[11px] font-semibold text-foreground">{health.affectedOperation || "Unclassified"}</p>
+                      </div>
+                      <div className="min-w-0 rounded-lg bg-muted/50 p-2.5">
+                        <p className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">Error type</p>
+                        <p className="mt-1 truncate font-mono text-[11px] font-semibold text-foreground">{health.errorType || "Unclassified"}</p>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="mt-3 rounded-lg border border-dashed border-border px-3 py-6 text-center text-xs text-muted-foreground">
+                    No latest error was returned.
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div>
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs font-bold text-foreground">Recent grouped errors</p>
+                  <p className="mt-1 text-[10px] text-muted-foreground">Occurrences are grouped from sanitized log lines</p>
+                </div>
+                <span className="font-mono text-[10px] font-semibold text-muted-foreground">{health.recentErrors.length} groups</span>
+              </div>
+              {health.recentErrors.length === 0 ? (
+                <div className="rounded-xl border border-dashed border-border bg-muted/20 px-4 py-6 text-center text-xs text-muted-foreground">
+                  No grouped Meta errors in this window.
+                </div>
+              ) : (
+                <div className="overflow-x-auto rounded-xl border border-border">
+                  <table className="w-full min-w-[620px] text-left">
+                    <thead className="border-b border-border/60 bg-muted/20 text-[9px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+                      <tr>
+                        <th className="px-3 py-2.5">Error line</th>
+                        <th className="px-3 py-2.5">Operation</th>
+                        <th className="px-3 py-2.5">Type</th>
+                        <th className="px-3 py-2.5 text-right">Count</th>
+                        <th className="px-3 py-2.5 text-right">Last seen</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border/50 text-[11px]">
+                      {health.recentErrors.map((item, index) => (
+                        <tr key={`${item.recordedAt}-${item.line}-${index}`} className="align-top">
+                          <td className="max-w-[280px] px-3 py-3">
+                            <p className="line-clamp-2 break-words font-mono leading-relaxed text-foreground">{item.line}</p>
+                          </td>
+                          <td className="max-w-[150px] truncate px-3 py-3 font-mono text-muted-foreground">{item.operation || "Unclassified"}</td>
+                          <td className="max-w-[140px] truncate px-3 py-3 font-mono text-muted-foreground">{item.errorType || "Unclassified"}</td>
+                          <td className="px-3 py-3 text-right font-mono font-bold text-destructive">{item.occurrences.toLocaleString()}</td>
+                          <td className="px-3 py-3 text-right font-mono text-muted-foreground">{formatDateTime(item.recordedAt)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 

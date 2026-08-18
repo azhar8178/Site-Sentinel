@@ -657,6 +657,36 @@ paths:
         "404":
           description: Server not found
 
+  /servers/{serverId}/meta-health:
+    get:
+      operationId: getServerMetaHealth
+      tags: [servers]
+      summary: Get Meta and Facebook error-log health with trend data
+      parameters:
+        - name: serverId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: hours
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 24
+            minimum: 1
+            maximum: 24
+          description: Number of hours of Meta error-log history
+      responses:
+        "200":
+          description: Meta and Facebook error-log health
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MetaHealth"
+        "404":
+          description: Server not found
+
   /servers/{serverId}/log-snapshots/export:
     get:
       operationId: exportServerLogSnapshots
@@ -2146,6 +2176,102 @@ components:
         - successCount
         - recentErrors
         - recentEvents
+        - message
+
+    MetaHealthEvent:
+      type: object
+      properties:
+        line:
+          type: string
+        recordedAt:
+          type: string
+          format: date-time
+      required: [line, recordedAt]
+
+    MetaHealthError:
+      type: object
+      properties:
+        line:
+          type: string
+        recordedAt:
+          type: string
+          format: date-time
+        occurrences:
+          type: integer
+        operation:
+          type: string
+        errorType:
+          type: string
+      required: [line, recordedAt, occurrences, operation, errorType]
+
+    MetaHealthTrendPoint:
+      type: object
+      properties:
+        recordedAt:
+          type: string
+          format: date-time
+        errorCount:
+          type: integer
+        warningCount:
+          type: integer
+      required: [recordedAt, errorCount, warningCount]
+
+    MetaHealth:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [unknown, healthy, warning, error]
+        source:
+          type: string
+          enum: [agent-log]
+        hours:
+          type: number
+        snapshotCount:
+          type: integer
+        totalEvents:
+          type: integer
+        totalErrors:
+          type: integer
+        totalWarnings:
+          type: integer
+        successCount:
+          type: integer
+        latestEventAt:
+          type: string
+          format: date-time
+          nullable: true
+        latestError:
+          allOf:
+            - $ref: "#/components/schemas/MetaHealthEvent"
+          nullable: true
+        affectedOperation:
+          type: string
+          nullable: true
+        errorType:
+          type: string
+          nullable: true
+        trend:
+          type: array
+          items:
+            $ref: "#/components/schemas/MetaHealthTrendPoint"
+        recentErrors:
+          type: array
+          items:
+            $ref: "#/components/schemas/MetaHealthError"
+        message:
+          type: string
+      required:
+        - status
+        - source
+        - hours
+        - snapshotCount
+        - totalEvents
+        - totalErrors
+        - totalWarnings
+        - successCount
+        - trend
+        - recentErrors
         - message
 
     LogSummarySource:

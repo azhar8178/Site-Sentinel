@@ -515,6 +515,60 @@ export interface MetaFeedStatus {
   message: string;
 }
 
+export interface MetaHealthEvent {
+  line: string;
+  recordedAt: string;
+}
+
+export interface MetaHealthError {
+  line: string;
+  recordedAt: string;
+  occurrences: number;
+  operation: string;
+  errorType: string;
+}
+
+export interface MetaHealthTrendPoint {
+  recordedAt: string;
+  errorCount: number;
+  warningCount: number;
+}
+
+export type MetaHealthStatus =
+  (typeof MetaHealthStatus)[keyof typeof MetaHealthStatus];
+
+export const MetaHealthStatus = {
+  unknown: "unknown",
+  healthy: "healthy",
+  warning: "warning",
+  error: "error",
+} as const;
+
+export type MetaHealthSource =
+  (typeof MetaHealthSource)[keyof typeof MetaHealthSource];
+
+export const MetaHealthSource = {
+  "agent-log": "agent-log",
+} as const;
+
+export interface MetaHealth {
+  status: MetaHealthStatus;
+  source: MetaHealthSource;
+  hours: number;
+  snapshotCount: number;
+  totalEvents: number;
+  totalErrors: number;
+  totalWarnings: number;
+  successCount: number;
+  latestEventAt?: string | null;
+  latestError?: MetaHealthEvent | null;
+  affectedOperation?: string | null;
+  errorType?: string | null;
+  trend: MetaHealthTrendPoint[];
+  recentErrors: MetaHealthError[];
+  message: string;
+}
+
 export interface LogSummarySource {
   source: string;
   entries: number;
@@ -771,6 +825,15 @@ export type GetServerMetaStatusParams = {
 export type GetServerLogSummaryParams = {
   /**
    * Number of hours of log history
+   * @minimum 1
+   * @maximum 24
+   */
+  hours?: number;
+};
+
+export type GetServerMetaHealthParams = {
+  /**
+   * Number of hours of Meta error-log history
    * @minimum 1
    * @maximum 24
    */

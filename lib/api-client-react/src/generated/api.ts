@@ -36,6 +36,7 @@ import type {
   GetMagentoOrdersParams,
   GetServerLogSnapshotsParams,
   GetServerLogSummaryParams,
+  GetServerMetaHealthParams,
   GetServerMetaStatusParams,
   GetServerMetricsParams,
   GetServerWafEventsParams,
@@ -50,6 +51,7 @@ import type {
   MagentoStats,
   MagentoSyncLog,
   MetaFeedStatus,
+  MetaHealth,
   ReceiveGitlabDeploymentWebhookBody,
   RegenerateServerKey200,
   ServerAlertConfigResponse,
@@ -2661,6 +2663,123 @@ export function useGetServerLogSummary<
   },
 ): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
   const queryOptions = getGetServerLogSummaryQueryOptions(
+    serverId,
+    params,
+    options,
+  );
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Get Meta and Facebook error-log health with trend data
+ */
+export const getGetServerMetaHealthUrl = (
+  serverId: number,
+  params?: GetServerMetaHealthParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/servers/${serverId}/meta-health?${stringifiedParams}`
+    : `/api/servers/${serverId}/meta-health`;
+};
+
+export const getServerMetaHealth = async (
+  serverId: number,
+  params?: GetServerMetaHealthParams,
+  options?: RequestInit,
+): Promise<MetaHealth> => {
+  return customFetch<MetaHealth>(getGetServerMetaHealthUrl(serverId, params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetServerMetaHealthQueryKey = (
+  serverId: number,
+  params?: GetServerMetaHealthParams,
+) => {
+  return [
+    `/api/servers/${serverId}/meta-health`,
+    ...(params ? [params] : []),
+  ] as const;
+};
+
+export const getGetServerMetaHealthQueryOptions = <
+  TData = Awaited<ReturnType<typeof getServerMetaHealth>>,
+  TError = ErrorType<void>,
+>(
+  serverId: number,
+  params?: GetServerMetaHealthParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getServerMetaHealth>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetServerMetaHealthQueryKey(serverId, params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getServerMetaHealth>>
+  > = ({ signal }) =>
+    getServerMetaHealth(serverId, params, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!serverId,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getServerMetaHealth>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetServerMetaHealthQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getServerMetaHealth>>
+>;
+export type GetServerMetaHealthQueryError = ErrorType<void>;
+
+/**
+ * @summary Get Meta and Facebook error-log health with trend data
+ */
+
+export function useGetServerMetaHealth<
+  TData = Awaited<ReturnType<typeof getServerMetaHealth>>,
+  TError = ErrorType<void>,
+>(
+  serverId: number,
+  params?: GetServerMetaHealthParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getServerMetaHealth>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetServerMetaHealthQueryOptions(
     serverId,
     params,
     options,

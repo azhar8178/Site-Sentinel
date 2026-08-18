@@ -98,6 +98,120 @@ function summarizeMetaStatus(
   };
 }
 
+function extractDirectMetaLines(snapshot: typeof serverLogSnapshotsTable.$inferSelect): string[] {
+  return (getSnapshotSources(snapshot).meta || "")
+    .split(/\r?\n/)
+    .map(line => line.trim())
+    .filter(Boolean);
+}
+
+function classifyMetaError(line: string): string {
+  if (/\b(?:rate limit|throttl)/i.test(line)) return "Rate limit";
+  if (/\b(?:auth|token|unauthori[sz]ed|forbidden|denied|permission)/i.test(line)) return "Authentication";
+  if (/\b(?:timeout|timed out|network|connection|unavailable|unreachable)/i.test(line)) return "Connectivity";
+  if (/\b(?:invalid|validation|malformed|bad request|schema)/i.test(line)) return "Validation";
+  if (/\b(?:not found|missing)/i.test(line)) return "Missing resource";
+  return "Feed error";
+}
+
+function extractMetaOperation(line: string): string {
+  const namedContext = line.match(/\b(?:operation|query|job|feed|endpoint|route)\s*[:=]\s*["']?([^"',\s]+)/i);
+  if (namedContext?.[1]) return namedContext[1].slice(0, 80);
+  if (/\b(?:catalog|product)\b/i.test(line)) return "Catalog / product feed";
+  if (/\b(?:instagram|facebook|meta)\b/i.test(line)) return "Meta / Facebook feed";
+  return "Meta feed request";
+}
+
+function summarizeMetaHealth(
+  snapshots: typeof serverLogSnapshotsTable.$inferSelect[],
+  hours: number,
+) {
+  const events = snapshots.flatMap(snapshot => extractDirectMetaLines(snapshot).map(line => ({
+    line: line.slice(0, 500),
+    recordedAt: snapshot.recordedAt.toISOString(),
+  })));
+  const errors = events.filter(event => META_ERROR_RE.test(event.line));
+  const warnings = events.filter(event => !META_ERROR_RE.test(event.line) && META_WARNING_RE.test(event.line));
+  const successCount = events.filter(event => META_SUCCESS_RE.test(event.line)).length;
+  const status: MetaStatus = errors.length > 0
+    ? "error"
+    : warnings.length > 0
+      ? "warning"
+      : events.length > 0
+        ? "healthy"
+        : "unknown";
+
+  const groupedErrors = new Map<string, {
+    line: string;
+    recordedAt: string;
+    occurrences: number;
+    operation: string;
+    errorType: string;
+  }>();
+  for (const event of errors) {
+    const existing = groupedErrors.get(event.line);
+    if (existing) {
+      existing.occurrences += 1;
+      existing.recordedAt = event.recordedAt;
+    } else {
+      groupedErrors.set(event.line, {
+        line: event.line,
+        recordedAt: event.recordedAt,
+        occurrences: 1,
+        operation: extractMetaOperation(event.line),
+        errorType: classifyMetaError(event.line),
+      });
+    }
+  }
+
+  const bucketCount = Math.min(12, Math.max(4, hours));
+  const windowMs = hours * 60 * 60 * 1000;
+  const bucketMs = windowMs / bucketCount;
+  const windowStart = Date.now() - windowMs;
+  const trend = Array.from({ length: bucketCount }, (_, index) => {
+    const start = windowStart + index * bucketMs;
+    const end = start + bucketMs;
+    return {
+      recordedAt: new Date(start).toISOString(),
+      errorCount: errors.filter(event => {
+        const time = new Date(event.recordedAt).getTime();
+        return time >= start && time < end;
+      }).length,
+      warningCount: warnings.filter(event => {
+        const time = new Date(event.recordedAt).getTime();
+        return time >= start && time < end;
+      }).length,
+    };
+  });
+
+  const latestError = errors.length > 0 ? errors[errors.length - 1] : null;
+  return {
+    status,
+    source: "agent-log" as const,
+    hours,
+    snapshotCount: snapshots.length,
+    totalEvents: events.length,
+    totalErrors: errors.length,
+    totalWarnings: warnings.length,
+    successCount,
+    latestEventAt: events.length > 0 ? events[events.length - 1].recordedAt : null,
+    latestError,
+    affectedOperation: latestError ? extractMetaOperation(latestError.line) : null,
+    errorType: latestError ? classifyMetaError(latestError.line) : null,
+    trend,
+    recentErrors: Array.from(groupedErrors.values()).sort((left, right) => (
+      new Date(right.recordedAt).getTime() - new Date(left.recordedAt).getTime()
+    )).slice(0, 6),
+    message: status === "unknown"
+      ? "No direct Meta or Facebook error-log entries were captured in the selected window."
+      : errors.length > 0
+        ? "Meta or Facebook error-log entries need attention."
+        : warnings.length > 0
+          ? "Meta or Facebook feed activity contains warning signals."
+          : "Meta or Facebook feed activity completed without classified errors.",
+  };
+}
+
 function summarizeServerLogs(
   snapshots: typeof serverLogSnapshotsTable.$inferSelect[],
   hours: number,
@@ -555,6 +669,38 @@ serversRouter.get("/servers/:id/meta-status", async (req, res, next) => {
       .orderBy(serverLogSnapshotsTable.recordedAt);
 
     res.json(summarizeMetaStatus(snapshots, hours));
+  } catch (err) {
+    next(err);
+  }
+});
+
+serversRouter.get("/servers/:id/meta-health", async (req, res, next) => {
+  try {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id) || id <= 0) {
+      res.status(400).json({ error: "Invalid server ID" });
+      return;
+    }
+
+    const [server] = await db
+      .select({ id: serversTable.id })
+      .from(serversTable)
+      .where(eq(serversTable.id, id))
+      .limit(1);
+    if (!server) {
+      res.status(404).json({ error: "Server not found" });
+      return;
+    }
+
+    const hours = clampNum(req.query.hours, 1, 24, 24);
+    const since = new Date(Date.now() - hours * 60 * 60 * 1000);
+    const snapshots = await db
+      .select()
+      .from(serverLogSnapshotsTable)
+      .where(and(eq(serverLogSnapshotsTable.serverId, id), gte(serverLogSnapshotsTable.recordedAt, since)))
+      .orderBy(serverLogSnapshotsTable.recordedAt);
+
+    res.json(summarizeMetaHealth(snapshots, hours));
   } catch (err) {
     next(err);
   }

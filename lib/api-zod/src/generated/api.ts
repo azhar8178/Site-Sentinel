@@ -1023,6 +1023,62 @@ export const GetServerLogSummaryResponse = zod.object({
 });
 
 /**
+ * @summary Get Meta and Facebook error-log health with trend data
+ */
+export const GetServerMetaHealthParams = zod.object({
+  serverId: zod.coerce.number(),
+});
+
+export const getServerMetaHealthQueryHoursDefault = 24;
+export const getServerMetaHealthQueryHoursMax = 24;
+
+export const GetServerMetaHealthQueryParams = zod.object({
+  hours: zod.coerce
+    .number()
+    .min(1)
+    .max(getServerMetaHealthQueryHoursMax)
+    .default(getServerMetaHealthQueryHoursDefault)
+    .describe("Number of hours of Meta error-log history"),
+});
+
+export const GetServerMetaHealthResponse = zod.object({
+  status: zod.enum(["unknown", "healthy", "warning", "error"]),
+  source: zod.enum(["agent-log"]),
+  hours: zod.number(),
+  snapshotCount: zod.number(),
+  totalEvents: zod.number(),
+  totalErrors: zod.number(),
+  totalWarnings: zod.number(),
+  successCount: zod.number(),
+  latestEventAt: zod.date().nullish(),
+  latestError: zod
+    .object({
+      line: zod.string(),
+      recordedAt: zod.date(),
+    })
+    .nullish(),
+  affectedOperation: zod.string().nullish(),
+  errorType: zod.string().nullish(),
+  trend: zod.array(
+    zod.object({
+      recordedAt: zod.date(),
+      errorCount: zod.number(),
+      warningCount: zod.number(),
+    }),
+  ),
+  recentErrors: zod.array(
+    zod.object({
+      line: zod.string(),
+      recordedAt: zod.date(),
+      occurrences: zod.number(),
+      operation: zod.string(),
+      errorType: zod.string(),
+    }),
+  ),
+  message: zod.string(),
+});
+
+/**
  * @summary Download sanitized server log snapshots
  */
 export const ExportServerLogSnapshotsParams = zod.object({
