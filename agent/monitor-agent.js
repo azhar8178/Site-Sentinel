@@ -870,7 +870,7 @@ function getStripeLogSnapshot() {
   }
 
   return readLogCommand(
-    "sh -c 'for root in /var/www/html /var/www/* /home/*/public_html /home/*/www /srv/www/*; do for f in \"$root\"/var/log/*stripe*.log \"$root\"/var/log/*payment*.log; do [ -f \"$f\" ] && { echo \"=== $f ===\"; tail -n 160 -- \"$f\"; }; done; done'",
+    "sh -c 'for root in /var/www/html /var/www/* /home/*/public_html /home/*/www /srv/www/*; do for f in \"$root\"/var/log/*stripe*.log \"$root\"/var/log/*payment*.log; do if [ -f \"$f\" ]; then echo \"=== $f ===\"; tail -n 160 -- \"$f\"; fi; done; done; exit 0'",
     20000,
   );
 }
@@ -903,7 +903,7 @@ function getLogSnapshot() {
       "sh -c 'for f in /var/log/php*-fpm.log /var/log/php*/fpm-php*.log /var/log/php/*fpm*.log; do [ -f \"$f\" ] && tail -n 80 \"$f\"; done' 2>/dev/null"
     ),
     magento: readLogCommand(
-      "sh -c 'for root in /var/www/html /var/www/* /home/*/public_html /home/*/www /srv/www/*; do for name in system exception debug; do f=\"$root/var/log/$name.log\"; [ -f \"$f\" ] && tail -n 120 \"$f\"; done; done' 2>/dev/null"
+      "sh -c 'for root in /var/www/html /var/www/* /home/*/public_html /home/*/www /srv/www/*; do for name in system exception debug; do f=\"$root/var/log/$name.log\"; if [ -f \"$f\" ]; then tail -n 120 \"$f\"; fi; done; done; exit 0' 2>/dev/null"
     ),
     stripe: getStripeLogSnapshot(),
     meta: getMetaLogSnapshot(),
